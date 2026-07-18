@@ -1,0 +1,28 @@
+name: Security contact request
+description: Request a private channel for a security report without disclosing details.
+title: "Security contact requested"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this only when GitHub private vulnerability reporting or private
+        security advisories are not available. Do not include vulnerability
+        details, exploit steps, secrets, provider keys, or private generated
+        output in this public issue.
+  - type: textarea
+    id: contact-context
+    attributes:
+      label: Public-safe context
+      description: Provide only enough context for a maintainer to route the report.
+      placeholder: "Example: I need to privately report a provider-key handling issue."
+    validations:
+      required: false
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I did not include vulnerability details, exploit steps, secrets, or private output.
+          required: true
+        - label: I need a maintainer to arrange a private reporting channel.
+          required: true

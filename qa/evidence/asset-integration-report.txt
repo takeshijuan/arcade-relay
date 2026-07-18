@@ -1,0 +1,55 @@
+# === AssetIntegration.IntegrateAll start ===
+#   renderer[0]='char1' type=SkinnedMeshRenderer bounds.size=(1.021340, 1.800000, 0.730877)
+#   hero import (pre-correction) measured height=1.8000m (target range [1.6,2]m)
+# Hero Avatar: valid=True (isValid=True, isHuman=True)
+# Hero clips: idle=True run=True attack=True
+# UI frame kit sprites sliced: allOk=True
+#   extracted texture: Assets/Generated/Models/model-hero_Textures/hero_tex_base.png
+#   extracted texture: Assets/Generated/Models/model-hero_Textures/hero_tex_metallic.png
+#   extracted texture: Assets/Generated/Models/model-hero_Textures/hero_tex_normal.png
+#   extracted texture: Assets/Generated/Models/model-hero_Textures/hero_tex_roughness.png
+# FixMaterialsForUrp(Assets/Generated/Models/model-hero.fbx): 1 material(s) re-pointed at URP/Lit (baseMap=hero_tex_base, normalMap=hero_tex_normal).
+#   extracted texture: Assets/Generated/Models/model-swarmer_Textures/swarmer_tex_base_retouched.png
+#   extracted texture: Assets/Generated/Models/model-swarmer_Textures/swarmer_tex_metallic.png
+#   extracted texture: Assets/Generated/Models/model-swarmer_Textures/swarmer_tex_normal.png
+#   extracted texture: Assets/Generated/Models/model-swarmer_Textures/swarmer_tex_roughness.png
+# FixMaterialsForUrp(Assets/Generated/Models/model-swarmer.fbx): 1 material(s) re-pointed at URP/Lit (baseMap=swarmer_tex_base_retouched, normalMap=swarmer_tex_normal).
+# ApplyRoleColorBlockingAndRimHighlight(Assets/Generated/Models/model-hero.fbx): tint=#3488D1@0.18 smoothness=0.65 -> 1 material(s).
+# ApplyRoleColorBlockingAndRimHighlight(Assets/Generated/Models/model-swarmer.fbx): tint=#8B12A5@0.18 smoothness=0.45 -> 1 material(s).
+# BuildOutlineMaterial: color=#164583 width=0.02m -> Assets/Generated/Materials/OutlineMaterial.mat
+# Outline material built: True
+# ApplyOutlineToRenderers('model-hero'): outline material appended to 1 renderer(s).
+#   renderer[0]='char1' type=SkinnedMeshRenderer bounds.size=(1.021340, 1.800000, 0.730877)
+# Hero prefab bounds (world size at identity transform): (1.02, 1.80, 0.73)
+# ApplyOutlineToRenderers('Swarmer'): outline material appended to 1 renderer(s).
+#   renderer[0]='Visual' type=MeshRenderer bounds.size=(0.897059, 0.958856, 1.460847)
+# Swarmer prefab bounds (world size at identity transform): (0.90, 0.96, 1.46)
+# Hit VFX prefab built: True
+# Crystal glow VFX prefab built: True
+# Crystal collect VFX prefab built: True
+# PatchPlayerVisual: HeroVisual already present — skipping (idempotent re-run).
+# PatchWaveSpawnerPrefab: WaveSpawner.enemyPrefab -> Swarmer prefab.
+# PatchSfxLibrary: SfxLibrary present with SFX-01..05 clip slots + mixer wired.
+# PatchAutoAttackDriverVfx: AutoAttackDriver._hitVfxPrefab -> HitVfx prefab.
+# PatchCrystalVfxLibrary: CrystalVfxLibrary present with glow+collect VFX prefabs wired.
+# PatchArenaBackdrop: IMG-06-backed ArenaBackdropSkybox material assigned to ArenaBackdrop._skyboxMaterial.
+# PatchBgmPlayer: BgmPlayer present with BGM-01 clip + mixer wired.
+# PatchMenuPurchaseSfx: MenuController present with SFX-06 (upgrade purchase) clip + AudioSource assigned.
+hero_avatar_valid=True
+hero_bounds_size=1.0213,1.8000,0.7309
+swarmer_bounds_size=0.8971,0.9589,1.4608
+hero_clips_complete=True
+hit_vfx_built=True
+crystal_glow_vfx_built=True
+crystal_collect_vfx_built=True
+bgm_clip=Assigned
+sfx_attack_hit_clip=Assigned
+sfx_dash_clip=Assigned
+sfx_player_hit_clip=Assigned
+sfx_crystal_pickup_clip=Assigned
+sfx_wave_start_clip=Assigned
+sfx_upgrade_purchase_clip=Assigned
+arena_backdrop_texture=Assigned
+outline_material_built=True
+material_finish_hero=Assigned
+material_finish_swarmer=Assigned

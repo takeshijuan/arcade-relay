@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="4" result="Passed" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-07-13 06:38:30Z" end-time="2026-07-13 06:38:32Z" duration="1.9607972">
+  <test-suite type="TestSuite" id="1128" name="game" fullname="game" runstate="Runnable" testcasecount="97" result="Passed" start-time="2026-07-13 06:38:30Z" end-time="2026-07-13 06:38:32Z" duration="1.960797" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="PlayMode" />
+    </properties>
+    <test-suite type="Assembly" id="1117" name="ForgeGame.PlayMode.Tests.dll" fullname="<repo>/game/Library/ScriptAssemblies/ForgeGame.PlayMode.Tests.dll" runstate="Runnable" testcasecount="95" result="Passed" start-time="2026-07-13 06:38:30Z" end-time="2026-07-13 06:38:32Z" duration="1.954245" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="69345" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="PlayMode" />
+        <property name="EditorOnly" value="False" />
+      </properties>
+      <test-suite type="TestSuite" id="1118" name="ForgeGame" fullname="ForgeGame" runstate="Runnable" testcasecount="95" result="Passed" start-time="2026-07-13 06:38:30Z" end-time="2026-07-13 06:38:32Z" duration="1.953341" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1119" name="Tests" fullname="ForgeGame.Tests" runstate="Runnable" testcasecount="95" result="Passed" start-time="2026-07-13 06:38:30Z" end-time="2026-07-13 06:38:32Z" duration="1.952804" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1120" name="PlayMode" fullname="ForgeGame.Tests.PlayMode" runstate="Runnable" testcasecount="95" result="Passed" start-time="2026-07-13 06:38:30Z" end-time="2026-07-13 06:38:32Z" duration="1.952243" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestFixture" id="1012" name="AutoAttackSceneTests" fullname="ForgeGame.Tests.PlayMode.AutoAttackSceneTests" classname="ForgeGame.Tests.PlayMode.AutoAttackSceneTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-07-13 06:38:30Z" end-time="2026-07-13 06:38:32Z" duration="1.948598" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1016" name="AttackLanding_SpawnsHitVfxAtTargetPosition_PlaysSfx_AndTransitionsAnimatorToAttack" fullname="ForgeGame.Tests.PlayMode.AutoAttackSceneTests.AttackLanding_SpawnsHitVfxAtTargetPosition_PlaysSfx_AndTransitionsAnimatorToAttack" methodname="AttackLanding_SpawnsHitVfxAtTargetPosition_PlaysSfx_AndTransitionsAnimatorToAttack" classname="ForgeGame.Tests.PlayMode.AutoAttackSceneTests" runstate="Runnable" seed="1380159722" result="Passed" start-time="2026-07-13 06:38:30Z" end-time="2026-07-13 06:38:30Z" duration="0.404000" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+]]></output>
+              </test-case>
+              <test-case id="1015" name="DyingHero_DoesNotFireAutoAttack_DuringDeathFadeSequence" fullname="ForgeGame.Tests.PlayMode.AutoAttackSceneTests.DyingHero_DoesNotFireAutoAttack_DuringDeathFadeSequence" methodname="DyingHero_DoesNotFireAutoAttack_DuringDeathFadeSequence" classname="ForgeGame.Tests.PlayMode.AutoAttackSceneTests" runstate="Runnable" seed="1234886793" result="Passed" start-time="2026-07-13 06:38:30Z" end-time="2026-07-13 06:38:31Z" duration="0.839446" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[Wiring] SessionHolder missing at Result transition (not loaded via Boot, or session state lost); folding run result into a fresh default SaveData
+[Wiring] SessionHolder missing at Result transition; Result screen will show a zeroed run summary
+[Wiring] SessionHolder/LastRunResult missing at Result (not reached via a completed Game run, or session state lost); showing a zeroed run summary
+]]></output>
+              </test-case>
+              <test-case id="1013" name="EnemyWithinRange_TakesDamageInBaseIncrements_AndDiesAfterTwoHits" fullname="ForgeGame.Tests.PlayMode.AutoAttackSceneTests.EnemyWithinRange_TakesDamageInBaseIncrements_AndDiesAfterTwoHits" methodname="EnemyWithinRange_TakesDamageInBaseIncrements_AndDiesAfterTwoHits" classname="ForgeGame.Tests.PlayMode.AutoAttackSceneTests" runstate="Runnable" seed="2008837124" result="Passed" start-time="2026-07-13 06:38:31Z" end-time="2026-07-13 06:38:32Z" duration="0.419707" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+]]></output>
+              </test-case>
+              <test-case id="1014" name="HeldMovementAndDashInput_DoesNotAffectAttackTiming" fullname="ForgeGame.Tests.PlayMode.AutoAttackSceneTests.HeldMovementAndDashInput_DoesNotAffectAttackTiming" methodname="HeldMovementAndDashInput_DoesNotAffectAttackTiming" classname="ForgeGame.Tests.PlayMode.AutoAttackSceneTests" runstate="Runnable" seed="397897402" result="Passed" start-time="2026-07-13 06:38:32Z" end-time="2026-07-13 06:38:32Z" duration="0.276337" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+Saving results to: <path-redacted> Support/DefaultCompany/game/TestResults.xml
+]]></output>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

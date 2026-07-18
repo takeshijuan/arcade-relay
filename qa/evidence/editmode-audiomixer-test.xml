@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="2" result="Passed" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-07-13 01:20:44Z" end-time="2026-07-13 01:20:44Z" duration="0.3428473">
+  <test-suite type="TestSuite" id="1000" name="game" fullname="game" runstate="Runnable" testcasecount="82" result="Passed" start-time="2026-07-13 01:20:44Z" end-time="2026-07-13 01:20:44Z" duration="0.342847" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <test-suite type="Assembly" id="1095" name="ForgeGame.EditMode.Tests.dll" fullname="<repo>/game/Library/ScriptAssemblies/ForgeGame.EditMode.Tests.dll" runstate="Runnable" testcasecount="82" result="Passed" start-time="2026-07-13 01:20:44Z" end-time="2026-07-13 01:20:44Z" duration="0.339620" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="79002" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <test-suite type="TestSuite" id="1096" name="ForgeGame" fullname="ForgeGame" runstate="Runnable" testcasecount="82" result="Passed" start-time="2026-07-13 01:20:44Z" end-time="2026-07-13 01:20:44Z" duration="0.339254" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1097" name="Tests" fullname="ForgeGame.Tests" runstate="Runnable" testcasecount="82" result="Passed" start-time="2026-07-13 01:20:44Z" end-time="2026-07-13 01:20:44Z" duration="0.339059" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1098" name="EditMode" fullname="ForgeGame.Tests.EditMode" runstate="Runnable" testcasecount="82" result="Passed" start-time="2026-07-13 01:20:44Z" end-time="2026-07-13 01:20:44Z" duration="0.338809" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestFixture" id="1006" name="AudioMixerSetupTests" fullname="ForgeGame.Tests.EditMode.AudioMixerSetupTests" classname="ForgeGame.Tests.EditMode.AudioMixerSetupTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-07-13 01:20:44Z" end-time="2026-07-13 01:20:44Z" duration="0.337162" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1007" name="EnsureMixer_CreatesMixerWithExposedBgmAndSfxVolumeParameters" fullname="ForgeGame.Tests.EditMode.AudioMixerSetupTests.EnsureMixer_CreatesMixerWithExposedBgmAndSfxVolumeParameters" methodname="EnsureMixer_CreatesMixerWithExposedBgmAndSfxVolumeParameters" classname="ForgeGame.Tests.EditMode.AudioMixerSetupTests" runstate="Runnable" seed="118640983" result="Passed" start-time="2026-07-13 01:20:44Z" end-time="2026-07-13 01:20:44Z" duration="0.176999" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[Exposed name does not exist: NotAnExposedParameter
+]]></output>
+              </test-case>
+              <test-case id="1008" name="EnsureMixer_SecondCall_IsIdempotent_ReturnsSameAssetWithoutError" fullname="ForgeGame.Tests.EditMode.AudioMixerSetupTests.EnsureMixer_SecondCall_IsIdempotent_ReturnsSameAssetWithoutError" methodname="EnsureMixer_SecondCall_IsIdempotent_ReturnsSameAssetWithoutError" classname="ForgeGame.Tests.EditMode.AudioMixerSetupTests" runstate="Runnable" seed="988604599" result="Passed" start-time="2026-07-13 01:20:44Z" end-time="2026-07-13 01:20:44Z" duration="0.154860" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[Saving results to: <path-redacted> Support/DefaultCompany/game/TestResults.xml
+]]></output>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

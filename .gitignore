@@ -1,0 +1,31 @@
+# secrets
+.env
+
+# node (engine=phaser)
+node_modules/
+game/dist/
+
+# Unity (engine=unity) — game/ が Unity プロジェクトの場合の生成物
+game/Library/
+game/Temp/
+game/Logs/
+game/UserSettings/
+game/obj/
+game/Build/
+game/MemoryCaptures/
+game/*.csproj
+game/*.sln
+game/*_BurstDebugInformation_DoNotShip/
+
+# Unreal (engine=unreal) — game/ が UE プロジェクトの場合の生成物
+game/Binaries/
+game/Intermediate/
+game/Saved/
+game/DerivedDataCache/
+game/*.xcworkspace/
+
+# OS
+.DS_Store
+
+# 生成資産の生データ（最終採用分は game/assets/ にコミット）
+design/refs/_candidates/

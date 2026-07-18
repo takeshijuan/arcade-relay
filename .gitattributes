@@ -1,0 +1,25 @@
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.mp3 binary
+*.ogg binary
+*.wav binary
+*.mp4 binary
+*.webm binary
+*.m4a binary
+
+# 3D / エンジン資産
+*.glb binary
+*.fbx binary
+*.blend binary
+*.uasset binary
+*.umap binary
+*.unitypackage binary
+*.unity -text
+*.prefab -text
+*.mat -text
+*.asset -text

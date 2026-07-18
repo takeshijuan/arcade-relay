@@ -1,0 +1,85 @@
+# ArcadeRelay パイプライン定義
+# /forge-status と hooks/session-start.sh が読む「現在地と次」の情報源。
+# stage 値と成果物パスは contract.md §1/§6 と一致していること。
+# artifacts の engine フィールド: 記載があればその engine（contract.md §11 / state/engine.txt）
+# の時のみ必須。無記載は全 engine 共通。engine.txt が無ければ phaser として評価する。
+
+pipeline:
+  - stage: brief
+    title: "ブレスト"
+    command: /forge-brainstorm
+    mode: interactive          # 唯一の対話フェーズ
+    artifacts:
+      - path: design/brief.md
+        required: true
+    next: concept
+
+  - stage: concept
+    title: "企画・設計（Phase 1・自律）"
+    command: /forge-concept
+    mode: autonomous
+    workflow: .claude/workflows/concept-design.js
+    checkpoint: A              # 完成した企画＋設計を人間承認
+    artifacts:
+      - path: design/concept.md
+        required: true
+      - path: design/gdd.md
+        required: true
+      - path: design/art-bible.md
+        required: true
+      - path: design/art-bible.json
+        required: true
+      - path: design/assets.md
+        required: true
+    next: prototype
+
+  - stage: prototype
+    title: "プロトタイプ（Phase 2・自律）"
+    command: /forge-prototype
+    mode: autonomous
+    workflow: .claude/workflows/prototype.js
+    checkpoint: B              # 遊べる縦串を提示、1回フィードバック
+    artifacts:
+      - path: docs/architecture.md
+        required: true
+      - path: docs/conventions.md
+        required: true
+      - path: state/stories.yaml
+        required: true
+      - path: game/package.json
+        required: true
+        engine: phaser
+      - path: game/ProjectSettings/ProjectVersion.txt
+        required: true
+        engine: unity
+      - path: game/ForgeGame.uproject
+        required: true
+        engine: unreal
+      - path: qa/report.md
+        required: true
+    next: build
+
+  - stage: build
+    title: "本実装・仕上げ（Phase 3・自律）"
+    command: /forge-build
+    mode: autonomous
+    workflow: .claude/workflows/full-build.js
+    checkpoint: C              # 完成品受け渡し
+    artifacts:
+      - path: qa/report.md
+        required: true
+      - path: game/assets/MANIFEST.jsonl
+        required: true
+        engine: phaser
+      - path: game/_generated/MANIFEST.jsonl
+        required: true
+        engine: unity
+      - path: game/_generated/MANIFEST.jsonl
+        required: true
+        engine: unreal
+    next: done
+
+  - stage: done
+    title: "完成"
+    command: null
+    next: null

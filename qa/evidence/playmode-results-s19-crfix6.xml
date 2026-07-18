@@ -1,0 +1,1189 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="109" result="Passed" total="109" passed="109" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-07-14 03:11:41Z" end-time="2026-07-14 03:12:34Z" duration="52.4173816">
+  <test-suite type="TestSuite" id="1143" name="game" fullname="game" runstate="Runnable" testcasecount="109" result="Passed" start-time="2026-07-14 03:11:41Z" end-time="2026-07-14 03:12:34Z" duration="52.417382" total="109" passed="109" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="PlayMode" />
+    </properties>
+    <test-suite type="Assembly" id="1132" name="ForgeGame.PlayMode.Tests.dll" fullname="<repo>/game/Library/ScriptAssemblies/ForgeGame.PlayMode.Tests.dll" runstate="Runnable" testcasecount="107" result="Passed" start-time="2026-07-14 03:11:41Z" end-time="2026-07-14 03:12:34Z" duration="52.396779" total="107" passed="107" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="64251" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="PlayMode" />
+        <property name="EditorOnly" value="False" />
+      </properties>
+      <test-suite type="TestSuite" id="1133" name="ForgeGame" fullname="ForgeGame" runstate="Runnable" testcasecount="107" result="Passed" start-time="2026-07-14 03:11:41Z" end-time="2026-07-14 03:12:34Z" duration="52.396123" total="107" passed="107" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1134" name="Tests" fullname="ForgeGame.Tests" runstate="Runnable" testcasecount="107" result="Passed" start-time="2026-07-14 03:11:41Z" end-time="2026-07-14 03:12:34Z" duration="52.395831" total="107" passed="107" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1135" name="PlayMode" fullname="ForgeGame.Tests.PlayMode" runstate="Runnable" testcasecount="107" result="Passed" start-time="2026-07-14 03:11:41Z" end-time="2026-07-14 03:12:34Z" duration="52.395260" total="107" passed="107" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestFixture" id="1001" name="ArenaEnvironmentSceneTests" fullname="ForgeGame.Tests.PlayMode.ArenaEnvironmentSceneTests" classname="ForgeGame.Tests.PlayMode.ArenaEnvironmentSceneTests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-07-14 03:11:41Z" end-time="2026-07-14 03:11:43Z" duration="1.998624" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1002" name="ArenaEnvironment_FloorBoundaryAndSpawnRing_ExistWithNoMaterialErrors" fullname="ForgeGame.Tests.PlayMode.ArenaEnvironmentSceneTests.ArenaEnvironment_FloorBoundaryAndSpawnRing_ExistWithNoMaterialErrors" methodname="ArenaEnvironment_FloorBoundaryAndSpawnRing_ExistWithNoMaterialErrors" classname="ForgeGame.Tests.PlayMode.ArenaEnvironmentSceneTests" runstate="Runnable" seed="1390493145" result="Passed" start-time="2026-07-14 03:11:41Z" end-time="2026-07-14 03:11:42Z" duration="0.470640" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+              <test-case id="1003" name="ArenaFloor_IsSizedToArenaRadius_AndBoundaryMatchesArenaRadius_SpawnRingMatchesSpawnRadius" fullname="ForgeGame.Tests.PlayMode.ArenaEnvironmentSceneTests.ArenaFloor_IsSizedToArenaRadius_AndBoundaryMatchesArenaRadius_SpawnRingMatchesSpawnRadius" methodname="ArenaFloor_IsSizedToArenaRadius_AndBoundaryMatchesArenaRadius_SpawnRingMatchesSpawnRadius" classname="ForgeGame.Tests.PlayMode.ArenaEnvironmentSceneTests" runstate="Runnable" seed="378026532" result="Passed" start-time="2026-07-14 03:11:42Z" end-time="2026-07-14 03:11:42Z" duration="0.215346" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+              <test-case id="1006" name="Capture_FourDirectionReadability_Evidence" fullname="ForgeGame.Tests.PlayMode.ArenaEnvironmentSceneTests.Capture_FourDirectionReadability_Evidence" methodname="Capture_FourDirectionReadability_Evidence" classname="ForgeGame.Tests.PlayMode.ArenaEnvironmentSceneTests" runstate="Runnable" seed="375150541" result="Passed" start-time="2026-07-14 03:11:42Z" end-time="2026-07-14 03:11:43Z" duration="0.532906" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+              <test-case id="1004" name="Crystal_HasEmissiveGlowingMaterial_AndRotatesOverTime" fullname="ForgeGame.Tests.PlayMode.ArenaEnvironmentSceneTests.Crystal_HasEmissiveGlowingMaterial_AndRotatesOverTime" methodname="Crystal_HasEmissiveGlowingMaterial_AndRotatesOverTime" classname="ForgeGame.Tests.PlayMode.ArenaEnvironmentSceneTests" runstate="Runnable" seed="1858432529" result="Passed" start-time="2026-07-14 03:11:43Z" end-time="2026-07-14 03:11:43Z" duration="0.531921" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+              <test-case id="1005" name="PlayerPosition_NeverGoesNaN_WhileArenaEnvironmentIsPresent" fullname="ForgeGame.Tests.PlayMode.ArenaEnvironmentSceneTests.PlayerPosition_NeverGoesNaN_WhileArenaEnvironmentIsPresent" methodname="PlayerPosition_NeverGoesNaN_WhileArenaEnvironmentIsPresent" classname="ForgeGame.Tests.PlayMode.ArenaEnvironmentSceneTests" runstate="Runnable" seed="754977570" result="Passed" start-time="2026-07-14 03:11:43Z" end-time="2026-07-14 03:11:43Z" duration="0.237319" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1007" name="AssetIntegrationSceneTests" fullname="ForgeGame.Tests.PlayMode.AssetIntegrationSceneTests" classname="ForgeGame.Tests.PlayMode.AssetIntegrationSceneTests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-07-14 03:11:43Z" end-time="2026-07-14 03:11:45Z" duration="1.263413" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1009" name="HeroVisual_BoundingBoxWithinArtBibleHeightRange" fullname="ForgeGame.Tests.PlayMode.AssetIntegrationSceneTests.HeroVisual_BoundingBoxWithinArtBibleHeightRange" methodname="HeroVisual_BoundingBoxWithinArtBibleHeightRange" classname="ForgeGame.Tests.PlayMode.AssetIntegrationSceneTests" runstate="Runnable" seed="1570697341" result="Passed" start-time="2026-07-14 03:11:43Z" end-time="2026-07-14 03:11:44Z" duration="0.234350" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+              <test-case id="1008" name="HeroVisual_HasValidHumanoidAnimatorAndNoMaterialErrors" fullname="ForgeGame.Tests.PlayMode.AssetIntegrationSceneTests.HeroVisual_HasValidHumanoidAnimatorAndNoMaterialErrors" methodname="HeroVisual_HasValidHumanoidAnimatorAndNoMaterialErrors" classname="ForgeGame.Tests.PlayMode.AssetIntegrationSceneTests" runstate="Runnable" seed="1525912966" result="Passed" start-time="2026-07-14 03:11:44Z" end-time="2026-07-14 03:11:44Z" duration="0.444384" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+              <test-case id="1011" name="SfxLibrary_AudioSourceIsRoutedToSfxMixerGroup" fullname="ForgeGame.Tests.PlayMode.AssetIntegrationSceneTests.SfxLibrary_AudioSourceIsRoutedToSfxMixerGroup" methodname="SfxLibrary_AudioSourceIsRoutedToSfxMixerGroup" classname="ForgeGame.Tests.PlayMode.AssetIntegrationSceneTests" runstate="Runnable" seed="1734812061" result="Passed" start-time="2026-07-14 03:11:44Z" end-time="2026-07-14 03:11:44Z" duration="0.199032" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+              <test-case id="1010" name="SfxLibrary_HasAllGeneratedClipsAssigned" fullname="ForgeGame.Tests.PlayMode.AssetIntegrationSceneTests.SfxLibrary_HasAllGeneratedClipsAssigned" methodname="SfxLibrary_HasAllGeneratedClipsAssigned" classname="ForgeGame.Tests.PlayMode.AssetIntegrationSceneTests" runstate="Runnable" seed="399677357" result="Passed" start-time="2026-07-14 03:11:44Z" end-time="2026-07-14 03:11:44Z" duration="0.196357" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+              <test-case id="1012" name="SwarmerPrefab_HasNoMaterialErrorsWhenSpawned" fullname="ForgeGame.Tests.PlayMode.AssetIntegrationSceneTests.SwarmerPrefab_HasNoMaterialErrorsWhenSpawned" methodname="SwarmerPrefab_HasNoMaterialErrorsWhenSpawned" classname="ForgeGame.Tests.PlayMode.AssetIntegrationSceneTests" runstate="Runnable" seed="695291111" result="Passed" start-time="2026-07-14 03:11:45Z" end-time="2026-07-14 03:11:45Z" duration="0.187077" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1013" name="AudioIntegrationSceneTests" fullname="ForgeGame.Tests.PlayMode.AudioIntegrationSceneTests" classname="ForgeGame.Tests.PlayMode.AudioIntegrationSceneTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-07-14 03:11:45Z" end-time="2026-07-14 03:11:48Z" duration="2.824505" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1015" name="Bgm_SurvivesSceneTransitions_WithoutRestarting" fullname="ForgeGame.Tests.PlayMode.AudioIntegrationSceneTests.Bgm_SurvivesSceneTransitions_WithoutRestarting" methodname="Bgm_SurvivesSceneTransitions_WithoutRestarting" classname="ForgeGame.Tests.PlayMode.AudioIntegrationSceneTests" runstate="Runnable" seed="1872468277" result="Passed" start-time="2026-07-14 03:11:45Z" end-time="2026-07-14 03:11:46Z" duration="1.804861" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1016" name="Boot_AppliesSavedVolumesToMixerBus_WithoutOpeningMenuSettings" fullname="ForgeGame.Tests.PlayMode.AudioIntegrationSceneTests.Boot_AppliesSavedVolumesToMixerBus_WithoutOpeningMenuSettings" methodname="Boot_AppliesSavedVolumesToMixerBus_WithoutOpeningMenuSettings" classname="ForgeGame.Tests.PlayMode.AudioIntegrationSceneTests" runstate="Runnable" seed="1277858164" result="Passed" start-time="2026-07-14 03:11:46Z" end-time="2026-07-14 03:11:47Z" duration="0.323160" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1017" name="Boot_CorruptSave_StillWiresBgmPlayer_WithDefaultVolumes" fullname="ForgeGame.Tests.PlayMode.AudioIntegrationSceneTests.Boot_CorruptSave_StillWiresBgmPlayer_WithDefaultVolumes" methodname="Boot_CorruptSave_StillWiresBgmPlayer_WithDefaultVolumes" classname="ForgeGame.Tests.PlayMode.AudioIntegrationSceneTests" runstate="Runnable" seed="309475893" result="Passed" start-time="2026-07-14 03:11:47Z" end-time="2026-07-14 03:11:47Z" duration="0.329515" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[SaveCorruption] reason=missing-or-invalid-save_version backup=<tmp-path>
+]]></output>
+              </test-case>
+              <test-case id="1014" name="Boot_StartsBgmLoopingOnBgmMixerGroup" fullname="ForgeGame.Tests.PlayMode.AudioIntegrationSceneTests.Boot_StartsBgmLoopingOnBgmMixerGroup" methodname="Boot_StartsBgmLoopingOnBgmMixerGroup" classname="ForgeGame.Tests.PlayMode.AudioIntegrationSceneTests" runstate="Runnable" seed="2046886692" result="Passed" start-time="2026-07-14 03:11:47Z" end-time="2026-07-14 03:11:48Z" duration="0.365358" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1018" name="AutoAttackSceneTests" fullname="ForgeGame.Tests.PlayMode.AutoAttackSceneTests" classname="ForgeGame.Tests.PlayMode.AutoAttackSceneTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-07-14 03:11:48Z" end-time="2026-07-14 03:11:49Z" duration="1.761323" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1022" name="AttackLanding_SpawnsHitVfxAtTargetPosition_PlaysSfx_AndTransitionsAnimatorToAttack" fullname="ForgeGame.Tests.PlayMode.AutoAttackSceneTests.AttackLanding_SpawnsHitVfxAtTargetPosition_PlaysSfx_AndTransitionsAnimatorToAttack" methodname="AttackLanding_SpawnsHitVfxAtTargetPosition_PlaysSfx_AndTransitionsAnimatorToAttack" classname="ForgeGame.Tests.PlayMode.AutoAttackSceneTests" runstate="Runnable" seed="166500569" result="Passed" start-time="2026-07-14 03:11:48Z" end-time="2026-07-14 03:11:48Z" duration="0.208296" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+]]></output>
+              </test-case>
+              <test-case id="1021" name="DyingHero_DoesNotFireAutoAttack_DuringDeathFadeSequence" fullname="ForgeGame.Tests.PlayMode.AutoAttackSceneTests.DyingHero_DoesNotFireAutoAttack_DuringDeathFadeSequence" methodname="DyingHero_DoesNotFireAutoAttack_DuringDeathFadeSequence" classname="ForgeGame.Tests.PlayMode.AutoAttackSceneTests" runstate="Runnable" seed="1598189133" result="Passed" start-time="2026-07-14 03:11:48Z" end-time="2026-07-14 03:11:49Z" duration="0.841895" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[Wiring] SessionHolder missing at Result transition (not loaded via Boot, or session state lost); folding run result into a fresh default SaveData
+[Wiring] SessionHolder missing at Result transition; Result screen will show a zeroed run summary
+[Wiring] SessionHolder/LastRunResult missing at Result (not reached via a completed Game run, or session state lost); showing a zeroed run summary
+]]></output>
+              </test-case>
+              <test-case id="1019" name="EnemyWithinRange_TakesDamageInBaseIncrements_AndDiesAfterTwoHits" fullname="ForgeGame.Tests.PlayMode.AutoAttackSceneTests.EnemyWithinRange_TakesDamageInBaseIncrements_AndDiesAfterTwoHits" methodname="EnemyWithinRange_TakesDamageInBaseIncrements_AndDiesAfterTwoHits" classname="ForgeGame.Tests.PlayMode.AutoAttackSceneTests" runstate="Runnable" seed="1808578995" result="Passed" start-time="2026-07-14 03:11:49Z" end-time="2026-07-14 03:11:49Z" duration="0.414217" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+]]></output>
+              </test-case>
+              <test-case id="1020" name="HeldMovementAndDashInput_DoesNotAffectAttackTiming" fullname="ForgeGame.Tests.PlayMode.AutoAttackSceneTests.HeldMovementAndDashInput_DoesNotAffectAttackTiming" methodname="HeldMovementAndDashInput_DoesNotAffectAttackTiming" classname="ForgeGame.Tests.PlayMode.AutoAttackSceneTests" runstate="Runnable" seed="1176539796" result="Passed" start-time="2026-07-14 03:11:49Z" end-time="2026-07-14 03:11:49Z" duration="0.295316" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1023" name="CameraShakeSceneTests" fullname="ForgeGame.Tests.PlayMode.CameraShakeSceneTests" classname="ForgeGame.Tests.PlayMode.CameraShakeSceneTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-07-14 03:11:49Z" end-time="2026-07-14 03:11:50Z" duration="0.908577" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1024" name="ContactDuringDashInvulnerability_TriggersSingleShake_ThenRevertsExactlyAfterDuration" fullname="ForgeGame.Tests.PlayMode.CameraShakeSceneTests.ContactDuringDashInvulnerability_TriggersSingleShake_ThenRevertsExactlyAfterDuration" methodname="ContactDuringDashInvulnerability_TriggersSingleShake_ThenRevertsExactlyAfterDuration" classname="ForgeGame.Tests.PlayMode.CameraShakeSceneTests" runstate="Runnable" seed="1971174220" result="Passed" start-time="2026-07-14 03:11:49Z" end-time="2026-07-14 03:11:50Z" duration="0.324447" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+]]></output>
+              </test-case>
+              <test-case id="1026" name="MultipleSimultaneousContactsWithinSameDashWindow_TriggersOnlyOneShake" fullname="ForgeGame.Tests.PlayMode.CameraShakeSceneTests.MultipleSimultaneousContactsWithinSameDashWindow_TriggersOnlyOneShake" methodname="MultipleSimultaneousContactsWithinSameDashWindow_TriggersOnlyOneShake" classname="ForgeGame.Tests.PlayMode.CameraShakeSceneTests" runstate="Runnable" seed="1132788865" result="Passed" start-time="2026-07-14 03:11:50Z" end-time="2026-07-14 03:11:50Z" duration="0.425163" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+]]></output>
+              </test-case>
+              <test-case id="1025" name="NormalDamage_WithoutInvulnerability_NeverTriggersShake" fullname="ForgeGame.Tests.PlayMode.CameraShakeSceneTests.NormalDamage_WithoutInvulnerability_NeverTriggersShake" methodname="NormalDamage_WithoutInvulnerability_NeverTriggersShake" classname="ForgeGame.Tests.PlayMode.CameraShakeSceneTests" runstate="Runnable" seed="858967043" result="Passed" start-time="2026-07-14 03:11:50Z" end-time="2026-07-14 03:11:50Z" duration="0.157474" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1027" name="CrystalSceneTests" fullname="ForgeGame.Tests.PlayMode.CrystalSceneTests" classname="ForgeGame.Tests.PlayMode.CrystalSceneTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-07-14 03:11:50Z" end-time="2026-07-14 03:11:51Z" duration="0.886294" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1028" name="CrystalWithinPickupRadius_AutoCollects_AndIncrementsRunStats" fullname="ForgeGame.Tests.PlayMode.CrystalSceneTests.CrystalWithinPickupRadius_AutoCollects_AndIncrementsRunStats" methodname="CrystalWithinPickupRadius_AutoCollects_AndIncrementsRunStats" classname="ForgeGame.Tests.PlayMode.CrystalSceneTests" runstate="Runnable" seed="400863316" result="Passed" start-time="2026-07-14 03:11:50Z" end-time="2026-07-14 03:11:50Z" duration="0.156592" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+              <test-case id="1030" name="KillingEnemyWithinPickupRadius_DropsCrystal_AutoCollects_AndScoreIncreasesByScorePerCrystal" fullname="ForgeGame.Tests.PlayMode.CrystalSceneTests.KillingEnemyWithinPickupRadius_DropsCrystal_AutoCollects_AndScoreIncreasesByScorePerCrystal" methodname="KillingEnemyWithinPickupRadius_DropsCrystal_AutoCollects_AndScoreIncreasesByScorePerCrystal" classname="ForgeGame.Tests.PlayMode.CrystalSceneTests" runstate="Runnable" seed="131738372" result="Passed" start-time="2026-07-14 03:11:50Z" end-time="2026-07-14 03:11:51Z" duration="0.395808" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+]]></output>
+              </test-case>
+              <test-case id="1029" name="UncollectedCrystal_DespawnsAfterLifetimeExpires_AndIsNeverCounted" fullname="ForgeGame.Tests.PlayMode.CrystalSceneTests.UncollectedCrystal_DespawnsAfterLifetimeExpires_AndIsNeverCounted" methodname="UncollectedCrystal_DespawnsAfterLifetimeExpires_AndIsNeverCounted" classname="ForgeGame.Tests.PlayMode.CrystalSceneTests" runstate="Runnable" seed="963542872" result="Passed" start-time="2026-07-14 03:11:51Z" end-time="2026-07-14 03:11:51Z" duration="0.332837" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1031" name="DashSceneTests" fullname="ForgeGame.Tests.PlayMode.DashSceneTests" classname="ForgeGame.Tests.PlayMode.DashSceneTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-07-14 03:11:51Z" end-time="2026-07-14 03:11:52Z" duration="0.852683" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1033" name="DashPressDuringCooldown_IsIgnored_NoSecondDashOrInvulnRearm" fullname="ForgeGame.Tests.PlayMode.DashSceneTests.DashPressDuringCooldown_IsIgnored_NoSecondDashOrInvulnRearm" methodname="DashPressDuringCooldown_IsIgnored_NoSecondDashOrInvulnRearm" classname="ForgeGame.Tests.PlayMode.DashSceneTests" runstate="Runnable" seed="1785345728" result="Passed" start-time="2026-07-14 03:11:51Z" end-time="2026-07-14 03:11:52Z" duration="0.431066" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+              <test-case id="1032" name="MoveInputHeld_DashMovesApproximatelyDashDistance_InTheInputDirection_AndSetsInvulnFlag" fullname="ForgeGame.Tests.PlayMode.DashSceneTests.MoveInputHeld_DashMovesApproximatelyDashDistance_InTheInputDirection_AndSetsInvulnFlag" methodname="MoveInputHeld_DashMovesApproximatelyDashDistance_InTheInputDirection_AndSetsInvulnFlag" classname="ForgeGame.Tests.PlayMode.DashSceneTests" runstate="Runnable" seed="27749153" result="Passed" start-time="2026-07-14 03:11:52Z" end-time="2026-07-14 03:11:52Z" duration="0.420524" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1034" name="EnemySpawnSceneTests" fullname="ForgeGame.Tests.PlayMode.EnemySpawnSceneTests" classname="ForgeGame.Tests.PlayMode.EnemySpawnSceneTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-07-14 03:11:52Z" end-time="2026-07-14 03:11:56Z" duration="4.577935" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1036" name="JustAfterSpawning_EnemyIsPlacedOnTheSpawnRing" fullname="ForgeGame.Tests.PlayMode.EnemySpawnSceneTests.JustAfterSpawning_EnemyIsPlacedOnTheSpawnRing" methodname="JustAfterSpawning_EnemyIsPlacedOnTheSpawnRing" classname="ForgeGame.Tests.PlayMode.EnemySpawnSceneTests" runstate="Runnable" seed="2070050962" result="Passed" start-time="2026-07-14 03:11:52Z" end-time="2026-07-14 03:11:52Z" duration="0.239349" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+              <test-case id="1038" name="OverALongWindow_ConcurrentEnemyCountNeverExceedsTheCap" fullname="ForgeGame.Tests.PlayMode.EnemySpawnSceneTests.OverALongWindow_ConcurrentEnemyCountNeverExceedsTheCap" methodname="OverALongWindow_ConcurrentEnemyCountNeverExceedsTheCap" classname="ForgeGame.Tests.PlayMode.EnemySpawnSceneTests" runstate="Runnable" seed="60773000" result="Passed" start-time="2026-07-14 03:11:52Z" end-time="2026-07-14 03:11:55Z" duration="3.235193" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+[Wiring] SessionHolder missing at Result transition (not loaded via Boot, or session state lost); folding run result into a fresh default SaveData
+[Wiring] SessionHolder missing at Result transition; Result screen will show a zeroed run summary
+[Wiring] SessionHolder/LastRunResult missing at Result (not reached via a completed Game run, or session state lost); showing a zeroed run summary
+]]></output>
+              </test-case>
+              <test-case id="1035" name="OverTime_EnemiesSpawnOnTheSpawnRing" fullname="ForgeGame.Tests.PlayMode.EnemySpawnSceneTests.OverTime_EnemiesSpawnOnTheSpawnRing" methodname="OverTime_EnemiesSpawnOnTheSpawnRing" classname="ForgeGame.Tests.PlayMode.EnemySpawnSceneTests" runstate="Runnable" seed="1376871844" result="Passed" start-time="2026-07-14 03:11:55Z" end-time="2026-07-14 03:11:56Z" duration="0.489222" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+              <test-case id="1037" name="SpawnedEnemy_ClosesDistanceToThePlayerOverTime" fullname="ForgeGame.Tests.PlayMode.EnemySpawnSceneTests.SpawnedEnemy_ClosesDistanceToThePlayerOverTime" methodname="SpawnedEnemy_ClosesDistanceToThePlayerOverTime" classname="ForgeGame.Tests.PlayMode.EnemySpawnSceneTests" runstate="Runnable" seed="1096301857" result="Passed" start-time="2026-07-14 03:11:56Z" end-time="2026-07-14 03:11:56Z" duration="0.612933" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1039" name="EnemyVisualMotionSceneTests" fullname="ForgeGame.Tests.PlayMode.EnemyVisualMotionSceneTests" classname="ForgeGame.Tests.PlayMode.EnemyVisualMotionSceneTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-07-14 03:11:56Z" end-time="2026-07-14 03:11:58Z" duration="1.071298" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1040" name="SwarmerVisual_BouncesOverTimeWithoutAnimatorOrMaterialErrors" fullname="ForgeGame.Tests.PlayMode.EnemyVisualMotionSceneTests.SwarmerVisual_BouncesOverTimeWithoutAnimatorOrMaterialErrors" methodname="SwarmerVisual_BouncesOverTimeWithoutAnimatorOrMaterialErrors" classname="ForgeGame.Tests.PlayMode.EnemyVisualMotionSceneTests" runstate="Runnable" seed="1944954112" result="Passed" start-time="2026-07-14 03:11:56Z" end-time="2026-07-14 03:11:57Z" duration="0.888360" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+              <test-case id="1041" name="SwarmerVisual_PreservesBakedLocalPositionOffsetUnderBounce" fullname="ForgeGame.Tests.PlayMode.EnemyVisualMotionSceneTests.SwarmerVisual_PreservesBakedLocalPositionOffsetUnderBounce" methodname="SwarmerVisual_PreservesBakedLocalPositionOffsetUnderBounce" classname="ForgeGame.Tests.PlayMode.EnemyVisualMotionSceneTests" runstate="Runnable" seed="1755486751" result="Passed" start-time="2026-07-14 03:11:57Z" end-time="2026-07-14 03:11:58Z" duration="0.181717" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1042" name="GameHudSceneTests" fullname="ForgeGame.Tests.PlayMode.GameHudSceneTests" classname="ForgeGame.Tests.PlayMode.GameHudSceneTests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-07-14 03:11:58Z" end-time="2026-07-14 03:12:00Z" duration="2.266825" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1043" name="ContinuousContact_ReducesHpText_AndBarFill" fullname="ForgeGame.Tests.PlayMode.GameHudSceneTests.ContinuousContact_ReducesHpText_AndBarFill" methodname="ContinuousContact_ReducesHpText_AndBarFill" classname="ForgeGame.Tests.PlayMode.GameHudSceneTests" runstate="Runnable" seed="1087281503" result="Passed" start-time="2026-07-14 03:11:58Z" end-time="2026-07-14 03:11:58Z" duration="0.195034" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+]]></output>
+              </test-case>
+              <test-case id="1044" name="DashActivation_ShowsCooldownRemaining_OnHud" fullname="ForgeGame.Tests.PlayMode.GameHudSceneTests.DashActivation_ShowsCooldownRemaining_OnHud" methodname="DashActivation_ShowsCooldownRemaining_OnHud" classname="ForgeGame.Tests.PlayMode.GameHudSceneTests" runstate="Runnable" seed="1044973166" result="Passed" start-time="2026-07-14 03:11:58Z" end-time="2026-07-14 03:11:58Z" duration="0.189191" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+              <test-case id="1047" name="GameHudCanvas_UsesScreenSpaceCameraRenderMode" fullname="ForgeGame.Tests.PlayMode.GameHudSceneTests.GameHudCanvas_UsesScreenSpaceCameraRenderMode" methodname="GameHudCanvas_UsesScreenSpaceCameraRenderMode" classname="ForgeGame.Tests.PlayMode.GameHudSceneTests" runstate="Runnable" seed="489087350" result="Passed" start-time="2026-07-14 03:11:58Z" end-time="2026-07-14 03:11:58Z" duration="0.197224" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+              <test-case id="1046" name="KillAndAutoPickup_IncreasesScore_OnHud" fullname="ForgeGame.Tests.PlayMode.GameHudSceneTests.KillAndAutoPickup_IncreasesScore_OnHud" methodname="KillAndAutoPickup_IncreasesScore_OnHud" classname="ForgeGame.Tests.PlayMode.GameHudSceneTests" runstate="Runnable" seed="1128397212" result="Passed" start-time="2026-07-14 03:11:58Z" end-time="2026-07-14 03:11:59Z" duration="0.447817" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+[AssetIntegration] EnemyAgent 'TestEnemy': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+]]></output>
+              </test-case>
+              <test-case id="1045" name="OverTime_WaveNumber_OnHud_Increases" fullname="ForgeGame.Tests.PlayMode.GameHudSceneTests.OverTime_WaveNumber_OnHud_Increases" methodname="OverTime_WaveNumber_OnHud_Increases" classname="ForgeGame.Tests.PlayMode.GameHudSceneTests" runstate="Runnable" seed="321305352" result="Passed" start-time="2026-07-14 03:11:59Z" end-time="2026-07-14 03:12:00Z" duration="1.235600" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1048" name="GameSceneTests" fullname="ForgeGame.Tests.PlayMode.GameSceneTests" classname="ForgeGame.Tests.PlayMode.GameSceneTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-07-14 03:12:00Z" end-time="2026-07-14 03:12:02Z" duration="1.750770" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1052" name="ArenaCamera_DoesNotFollowThePlayer" fullname="ForgeGame.Tests.PlayMode.GameSceneTests.ArenaCamera_DoesNotFollowThePlayer" methodname="ArenaCamera_DoesNotFollowThePlayer" classname="ForgeGame.Tests.PlayMode.GameSceneTests" runstate="Runnable" seed="1697661035" result="Passed" start-time="2026-07-14 03:12:00Z" end-time="2026-07-14 03:12:00Z" duration="0.413291" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+              <test-case id="1051" name="ArenaCamera_ForwardPointsTowardArenaCenter" fullname="ForgeGame.Tests.PlayMode.GameSceneTests.ArenaCamera_ForwardPointsTowardArenaCenter" methodname="ArenaCamera_ForwardPointsTowardArenaCenter" classname="ForgeGame.Tests.PlayMode.GameSceneTests" runstate="Runnable" seed="1589444367" result="Passed" start-time="2026-07-14 03:12:00Z" end-time="2026-07-14 03:12:00Z" duration="0.226896" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+              <test-case id="1049" name="RightInput_MovesPlayerToThePositiveXSide" fullname="ForgeGame.Tests.PlayMode.GameSceneTests.RightInput_MovesPlayerToThePositiveXSide" methodname="RightInput_MovesPlayerToThePositiveXSide" classname="ForgeGame.Tests.PlayMode.GameSceneTests" runstate="Runnable" seed="990591119" result="Passed" start-time="2026-07-14 03:12:00Z" end-time="2026-07-14 03:12:01Z" duration="0.405867" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+              <test-case id="1050" name="SustainedInput_NeverLeavesTheArenaRadius" fullname="ForgeGame.Tests.PlayMode.GameSceneTests.SustainedInput_NeverLeavesTheArenaRadius" methodname="SustainedInput_NeverLeavesTheArenaRadius" classname="ForgeGame.Tests.PlayMode.GameSceneTests" runstate="Runnable" seed="1544683795" result="Passed" start-time="2026-07-14 03:12:01Z" end-time="2026-07-14 03:12:02Z" duration="0.702764" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1053" name="HealthSceneTests" fullname="ForgeGame.Tests.PlayMode.HealthSceneTests" classname="ForgeGame.Tests.PlayMode.HealthSceneTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-07-14 03:12:02Z" end-time="2026-07-14 03:12:03Z" duration="1.621143" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1055" name="ContactDuringDashInvulnerability_NeverReducesPlayerHp" fullname="ForgeGame.Tests.PlayMode.HealthSceneTests.ContactDuringDashInvulnerability_NeverReducesPlayerHp" methodname="ContactDuringDashInvulnerability_NeverReducesPlayerHp" classname="ForgeGame.Tests.PlayMode.HealthSceneTests" runstate="Runnable" seed="1957033214" result="Passed" start-time="2026-07-14 03:12:02Z" end-time="2026-07-14 03:12:02Z" duration="0.456060" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+]]></output>
+              </test-case>
+              <test-case id="1054" name="ContinuousContact_ReducesPlayerHp_ByAtLeastOneContactDamageIncrement" fullname="ForgeGame.Tests.PlayMode.HealthSceneTests.ContinuousContact_ReducesPlayerHp_ByAtLeastOneContactDamageIncrement" methodname="ContinuousContact_ReducesPlayerHp_ByAtLeastOneContactDamageIncrement" classname="ForgeGame.Tests.PlayMode.HealthSceneTests" runstate="Runnable" seed="2085894661" result="Passed" start-time="2026-07-14 03:12:02Z" end-time="2026-07-14 03:12:02Z" duration="0.229726" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+]]></output>
+              </test-case>
+              <test-case id="1056" name="HpReachesZero_TransitionsToResult_AndSavesExactlyOnce" fullname="ForgeGame.Tests.PlayMode.HealthSceneTests.HpReachesZero_TransitionsToResult_AndSavesExactlyOnce" methodname="HpReachesZero_TransitionsToResult_AndSavesExactlyOnce" classname="ForgeGame.Tests.PlayMode.HealthSceneTests" runstate="Runnable" seed="59585112" result="Passed" start-time="2026-07-14 03:12:02Z" end-time="2026-07-14 03:12:03Z" duration="0.933916" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[Wiring] SessionHolder missing at Result transition (not loaded via Boot, or session state lost); folding run result into a fresh default SaveData
+[Wiring] SessionHolder missing at Result transition; Result screen will show a zeroed run summary
+[Wiring] SessionHolder/LastRunResult missing at Result (not reached via a completed Game run, or session state lost); showing a zeroed run summary
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1057" name="HeavyEnemySceneTests" fullname="ForgeGame.Tests.PlayMode.HeavyEnemySceneTests" classname="ForgeGame.Tests.PlayMode.HeavyEnemySceneTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-07-14 03:12:03Z" end-time="2026-07-14 03:12:05Z" duration="2.238863" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1061" name="AfterUnlockWave_HeavyVariantsMixIntoAutomaticSpawns_WithPlausibleStatMultipliers" fullname="ForgeGame.Tests.PlayMode.HeavyEnemySceneTests.AfterUnlockWave_HeavyVariantsMixIntoAutomaticSpawns_WithPlausibleStatMultipliers" methodname="AfterUnlockWave_HeavyVariantsMixIntoAutomaticSpawns_WithPlausibleStatMultipliers" classname="ForgeGame.Tests.PlayMode.HeavyEnemySceneTests" runstate="Runnable" seed="1196134156" result="Passed" start-time="2026-07-14 03:12:03Z" end-time="2026-07-14 03:12:04Z" duration="0.946786" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+              <test-case id="1059" name="HeavyVariant_Contact_AppliesHeavyContactDamageMultiplier" fullname="ForgeGame.Tests.PlayMode.HeavyEnemySceneTests.HeavyVariant_Contact_AppliesHeavyContactDamageMultiplier" methodname="HeavyVariant_Contact_AppliesHeavyContactDamageMultiplier" classname="ForgeGame.Tests.PlayMode.HeavyEnemySceneTests" runstate="Runnable" seed="1981049257" result="Passed" start-time="2026-07-14 03:12:04Z" end-time="2026-07-14 03:12:04Z" duration="0.252680" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+[AssetIntegration] EnemyAgent 'TestEnemy_HeavySwarmer': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+]]></output>
+              </test-case>
+              <test-case id="1058" name="HeavyVariant_Initialize_AppliesHpAndSpeedMultipliers" fullname="ForgeGame.Tests.PlayMode.HeavyEnemySceneTests.HeavyVariant_Initialize_AppliesHpAndSpeedMultipliers" methodname="HeavyVariant_Initialize_AppliesHpAndSpeedMultipliers" classname="ForgeGame.Tests.PlayMode.HeavyEnemySceneTests" runstate="Runnable" seed="2027207953" result="Passed" start-time="2026-07-14 03:12:04Z" end-time="2026-07-14 03:12:05Z" duration="0.226904" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+[AssetIntegration] EnemyAgent 'TestEnemy_HeavySwarmer': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+]]></output>
+              </test-case>
+              <test-case id="1060" name="HeavyVariant_Kill_AwardsHeavyScoreAndDropsHeavyCrystalCount" fullname="ForgeGame.Tests.PlayMode.HeavyEnemySceneTests.HeavyVariant_Kill_AwardsHeavyScoreAndDropsHeavyCrystalCount" methodname="HeavyVariant_Kill_AwardsHeavyScoreAndDropsHeavyCrystalCount" classname="ForgeGame.Tests.PlayMode.HeavyEnemySceneTests" runstate="Runnable" seed="301728626" result="Passed" start-time="2026-07-14 03:12:05Z" end-time="2026-07-14 03:12:05Z" duration="0.808775" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+[AssetIntegration] EnemyAgent 'TestEnemy_HeavySwarmer': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1062" name="HeroFxSceneTests" fullname="ForgeGame.Tests.PlayMode.HeroFxSceneTests" classname="ForgeGame.Tests.PlayMode.HeroFxSceneTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-07-14 03:12:05Z" end-time="2026-07-14 03:12:07Z" duration="1.235641" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1064" name="Death_FadesAndTiltsHeroMaterial_DrivesHudDissolve_ThenTransitionsToResult_AfterFullDeathSequenceDuration" fullname="ForgeGame.Tests.PlayMode.HeroFxSceneTests.Death_FadesAndTiltsHeroMaterial_DrivesHudDissolve_ThenTransitionsToResult_AfterFullDeathSequenceDuration" methodname="Death_FadesAndTiltsHeroMaterial_DrivesHudDissolve_ThenTransitionsToResult_AfterFullDeathSequenceDuration" classname="ForgeGame.Tests.PlayMode.HeroFxSceneTests" runstate="Runnable" seed="222847132" result="Passed" start-time="2026-07-14 03:12:05Z" end-time="2026-07-14 03:12:06Z" duration="0.874157" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[Wiring] SessionHolder missing at Result transition (not loaded via Boot, or session state lost); folding run result into a fresh default SaveData
+[Wiring] SessionHolder missing at Result transition; Result screen will show a zeroed run summary
+[Wiring] SessionHolder/LastRunResult missing at Result (not reached via a completed Game run, or session state lost); showing a zeroed run summary
+]]></output>
+              </test-case>
+              <test-case id="1063" name="NonLethalHit_FlashesHeroMaterial_ThenRevertsToBaseColor_WithoutTriggeringDeathFx" fullname="ForgeGame.Tests.PlayMode.HeroFxSceneTests.NonLethalHit_FlashesHeroMaterial_ThenRevertsToBaseColor_WithoutTriggeringDeathFx" methodname="NonLethalHit_FlashesHeroMaterial_ThenRevertsToBaseColor_WithoutTriggeringDeathFx" classname="ForgeGame.Tests.PlayMode.HeroFxSceneTests" runstate="Runnable" seed="1229789786" result="Passed" start-time="2026-07-14 03:12:06Z" end-time="2026-07-14 03:12:07Z" duration="0.359994" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1065" name="MenuSceneTests" fullname="ForgeGame.Tests.PlayMode.MenuSceneTests" classname="ForgeGame.Tests.PlayMode.MenuSceneTests" runstate="Runnable" testcasecount="10" result="Passed" start-time="2026-07-14 03:12:07Z" end-time="2026-07-14 03:12:09Z" duration="2.590029" total="10" passed="10" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1069" name="Cancel_TransitionsToTitleScene" fullname="ForgeGame.Tests.PlayMode.MenuSceneTests.Cancel_TransitionsToTitleScene" methodname="Cancel_TransitionsToTitleScene" classname="ForgeGame.Tests.PlayMode.MenuSceneTests" runstate="Runnable" seed="264390477" result="Passed" start-time="2026-07-14 03:12:07Z" end-time="2026-07-14 03:12:07Z" duration="0.457022" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1072" name="FocusMove_ClampsAtLastAndFirstItem_WithinUpgradeTab" fullname="ForgeGame.Tests.PlayMode.MenuSceneTests.FocusMove_ClampsAtLastAndFirstItem_WithinUpgradeTab" methodname="FocusMove_ClampsAtLastAndFirstItem_WithinUpgradeTab" classname="ForgeGame.Tests.PlayMode.MenuSceneTests" runstate="Runnable" seed="512223339" result="Passed" start-time="2026-07-14 03:12:07Z" end-time="2026-07-14 03:12:07Z" duration="0.244759" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1075" name="MenuCanvas_UsesScreenSpaceCameraRenderMode" fullname="ForgeGame.Tests.PlayMode.MenuSceneTests.MenuCanvas_UsesScreenSpaceCameraRenderMode" methodname="MenuCanvas_UsesScreenSpaceCameraRenderMode" classname="ForgeGame.Tests.PlayMode.MenuSceneTests" runstate="Runnable" seed="353136243" result="Passed" start-time="2026-07-14 03:12:07Z" end-time="2026-07-14 03:12:08Z" duration="0.204350" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1074" name="SettingsTab_ShowsVolumeItemsAndInstructions" fullname="ForgeGame.Tests.PlayMode.MenuSceneTests.SettingsTab_ShowsVolumeItemsAndInstructions" methodname="SettingsTab_ShowsVolumeItemsAndInstructions" classname="ForgeGame.Tests.PlayMode.MenuSceneTests" runstate="Runnable" seed="1483034938" result="Passed" start-time="2026-07-14 03:12:08Z" end-time="2026-07-14 03:12:08Z" duration="0.213022" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1067" name="StartsOnStartTab_WithOnlyItsPanelActive" fullname="ForgeGame.Tests.PlayMode.MenuSceneTests.StartsOnStartTab_WithOnlyItsPanelActive" methodname="StartsOnStartTab_WithOnlyItsPanelActive" classname="ForgeGame.Tests.PlayMode.MenuSceneTests" runstate="Runnable" seed="1921741129" result="Passed" start-time="2026-07-14 03:12:08Z" end-time="2026-07-14 03:12:08Z" duration="0.199173" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1073" name="StatsTab_ShowsAllRequiredSaveDataFields" fullname="ForgeGame.Tests.PlayMode.MenuSceneTests.StatsTab_ShowsAllRequiredSaveDataFields" methodname="StatsTab_ShowsAllRequiredSaveDataFields" classname="ForgeGame.Tests.PlayMode.MenuSceneTests" runstate="Runnable" seed="522001795" result="Passed" start-time="2026-07-14 03:12:08Z" end-time="2026-07-14 03:12:08Z" duration="0.190845" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1068" name="SubmitOnStartTab_TransitionsToGameScene" fullname="ForgeGame.Tests.PlayMode.MenuSceneTests.SubmitOnStartTab_TransitionsToGameScene" methodname="SubmitOnStartTab_TransitionsToGameScene" classname="ForgeGame.Tests.PlayMode.MenuSceneTests" runstate="Runnable" seed="61461900" result="Passed" start-time="2026-07-14 03:12:08Z" end-time="2026-07-14 03:12:09Z" duration="0.395679" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1066" name="TabBar_HasAllFourRequiredLabels" fullname="ForgeGame.Tests.PlayMode.MenuSceneTests.TabBar_HasAllFourRequiredLabels" methodname="TabBar_HasAllFourRequiredLabels" classname="ForgeGame.Tests.PlayMode.MenuSceneTests" runstate="Runnable" seed="82489402" result="Passed" start-time="2026-07-14 03:12:09Z" end-time="2026-07-14 03:12:09Z" duration="0.216101" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1070" name="TabNext_CyclesForwardAndWrapsPastLastTab" fullname="ForgeGame.Tests.PlayMode.MenuSceneTests.TabNext_CyclesForwardAndWrapsPastLastTab" methodname="TabNext_CyclesForwardAndWrapsPastLastTab" classname="ForgeGame.Tests.PlayMode.MenuSceneTests" runstate="Runnable" seed="302715594" result="Passed" start-time="2026-07-14 03:12:09Z" end-time="2026-07-14 03:12:09Z" duration="0.237101" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1071" name="TabPrev_FromStartTab_WrapsBackwardToSettingsTab" fullname="ForgeGame.Tests.PlayMode.MenuSceneTests.TabPrev_FromStartTab_WrapsBackwardToSettingsTab" methodname="TabPrev_FromStartTab_WrapsBackwardToSettingsTab" classname="ForgeGame.Tests.PlayMode.MenuSceneTests" runstate="Runnable" seed="1713563597" result="Passed" start-time="2026-07-14 03:12:09Z" end-time="2026-07-14 03:12:09Z" duration="0.228771" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1076" name="MenuSettingsSceneTests" fullname="ForgeGame.Tests.PlayMode.MenuSettingsSceneTests" classname="ForgeGame.Tests.PlayMode.MenuSettingsSceneTests" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-07-14 03:12:09Z" end-time="2026-07-14 03:12:11Z" duration="1.316827" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1077" name="AdjustBgm_PressD_IncreasesByStep_SavesImmediately_AndDrivesMixer" fullname="ForgeGame.Tests.PlayMode.MenuSettingsSceneTests.AdjustBgm_PressD_IncreasesByStep_SavesImmediately_AndDrivesMixer" methodname="AdjustBgm_PressD_IncreasesByStep_SavesImmediately_AndDrivesMixer" classname="ForgeGame.Tests.PlayMode.MenuSettingsSceneTests" runstate="Runnable" seed="1367851481" result="Passed" start-time="2026-07-14 03:12:09Z" end-time="2026-07-14 03:12:10Z" duration="0.229353" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1078" name="AdjustSfx_PressA_DecreasesByStep_OnlyAffectsSfxVolume" fullname="ForgeGame.Tests.PlayMode.MenuSettingsSceneTests.AdjustSfx_PressA_DecreasesByStep_OnlyAffectsSfxVolume" methodname="AdjustSfx_PressA_DecreasesByStep_OnlyAffectsSfxVolume" classname="ForgeGame.Tests.PlayMode.MenuSettingsSceneTests" runstate="Runnable" seed="2010919408" result="Passed" start-time="2026-07-14 03:12:10Z" end-time="2026-07-14 03:12:10Z" duration="0.215499" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1080" name="AdjustVolume_ClampsAtLowerBound_RepeatedPressesDoNotGoBelowZero" fullname="ForgeGame.Tests.PlayMode.MenuSettingsSceneTests.AdjustVolume_ClampsAtLowerBound_RepeatedPressesDoNotGoBelowZero" methodname="AdjustVolume_ClampsAtLowerBound_RepeatedPressesDoNotGoBelowZero" classname="ForgeGame.Tests.PlayMode.MenuSettingsSceneTests" runstate="Runnable" seed="1369606540" result="Passed" start-time="2026-07-14 03:12:10Z" end-time="2026-07-14 03:12:10Z" duration="0.212065" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1079" name="AdjustVolume_ClampsAtUpperBound_RepeatedPressesDoNotExceedOne" fullname="ForgeGame.Tests.PlayMode.MenuSettingsSceneTests.AdjustVolume_ClampsAtUpperBound_RepeatedPressesDoNotExceedOne" methodname="AdjustVolume_ClampsAtUpperBound_RepeatedPressesDoNotExceedOne" classname="ForgeGame.Tests.PlayMode.MenuSettingsSceneTests" runstate="Runnable" seed="368987602" result="Passed" start-time="2026-07-14 03:12:10Z" end-time="2026-07-14 03:12:10Z" duration="0.212214" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1082" name="StatsTab_CrystalRows_HaveNonNullIconImages" fullname="ForgeGame.Tests.PlayMode.MenuSettingsSceneTests.StatsTab_CrystalRows_HaveNonNullIconImages" methodname="StatsTab_CrystalRows_HaveNonNullIconImages" classname="ForgeGame.Tests.PlayMode.MenuSettingsSceneTests" runstate="Runnable" seed="1822207935" result="Passed" start-time="2026-07-14 03:12:10Z" end-time="2026-07-14 03:12:10Z" duration="0.216298" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1081" name="SubmitWhileSliderFocused_DoesNotTransitionScene_OrChangeSaveData" fullname="ForgeGame.Tests.PlayMode.MenuSettingsSceneTests.SubmitWhileSliderFocused_DoesNotTransitionScene_OrChangeSaveData" methodname="SubmitWhileSliderFocused_DoesNotTransitionScene_OrChangeSaveData" classname="ForgeGame.Tests.PlayMode.MenuSettingsSceneTests" runstate="Runnable" seed="1426245997" result="Passed" start-time="2026-07-14 03:12:10Z" end-time="2026-07-14 03:12:11Z" duration="0.228909" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1083" name="PersistenceStoryTests" fullname="ForgeGame.Tests.PlayMode.PersistenceStoryTests" classname="ForgeGame.Tests.PlayMode.PersistenceStoryTests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-07-14 03:12:11Z" end-time="2026-07-14 03:12:11Z" duration="0.014467" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1086" name="Load_ExplicitZeroSaveVersion_RetiresBackupLogsOnceAndReturnsDefaultCorrupt" fullname="ForgeGame.Tests.PlayMode.PersistenceStoryTests.Load_ExplicitZeroSaveVersion_RetiresBackupLogsOnceAndReturnsDefaultCorrupt" methodname="Load_ExplicitZeroSaveVersion_RetiresBackupLogsOnceAndReturnsDefaultCorrupt" classname="ForgeGame.Tests.PlayMode.PersistenceStoryTests" runstate="Runnable" seed="749316015" result="Passed" start-time="2026-07-14 03:12:11Z" end-time="2026-07-14 03:12:11Z" duration="0.004948" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[SaveCorruption] reason=missing-or-invalid-save_version backup=<tmp-path>
+]]></output>
+              </test-case>
+              <test-case id="1088" name="Load_FutureSaveVersion_RetiresBackupLogsOnceAndReturnsDefaultCorrupt" fullname="ForgeGame.Tests.PlayMode.PersistenceStoryTests.Load_FutureSaveVersion_RetiresBackupLogsOnceAndReturnsDefaultCorrupt" methodname="Load_FutureSaveVersion_RetiresBackupLogsOnceAndReturnsDefaultCorrupt" classname="ForgeGame.Tests.PlayMode.PersistenceStoryTests" runstate="Runnable" seed="559221912" result="Passed" start-time="2026-07-14 03:12:11Z" end-time="2026-07-14 03:12:11Z" duration="0.001965" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[SaveCorruption] reason=future-version backup=<tmp-path>
+]]></output>
+              </test-case>
+              <test-case id="1085" name="Load_MissingSaveVersionKey_RetiresBackupLogsOnceAndReturnsDefaultCorrupt" fullname="ForgeGame.Tests.PlayMode.PersistenceStoryTests.Load_MissingSaveVersionKey_RetiresBackupLogsOnceAndReturnsDefaultCorrupt" methodname="Load_MissingSaveVersionKey_RetiresBackupLogsOnceAndReturnsDefaultCorrupt" classname="ForgeGame.Tests.PlayMode.PersistenceStoryTests" runstate="Runnable" seed="1817776525" result="Passed" start-time="2026-07-14 03:12:11Z" end-time="2026-07-14 03:12:11Z" duration="0.002216" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[SaveCorruption] reason=missing-or-invalid-save_version backup=<tmp-path>
+]]></output>
+              </test-case>
+              <test-case id="1087" name="Load_UnparsableJson_RetiresBackupLogsOnceAndReturnsDefaultCorrupt" fullname="ForgeGame.Tests.PlayMode.PersistenceStoryTests.Load_UnparsableJson_RetiresBackupLogsOnceAndReturnsDefaultCorrupt" methodname="Load_UnparsableJson_RetiresBackupLogsOnceAndReturnsDefaultCorrupt" classname="ForgeGame.Tests.PlayMode.PersistenceStoryTests" runstate="Runnable" seed="2144201475" result="Passed" start-time="2026-07-14 03:12:11Z" end-time="2026-07-14 03:12:11Z" duration="0.002089" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[SaveCorruption] reason=json-parse:JSON parse error: Missing a name for object member. backup=<tmp-path>
+]]></output>
+              </test-case>
+              <test-case id="1084" name="Save_ThenLoadWithNewAdapterInstance_RoundTripsAllFields" fullname="ForgeGame.Tests.PlayMode.PersistenceStoryTests.Save_ThenLoadWithNewAdapterInstance_RoundTripsAllFields" methodname="Save_ThenLoadWithNewAdapterInstance_RoundTripsAllFields" classname="ForgeGame.Tests.PlayMode.PersistenceStoryTests" runstate="Runnable" seed="214041424" result="Passed" start-time="2026-07-14 03:12:11Z" end-time="2026-07-14 03:12:11Z" duration="0.001197" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1089" name="QaPlayEvidenceTests" fullname="ForgeGame.Tests.PlayMode.QaPlayEvidenceTests" classname="ForgeGame.Tests.PlayMode.QaPlayEvidenceTests" runstate="Runnable" testcasecount="7" result="Passed" start-time="2026-07-14 03:12:11Z" end-time="2026-07-14 03:12:15Z" duration="4.582605" total="7" passed="7" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1093" name="Capture_Game" fullname="ForgeGame.Tests.PlayMode.QaPlayEvidenceTests.Capture_Game" methodname="Capture_Game" classname="ForgeGame.Tests.PlayMode.QaPlayEvidenceTests" runstate="Runnable" seed="881102242" result="Passed" start-time="2026-07-14 03:12:11Z" end-time="2026-07-14 03:12:12Z" duration="1.794619" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+              <test-case id="1094" name="Capture_Game_MidWaveSwarmDensity" fullname="ForgeGame.Tests.PlayMode.QaPlayEvidenceTests.Capture_Game_MidWaveSwarmDensity" methodname="Capture_Game_MidWaveSwarmDensity" classname="ForgeGame.Tests.PlayMode.QaPlayEvidenceTests" runstate="Runnable" seed="22263822" result="Passed" start-time="2026-07-14 03:12:12Z" end-time="2026-07-14 03:12:14Z" duration="1.737951" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+              <test-case id="1091" name="Capture_Menu_StartTab" fullname="ForgeGame.Tests.PlayMode.QaPlayEvidenceTests.Capture_Menu_StartTab" methodname="Capture_Menu_StartTab" classname="ForgeGame.Tests.PlayMode.QaPlayEvidenceTests" runstate="Runnable" seed="1752308557" result="Passed" start-time="2026-07-14 03:12:14Z" end-time="2026-07-14 03:12:14Z" duration="0.214795" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1092" name="Capture_Menu_StatsTab" fullname="ForgeGame.Tests.PlayMode.QaPlayEvidenceTests.Capture_Menu_StatsTab" methodname="Capture_Menu_StatsTab" classname="ForgeGame.Tests.PlayMode.QaPlayEvidenceTests" runstate="Runnable" seed="1152177593" result="Passed" start-time="2026-07-14 03:12:14Z" end-time="2026-07-14 03:12:15Z" duration="0.214403" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1096" name="Capture_Result" fullname="ForgeGame.Tests.PlayMode.QaPlayEvidenceTests.Capture_Result" methodname="Capture_Result" classname="ForgeGame.Tests.PlayMode.QaPlayEvidenceTests" runstate="Runnable" seed="1543406401" result="Passed" start-time="2026-07-14 03:12:15Z" end-time="2026-07-14 03:12:15Z" duration="0.198882" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1095" name="Capture_Swarmer_Closeup" fullname="ForgeGame.Tests.PlayMode.QaPlayEvidenceTests.Capture_Swarmer_Closeup" methodname="Capture_Swarmer_Closeup" classname="ForgeGame.Tests.PlayMode.QaPlayEvidenceTests" runstate="Runnable" seed="582638317" result="Passed" start-time="2026-07-14 03:12:15Z" end-time="2026-07-14 03:12:15Z" duration="0.215588" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+              <test-case id="1090" name="Capture_Title" fullname="ForgeGame.Tests.PlayMode.QaPlayEvidenceTests.Capture_Title" methodname="Capture_Title" classname="ForgeGame.Tests.PlayMode.QaPlayEvidenceTests" runstate="Runnable" seed="34967613" result="Passed" start-time="2026-07-14 03:12:15Z" end-time="2026-07-14 03:12:15Z" duration="0.203696" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Title (not loaded via Boot, or session state lost); treating as recovered=false
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1097" name="ResultSceneTests" fullname="ForgeGame.Tests.PlayMode.ResultSceneTests" classname="ForgeGame.Tests.PlayMode.ResultSceneTests" runstate="Runnable" testcasecount="9" result="Passed" start-time="2026-07-14 03:12:15Z" end-time="2026-07-14 03:12:19Z" duration="3.961897" total="9" passed="9" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1103" name="Cancel_TransitionsToMenuScene" fullname="ForgeGame.Tests.PlayMode.ResultSceneTests.Cancel_TransitionsToMenuScene" methodname="Cancel_TransitionsToMenuScene" classname="ForgeGame.Tests.PlayMode.ResultSceneTests" runstate="Runnable" seed="117312757" result="Passed" start-time="2026-07-14 03:12:15Z" end-time="2026-07-14 03:12:16Z" duration="0.421110" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1098" name="DisplaysFinalScoreSurvivalTimeAndWaveReached" fullname="ForgeGame.Tests.PlayMode.ResultSceneTests.DisplaysFinalScoreSurvivalTimeAndWaveReached" methodname="DisplaysFinalScoreSurvivalTimeAndWaveReached" classname="ForgeGame.Tests.PlayMode.ResultSceneTests" runstate="Runnable" seed="840027985" result="Passed" start-time="2026-07-14 03:12:16Z" end-time="2026-07-14 03:12:16Z" duration="0.224096" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1106" name="FullLoop_TitleToMenuToGameToResultToMenu" fullname="ForgeGame.Tests.PlayMode.ResultSceneTests.FullLoop_TitleToMenuToGameToResultToMenu" methodname="FullLoop_TitleToMenuToGameToResultToMenu" classname="ForgeGame.Tests.PlayMode.ResultSceneTests" runstate="Runnable" seed="672422509" result="Passed" start-time="2026-07-14 03:12:16Z" end-time="2026-07-14 03:12:17Z" duration="1.586246" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Title (not loaded via Boot, or session state lost); treating as recovered=false
+[Wiring] SessionHolder/Save missing at Menu (not loaded via Boot, or session state lost); showing default SaveData
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[AssetIntegration] EnemyAgent 'TestEnemyContact': no "Visual" child found — coded approach motion (ApplyVisualMotion) will no-op for this enemy.
+[Wiring] SessionHolder missing at Result transition (not loaded via Boot, or session state lost); folding run result into a fresh default SaveData
+[Wiring] SessionHolder missing at Result transition; Result screen will show a zeroed run summary
+[Wiring] SessionHolder/LastRunResult missing at Result (not reached via a completed Game run, or session state lost); showing a zeroed run summary
+[Wiring] SessionHolder/Save missing at Menu (not loaded via Boot, or session state lost); showing default SaveData
+]]></output>
+              </test-case>
+              <test-case id="1100" name="HighScoreUpdated_False_HidesNotice" fullname="ForgeGame.Tests.PlayMode.ResultSceneTests.HighScoreUpdated_False_HidesNotice" methodname="HighScoreUpdated_False_HidesNotice" classname="ForgeGame.Tests.PlayMode.ResultSceneTests" runstate="Runnable" seed="2049037223" result="Passed" start-time="2026-07-14 03:12:17Z" end-time="2026-07-14 03:12:18Z" duration="0.210720" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1099" name="HighScoreUpdated_True_ShowsNotice" fullname="ForgeGame.Tests.PlayMode.ResultSceneTests.HighScoreUpdated_True_ShowsNotice" methodname="HighScoreUpdated_True_ShowsNotice" classname="ForgeGame.Tests.PlayMode.ResultSceneTests" runstate="Runnable" seed="1426587782" result="Passed" start-time="2026-07-14 03:12:18Z" end-time="2026-07-14 03:12:18Z" duration="0.204328" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1105" name="Restart_ResetsPlayerPositionHpWaveTimerEnemiesAndScore" fullname="ForgeGame.Tests.PlayMode.ResultSceneTests.Restart_ResetsPlayerPositionHpWaveTimerEnemiesAndScore" methodname="Restart_ResetsPlayerPositionHpWaveTimerEnemiesAndScore" classname="ForgeGame.Tests.PlayMode.ResultSceneTests" runstate="Runnable" seed="1592641126" result="Passed" start-time="2026-07-14 03:12:18Z" end-time="2026-07-14 03:12:18Z" duration="0.397332" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1104" name="ResultCanvas_UsesScreenSpaceCameraRenderMode" fullname="ForgeGame.Tests.PlayMode.ResultSceneTests.ResultCanvas_UsesScreenSpaceCameraRenderMode" methodname="ResultCanvas_UsesScreenSpaceCameraRenderMode" classname="ForgeGame.Tests.PlayMode.ResultSceneTests" runstate="Runnable" seed="538571480" result="Passed" start-time="2026-07-14 03:12:18Z" end-time="2026-07-14 03:12:18Z" duration="0.189243" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1102" name="Submit_Space_AlsoTransitionsToGameScene" fullname="ForgeGame.Tests.PlayMode.ResultSceneTests.Submit_Space_AlsoTransitionsToGameScene" methodname="Submit_Space_AlsoTransitionsToGameScene" classname="ForgeGame.Tests.PlayMode.ResultSceneTests" runstate="Runnable" seed="73047958" result="Passed" start-time="2026-07-14 03:12:18Z" end-time="2026-07-14 03:12:19Z" duration="0.376881" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1101" name="Submit_TransitionsToGameScene" fullname="ForgeGame.Tests.PlayMode.ResultSceneTests.Submit_TransitionsToGameScene" methodname="Submit_TransitionsToGameScene" classname="ForgeGame.Tests.PlayMode.ResultSceneTests" runstate="Runnable" seed="22889619" result="Passed" start-time="2026-07-14 03:12:19Z" end-time="2026-07-14 03:12:19Z" duration="0.348838" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1107" name="ScaffoldPlayModeSmokeTests" fullname="ForgeGame.Tests.PlayMode.ScaffoldPlayModeSmokeTests" classname="ForgeGame.Tests.PlayMode.ScaffoldPlayModeSmokeTests" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-07-14 03:12:19Z" end-time="2026-07-14 03:12:19Z" duration="0.006059" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1108" name="GameInput_ActionsBuildAndEnableInPlayMode" fullname="ForgeGame.Tests.PlayMode.ScaffoldPlayModeSmokeTests.GameInput_ActionsBuildAndEnableInPlayMode" methodname="GameInput_ActionsBuildAndEnableInPlayMode" classname="ForgeGame.Tests.PlayMode.ScaffoldPlayModeSmokeTests" runstate="Runnable" seed="1562150292" result="Passed" start-time="2026-07-14 03:12:19Z" end-time="2026-07-14 03:12:19Z" duration="0.004944" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1109" name="SessionHolderTests" fullname="ForgeGame.Tests.PlayMode.SessionHolderTests" classname="ForgeGame.Tests.PlayMode.SessionHolderTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-07-14 03:12:19Z" end-time="2026-07-14 03:12:19Z" duration="0.007720" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1113" name="Awake_NonRootGameObject_ReparentsToRootAndBecomesDontDestroyOnLoadSingleton" fullname="ForgeGame.Tests.PlayMode.SessionHolderTests.Awake_NonRootGameObject_ReparentsToRootAndBecomesDontDestroyOnLoadSingleton" methodname="Awake_NonRootGameObject_ReparentsToRootAndBecomesDontDestroyOnLoadSingleton" classname="ForgeGame.Tests.PlayMode.SessionHolderTests" runstate="Runnable" seed="1167681723" result="Passed" start-time="2026-07-14 03:12:19Z" end-time="2026-07-14 03:12:19Z" duration="0.002568" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder must be a root GameObject
+]]></output>
+              </test-case>
+              <test-case id="1110" name="EnsureCreated_HoldsSaveDataAndIsDontDestroyOnLoadSingleton" fullname="ForgeGame.Tests.PlayMode.SessionHolderTests.EnsureCreated_HoldsSaveDataAndIsDontDestroyOnLoadSingleton" methodname="EnsureCreated_HoldsSaveDataAndIsDontDestroyOnLoadSingleton" classname="ForgeGame.Tests.PlayMode.SessionHolderTests" runstate="Runnable" seed="1757010676" result="Passed" start-time="2026-07-14 03:12:19Z" end-time="2026-07-14 03:12:19Z" duration="0.001157" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1111" name="EnsureCreated_NullSaveOnExistingInstance_KeepsExistingValueInstead" fullname="ForgeGame.Tests.PlayMode.SessionHolderTests.EnsureCreated_NullSaveOnExistingInstance_KeepsExistingValueInstead" methodname="EnsureCreated_NullSaveOnExistingInstance_KeepsExistingValueInstead" classname="ForgeGame.Tests.PlayMode.SessionHolderTests" runstate="Runnable" seed="328022732" result="Passed" start-time="2026-07-14 03:12:19Z" end-time="2026-07-14 03:12:19Z" duration="0.001543" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder.EnsureCreated called with null SaveData; keeping existing in-memory value
+]]></output>
+              </test-case>
+              <test-case id="1112" name="EnsureCreated_NullSaveWithNoExistingInstance_FallsBackToDefaultsAndForcesRecovered" fullname="ForgeGame.Tests.PlayMode.SessionHolderTests.EnsureCreated_NullSaveWithNoExistingInstance_FallsBackToDefaultsAndForcesRecovered" methodname="EnsureCreated_NullSaveWithNoExistingInstance_FallsBackToDefaultsAndForcesRecovered" classname="ForgeGame.Tests.PlayMode.SessionHolderTests" runstate="Runnable" seed="747753636" result="Passed" start-time="2026-07-14 03:12:19Z" end-time="2026-07-14 03:12:19Z" duration="0.001426" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder.EnsureCreated called with null SaveData; no existing value to preserve, falling back to defaults
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1114" name="TitleSceneTests" fullname="ForgeGame.Tests.PlayMode.TitleSceneTests" classname="ForgeGame.Tests.PlayMode.TitleSceneTests" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-07-14 03:12:19Z" end-time="2026-07-14 03:12:21Z" duration="1.390145" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1117" name="Cancel_RequestsQuit_ExactlyOnce_WithoutActuallyQuittingInEditor" fullname="ForgeGame.Tests.PlayMode.TitleSceneTests.Cancel_RequestsQuit_ExactlyOnce_WithoutActuallyQuittingInEditor" methodname="Cancel_RequestsQuit_ExactlyOnce_WithoutActuallyQuittingInEditor" classname="ForgeGame.Tests.PlayMode.TitleSceneTests" runstate="Runnable" seed="1572606121" result="Passed" start-time="2026-07-14 03:12:19Z" end-time="2026-07-14 03:12:19Z" duration="0.184537" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Title (not loaded via Boot, or session state lost); treating as recovered=false
+]]></output>
+              </test-case>
+              <test-case id="1119" name="Recovered_False_HidesRecoveryNoticeOnTitle" fullname="ForgeGame.Tests.PlayMode.TitleSceneTests.Recovered_False_HidesRecoveryNoticeOnTitle" methodname="Recovered_False_HidesRecoveryNoticeOnTitle" classname="ForgeGame.Tests.PlayMode.TitleSceneTests" runstate="Runnable" seed="182701459" result="Passed" start-time="2026-07-14 03:12:19Z" end-time="2026-07-14 03:12:20Z" duration="0.176663" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1118" name="Recovered_True_ShowsRecoveryNoticeOnTitle" fullname="ForgeGame.Tests.PlayMode.TitleSceneTests.Recovered_True_ShowsRecoveryNoticeOnTitle" methodname="Recovered_True_ShowsRecoveryNoticeOnTitle" classname="ForgeGame.Tests.PlayMode.TitleSceneTests" runstate="Runnable" seed="1910243672" result="Passed" start-time="2026-07-14 03:12:20Z" end-time="2026-07-14 03:12:20Z" duration="0.179275" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1116" name="Submit_Space_AlsoTransitionsToMenuScene" fullname="ForgeGame.Tests.PlayMode.TitleSceneTests.Submit_Space_AlsoTransitionsToMenuScene" methodname="Submit_Space_AlsoTransitionsToMenuScene" classname="ForgeGame.Tests.PlayMode.TitleSceneTests" runstate="Runnable" seed="2120003443" result="Passed" start-time="2026-07-14 03:12:20Z" end-time="2026-07-14 03:12:20Z" duration="0.354803" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Title (not loaded via Boot, or session state lost); treating as recovered=false
+[Wiring] SessionHolder/Save missing at Menu (not loaded via Boot, or session state lost); showing default SaveData
+]]></output>
+              </test-case>
+              <test-case id="1115" name="Submit_TransitionsToMenuScene" fullname="ForgeGame.Tests.PlayMode.TitleSceneTests.Submit_TransitionsToMenuScene" methodname="Submit_TransitionsToMenuScene" classname="ForgeGame.Tests.PlayMode.TitleSceneTests" runstate="Runnable" seed="319306298" result="Passed" start-time="2026-07-14 03:12:20Z" end-time="2026-07-14 03:12:20Z" duration="0.330327" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Title (not loaded via Boot, or session state lost); treating as recovered=false
+[Wiring] SessionHolder/Save missing at Menu (not loaded via Boot, or session state lost); showing default SaveData
+]]></output>
+              </test-case>
+              <test-case id="1120" name="TitleCanvas_UsesScreenSpaceCameraRenderMode" fullname="ForgeGame.Tests.PlayMode.TitleSceneTests.TitleCanvas_UsesScreenSpaceCameraRenderMode" methodname="TitleCanvas_UsesScreenSpaceCameraRenderMode" classname="ForgeGame.Tests.PlayMode.TitleSceneTests" runstate="Runnable" seed="1079095299" result="Passed" start-time="2026-07-14 03:12:20Z" end-time="2026-07-14 03:12:21Z" duration="0.162641" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Title (not loaded via Boot, or session state lost); treating as recovered=false
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1121" name="UpgradePurchaseSceneTests" fullname="ForgeGame.Tests.PlayMode.UpgradePurchaseSceneTests" classname="ForgeGame.Tests.PlayMode.UpgradePurchaseSceneTests" runstate="Runnable" testcasecount="7" result="Passed" start-time="2026-07-14 03:12:21Z" end-time="2026-07-14 03:12:22Z" duration="1.610018" total="7" passed="7" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1124" name="Purchase_AtMaxLevel_DoesNotPurchase_EvenWithAmpleBalance" fullname="ForgeGame.Tests.PlayMode.UpgradePurchaseSceneTests.Purchase_AtMaxLevel_DoesNotPurchase_EvenWithAmpleBalance" methodname="Purchase_AtMaxLevel_DoesNotPurchase_EvenWithAmpleBalance" classname="ForgeGame.Tests.PlayMode.UpgradePurchaseSceneTests" runstate="Runnable" seed="1534891612" result="Passed" start-time="2026-07-14 03:12:21Z" end-time="2026-07-14 03:12:21Z" duration="0.176486" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1125" name="Purchase_MoveSpeedUpgrade_ViaUpgradeTabFocusIndex1_IncrementsMoveSpeedOnly" fullname="ForgeGame.Tests.PlayMode.UpgradePurchaseSceneTests.Purchase_MoveSpeedUpgrade_ViaUpgradeTabFocusIndex1_IncrementsMoveSpeedOnly" methodname="Purchase_MoveSpeedUpgrade_ViaUpgradeTabFocusIndex1_IncrementsMoveSpeedOnly" classname="ForgeGame.Tests.PlayMode.UpgradePurchaseSceneTests" runstate="Runnable" seed="1253536090" result="Passed" start-time="2026-07-14 03:12:21Z" end-time="2026-07-14 03:12:21Z" duration="0.178468" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1128" name="Purchase_WithInsufficientBalance_DoesNotPlayUpgradePurchaseSfx" fullname="ForgeGame.Tests.PlayMode.UpgradePurchaseSceneTests.Purchase_WithInsufficientBalance_DoesNotPlayUpgradePurchaseSfx" methodname="Purchase_WithInsufficientBalance_DoesNotPlayUpgradePurchaseSfx" classname="ForgeGame.Tests.PlayMode.UpgradePurchaseSceneTests" runstate="Runnable" seed="611466160" result="Passed" start-time="2026-07-14 03:12:21Z" end-time="2026-07-14 03:12:21Z" duration="0.203269" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1123" name="Purchase_WithInsufficientBalance_LeavesBalanceAndLevelUnchanged" fullname="ForgeGame.Tests.PlayMode.UpgradePurchaseSceneTests.Purchase_WithInsufficientBalance_LeavesBalanceAndLevelUnchanged" methodname="Purchase_WithInsufficientBalance_LeavesBalanceAndLevelUnchanged" classname="ForgeGame.Tests.PlayMode.UpgradePurchaseSceneTests" runstate="Runnable" seed="504128567" result="Passed" start-time="2026-07-14 03:12:21Z" end-time="2026-07-14 03:12:21Z" duration="0.202607" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1122" name="Purchase_WithSufficientBalance_DecreasesBalance_IncrementsLevel_AndSavesImmediately" fullname="ForgeGame.Tests.PlayMode.UpgradePurchaseSceneTests.Purchase_WithSufficientBalance_DecreasesBalance_IncrementsLevel_AndSavesImmediately" methodname="Purchase_WithSufficientBalance_DecreasesBalance_IncrementsLevel_AndSavesImmediately" classname="ForgeGame.Tests.PlayMode.UpgradePurchaseSceneTests" runstate="Runnable" seed="1519938926" result="Passed" start-time="2026-07-14 03:12:21Z" end-time="2026-07-14 03:12:22Z" duration="0.201725" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1127" name="Purchase_WithSufficientBalance_PlaysUpgradePurchaseSfx" fullname="ForgeGame.Tests.PlayMode.UpgradePurchaseSceneTests.Purchase_WithSufficientBalance_PlaysUpgradePurchaseSfx" methodname="Purchase_WithSufficientBalance_PlaysUpgradePurchaseSfx" classname="ForgeGame.Tests.PlayMode.UpgradePurchaseSceneTests" runstate="Runnable" seed="693896180" result="Passed" start-time="2026-07-14 03:12:22Z" end-time="2026-07-14 03:12:22Z" duration="0.210630" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1126" name="PurchaseMaxHpUpgrade_ThenLoadGame_PlayerEffectiveMaxHpReflectsPurchase" fullname="ForgeGame.Tests.PlayMode.UpgradePurchaseSceneTests.PurchaseMaxHpUpgrade_ThenLoadGame_PlayerEffectiveMaxHpReflectsPurchase" methodname="PurchaseMaxHpUpgrade_ThenLoadGame_PlayerEffectiveMaxHpReflectsPurchase" classname="ForgeGame.Tests.PlayMode.UpgradePurchaseSceneTests" runstate="Runnable" seed="422557857" result="Passed" start-time="2026-07-14 03:12:22Z" end-time="2026-07-14 03:12:22Z" duration="0.434615" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1129" name="WavePulseSceneTests" fullname="ForgeGame.Tests.PlayMode.WavePulseSceneTests" classname="ForgeGame.Tests.PlayMode.WavePulseSceneTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-07-14 03:12:22Z" end-time="2026-07-14 03:12:34Z" duration="11.653756" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1131" name="GameHudCanvas_StillScreenSpaceCamera_WithWaveScaleFeature" fullname="ForgeGame.Tests.PlayMode.WavePulseSceneTests.GameHudCanvas_StillScreenSpaceCamera_WithWaveScaleFeature" methodname="GameHudCanvas_StillScreenSpaceCamera_WithWaveScaleFeature" classname="ForgeGame.Tests.PlayMode.WavePulseSceneTests" runstate="Runnable" seed="1479459234" result="Passed" start-time="2026-07-14 03:12:22Z" end-time="2026-07-14 03:12:22Z" duration="0.199494" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+              <test-case id="1130" name="WaveIncrease_TriggersWaveStartSfxExactlyOnce_AndPulsesHudWaveScale" fullname="ForgeGame.Tests.PlayMode.WavePulseSceneTests.WaveIncrease_TriggersWaveStartSfxExactlyOnce_AndPulsesHudWaveScale" methodname="WaveIncrease_TriggersWaveStartSfxExactlyOnce_AndPulsesHudWaveScale" classname="ForgeGame.Tests.PlayMode.WavePulseSceneTests" runstate="Runnable" seed="715353343" result="Passed" start-time="2026-07-14 03:12:22Z" end-time="2026-07-14 03:12:34Z" duration="11.453062" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MOVE_SPEED (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base AUTO_ATTACK_DAMAGE_BASE (Lv0)
+[Wiring] SessionHolder missing at Game (not loaded via Boot, or session state lost); using base PLAYER_MAX_HP_BASE (Lv0)
+]]></output>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+    <test-suite type="Assembly" id="1139" name="Unity.InputSystem.IntegrationTests.dll" fullname="<repo>/game/Library/ScriptAssemblies/Unity.InputSystem.IntegrationTests.dll" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-07-14 03:12:34Z" end-time="2026-07-14 03:12:34Z" duration="0.014129" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="64251" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="PlayMode" />
+        <property name="EditorOnly" value="False" />
+      </properties>
+      <test-suite type="TestFixture" id="1136" name="IntegrationTests" fullname="IntegrationTests" classname="IntegrationTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-07-14 03:12:34Z" end-time="2026-07-14 03:12:34Z" duration="0.013549" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-case id="1138" name="Integration_CanChangeInputBackendPlayerSettingInEditor" fullname="IntegrationTests.Integration_CanChangeInputBackendPlayerSettingInEditor" methodname="Integration_CanChangeInputBackendPlayerSettingInEditor" classname="IntegrationTests" runstate="Runnable" seed="908328677" result="Passed" start-time="2026-07-14 03:12:34Z" end-time="2026-07-14 03:12:34Z" duration="0.006114" asserts="0">
+          <properties>
+            <property name="Category" value="Integration" />
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+        </test-case>
+        <test-case id="1137" name="Integration_CanSendAndReceiveEvents" fullname="IntegrationTests.Integration_CanSendAndReceiveEvents" methodname="Integration_CanSendAndReceiveEvents" classname="IntegrationTests" runstate="Runnable" seed="108357804" result="Passed" start-time="2026-07-14 03:12:34Z" end-time="2026-07-14 03:12:34Z" duration="0.006088" asserts="0">
+          <properties>
+            <property name="Category" value="Integration" />
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+          <output><![CDATA[Saving results to: <path-redacted> Support/DefaultCompany/game/TestResults.xml
+]]></output>
+        </test-case>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

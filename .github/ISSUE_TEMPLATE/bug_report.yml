@@ -1,0 +1,74 @@
+name: Bug report
+description: Report a reproducible ArcadeRelay harness or generated-game failure.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Do not include secrets, provider keys, or
+        vulnerability details here. Use SECURITY.md for security reports.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - /forge command or skill
+        - Workflow orchestration
+        - Agent prompt or review gate
+        - Asset generation
+        - Generated game
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should have happened?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+      description: Include command names, relevant files, and minimal inputs.
+      placeholder: |
+        1. Run /forge-status
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: state
+    attributes:
+      label: Harness state
+      description: Paste relevant non-secret state such as stage, review mode, or active summary.
+      render: text
+    validations:
+      required: false
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Logs or evidence
+      description: Add non-secret logs, screenshots, qa/report.md summaries, or browser evidence.
+      render: text
+    validations:
+      required: false
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and pull requests.
+          required: true
+        - label: I removed secrets, API keys, and private provider output.
+          required: true
+        - label: I agree to follow this project's Code of Conduct.
+          required: true

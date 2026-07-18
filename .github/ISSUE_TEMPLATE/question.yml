@@ -1,0 +1,39 @@
+name: Question
+description: Ask for help using ArcadeRelay.
+title: "[Question]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for public support questions. Do not include secrets, provider
+        keys, vulnerability details, or private generated output.
+  - type: textarea
+    id: goal
+    attributes:
+      label: What are you trying to do?
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Include command names, stage, provider mode, and relevant non-secret files.
+    validations:
+      required: true
+  - type: textarea
+    id: tried
+    attributes:
+      label: What have you tried?
+    validations:
+      required: false
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and pull requests.
+          required: true
+        - label: I removed secrets, API keys, and private provider output.
+          required: true
+        - label: I agree to follow this project's Code of Conduct.
+          required: true

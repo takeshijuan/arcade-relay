@@ -1,0 +1,57 @@
+{
+  "style_block": "Stylized 3D toon render, flat cel-shaded color fill with clean bold 2-3px dark-navy outlines on every silhouette edge; no photorealistic textures, no painterly/airbrush gradients, no fur/cloth micro-detail. Single soft key light from upper-front-left producing only soft-edged ambient-occlusion darkening at contact points (ground contact, joints, undersides) — no hard cast shadows, no cross-hatching, no rim-light bloom beyond a thin glossy white highlight stripe on armor edges and crystal facets. Forms are simplified, rounded, low-detail-count silhouettes with clear single-hue color blocking per role (see palette): hero reads as a tall vertical humanoid silhouette in blues, the swarmer enemy reads as a low, wide, horned quadruped silhouette in purples, crystals read as small faceted low-poly gems with a soft emissive glow halo in their assigned hue. Setting is a bright fantasy arena: a matte flat-green circular floor disc with thin lighter-green concentric ring linework, fading to a deep near-black void beyond the arena edge (no ground texture detail, no environmental clutter). Do not include any human/humanoid NPC characters, sports-uniform motifs, jerseys, or numbered chest emblems in any generated asset — the only permitted subjects are the hero, the swarmer/heavy-swarmer creature line, crystals, and the arena floor/void exactly as described.",
+  "palette": [
+    "#3488D1",
+    "#164583",
+    "#F2F5FA",
+    "#8B12A5",
+    "#350F49",
+    "#6B1030",
+    "#7FE850",
+    "#1E4A26",
+    "#4FE8E2",
+    "#E62284",
+    "#12081F",
+    "#F5F7FA",
+    "#FF3B30"
+  ],
+  "style_codes": [
+    "ideogram-v3:style_type=GENERAL",
+    "ideogram-v3:style_reference_images=design/refs/crop-02-scene.png,design/refs/crop-01-hero.png,design/refs/crop-03-enemy.png",
+    "pending:ideogram_style_code_capture_on_first_generation"
+  ],
+  "reference_images": [
+    "design/refs/crop-02-scene.png",
+    "design/refs/crop-01-hero.png",
+    "design/refs/crop-03-enemy.png"
+  ],
+  "character_reference": "design/refs/crop-01-hero.png",
+  "resolution": {
+    "concept_art_px": 1024,
+    "ui_sprite_px": 512,
+    "texture_px": 2048,
+    "tile_px": null
+  },
+  "scale": {
+    "units": "meters",
+    "engine_unit_to_meter": 1.0,
+    "up_axis": "+Y",
+    "forward_axis": "+Z",
+    "hero_height_m": 1.8,
+    "hero_height_range_m": [1.6, 2.0],
+    "swarmer_shoulder_height_m": 1.0,
+    "swarmer_body_length_m": 1.4
+  },
+  "polygon_budget_tri": {
+    "hero": 50000,
+    "enemy": 20000,
+    "prop": 10000,
+    "environment": 100000
+  },
+  "notes": {
+    "prop_budget_status": "reserved/unused — GDDの設計判断によりクリスタル・アリーナ環境は生成MDLではなくUnityプリミティブ+マテリアルで表現するため、生成対象resourceは無い（budgetは将来プロップ追加時のための温存値）",
+    "environment_budget_status": "reserved/unused — 同上（アリーナは円柱/平面プリミティブのみ、生成環境モデルは無い）",
+    "key_image_caveat": "key-image-candidate-1.png の全体構図には概念上スコープ外の「倒れた人間キャラクター」4体が描かれている。reference_images / character_reference には crop-01/02/03（人間キャラクターを含まない再クロップ画像）のみを使用し、style_block にも明示除外を記載済み",
+    "crystal_magenta_revision": "AR-BIBLE iteration 1 指摘1対応: palette[9]（crystal_magenta）は当初 key image 実測色 #D33FD4（hue≈299.6°）だったが、enemy_primary #8B12A5（hue≈289.4°）との色相差が10.2°しか無く、P-03の敵密集時にクリスタルと敵の混同リスクがあった。#E62284（hue≈330°）へ再指定し色相差を約40.6°に拡大。加えて識別は色相単独に依存させず、クリスタルのエミッシブ発光（高輝度val≈0.90+Bloomハロー）と敵の非発光マット面（val≈0.65）の輝度差、および形状・スケール差を併用する設計とした（design/art-bible.md「シルエット方針」節参照）"
+  }
+}

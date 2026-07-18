@@ -1,0 +1,22 @@
+{
+  "bone_count": 24,
+  "bone_names_sample": [
+    "Hips",
+    "LeftUpLeg",
+    "LeftLeg",
+    "LeftFoot",
+    "LeftToeBase",
+    "RightUpLeg",
+    "RightLeg",
+    "RightFoot",
+    "RightToeBase",
+    "Spine02"
+  ],
+  "mesh_count": 1,
+  "material_count": 1,
+  "tri_count": 55499,
+  "anim_count": 1,
+  "anim_names": [
+    "Armature|Armature|Armature|Armature|Armature|Idle|baselayer"
+  ]
+}

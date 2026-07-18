@@ -1,0 +1,25 @@
+{
+    "name": "ForgeGame.EditMode.Tests",
+    "rootNamespace": "ForgeGame.Tests.EditMode",
+    "references": [
+        "ForgeGame",
+        "ForgeGame.Editor",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
