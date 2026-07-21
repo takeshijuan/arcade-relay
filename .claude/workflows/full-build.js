@@ -200,6 +200,7 @@ const reviewMode = ARGS.reviewMode ? String(ARGS.reviewMode) : 'lean';
 const feedbackPath = ARGS.checkpointBFeedbackPath ? String(ARGS.checkpointBFeedbackPath) : 'state/checkpoint-b-feedback.md';
 const unresolvedFindings = [];
 const verdictHistory = []; // 全ゲート verdict の蓄積（review-mode=full: スキルが完了後に全件を人間へ提示する素材）
+let laneContextWarn = ''; // レーン実装プロンプト冒頭に注入する警告（Polish 開始時に Build バッチ検証不合格を伝える — adversarial L-11）
 
 // ---------- エンジンプロファイル（contract.md §11。値は各 tech-stack 文書と一致させること）----------
 // phaser の値は従来のプロンプト文字列と同一に保つ（後方互換）。
@@ -258,10 +259,10 @@ const MANIFEST = EP.manifestPath;
 
 const CODE_COMMIT_RULE =
   'コミット規律: git add は自分が編集した**個別ファイルパス**のみ（ディレクトリ指定・git add -A は禁止 — 単一 index を共有する並走レーン/資産トラックの staged 変更や未コミット WIP を巻き込む）。' +
-  'commit は必ずパス指定形 `git commit -m "<msg>" -- <自分の編集ファイル...>` を使う（並走 agent が同時刻に stage した無関係ファイルを除外できる唯一の形）。' +
-  'コミット hash は `git rev-parse HEAD` ではなく `git log --format="%H %s" -20` から**自分のコミットメッセージに一致する最上（最新）の行**の hash を取る（rev-parse HEAD は並走レーンの直後コミットを拾い得る。一致行が窓に無ければ -50 で再取得）。' + GIT_RETRY_NOTE;
+  'commit は必ずパス指定形 `git commit -m "<msg>" -- <自分の編集ファイル...>` を使う（他パスの staged 巻き込みを防ぐ。**同一ファイル内の他レーン WIP は除外できない**ため、共有ファイル — config/types/stories.yaml — への自分の追記は編集後すぐ**その1ファイルだけ**を単独コミットして確定させる）。' +
+  'コミット hash は `git rev-parse HEAD` ではなく `git log --format="%H %s" -20` から**自分のコミットメッセージに一致する最上（最新）の行**の hash を取り、`git show --stat <hash>` に**自分の編集ファイルが含まれることを確認**する（rev-parse HEAD は並走レーンの直後コミットを拾い得る。一致行が窓に無ければ -50 で再取得。含まれない・commit 自体が失敗した場合は古い同名コミットの hash を返さず**失敗を正直に報告**する）。' + GIT_RETRY_NOTE;
 const ASSET_COMMIT_RULE =
-  'コミット規律: git add は ' + EP.rawAssetDir.replace(/\/$/, '') + ' design docs state のパス限定で行い、**commit も必ずパス指定形** `git commit -m "<msg>" -- ' + EP.rawAssetDir.replace(/\/$/, '') + ' design docs state`（git add -A・素の git commit は禁止 — 並走する実装トラックの staged 変更を巻き取らない）。' + GIT_RETRY_NOTE;
+  'コミット規律: git add は ' + EP.rawAssetDir.replace(/\/$/, '') + ' design docs state/reviews のパス限定で行い、**commit も必ずパス指定形** `git commit -m "<msg>" -- ' + EP.rawAssetDir.replace(/\/$/, '') + ' design docs state/reviews`（git add -A・素の git commit・state ディレクトリ丸ごと指定は禁止 — 並走コードレーンの stories.yaml / active.md の WIP を巻き取らない）。' + GIT_RETRY_NOTE;
 
 // 並走レーン規律（retro-e2 案A: assignee レーン並列。コード編集と review agent のみ並列 —
 // エンジン起動を伴う検証はレーン合流後のバッチ検証区間に集約（案B）。tech-stack 文書「検証」節が正本）
@@ -292,8 +293,8 @@ async function batchVerify(phaseName, contextNote) {
     '手順:\n' +
     '1) ' + EP.verifyCmd + ' を実行\n' +
     '2) 失敗があれば、エラーのファイルパスと `git log --oneline -- <該当パス>` で原因 story を特定する（切り分け困難ならレーン中の story コミット単位で二分探索）\n' +
-    '3) 最小修正で合格に到達させる（他 story の設計を作り替えない。チューニング値の変更は ' + EP.configPath + ' のみ。**直列区間の例外として、バッチ検証の最小修正に限り担当領域外のファイル — ui 層含む — も編集してよい**）\n' +
-    '4) 修正した場合は state/reviews/batch-verify.md に「phase / 原因 story / 修正内容 / ISO8601 日時」を追記し、git commit -m "batch-verify fix (' + phaseName + ')"。state/active.md の現在地を「' + phaseName + ' バッチ検証完了」に更新（直列区間 — レーン規律の対象外）。' + CODE_COMMIT_RULE + '\n' +
+    '3) 最小修正で合格に到達させる（他 story の設計を作り替えない。チューニング値の変更は ' + EP.configPath + ' のみ。**直列区間の例外として、バッチ検証の最小修正に限り担当領域外のファイル — ui 層含む — も編集してよい**。**機能の削除・呼び出しの除去・無効化による回避は最小修正ではない** — コンパイル整合を保ったまま意図を維持し、やむを得ず挙動を変えた場合は fixedNotes に明記せよ）\n' +
+    '4) 修正した場合は state/reviews/batch-verify.md に「phase / 原因 story / 修正内容 / ISO8601 日時」を追記し、コミット規律のパス指定形で git commit（メッセージ: "batch-verify fix (' + phaseName + ')"）。state/active.md の現在地を「' + phaseName + ' バッチ検証完了」に更新（直列区間 — レーン規律の対象外）。' + CODE_COMMIT_RULE + '\n' +
     '構造化返却: ok（最終合格で true。到達できなければ false を正直に）/ fixedNotes / unresolved。',
     { label: 'batch-verify-' + phaseName.toLowerCase(), phase: phaseName, agentType: 'gameplay-engineer', schema: BATCH_VERIFY_SCHEMA, effort: 'high' }
   );
@@ -301,17 +302,19 @@ async function batchVerify(phaseName, contextNote) {
     unresolvedFindings.push('[BLOCKER] ' + phaseName + ': バッチ検証 agent が結果を返さなかった（ビルド健全性未確認のまま続行 — 後段 QA が検出する）');
     return false;
   }
-  if ((bv.fixedNotes || []).length > 0) {
-    log('batch-verify(' + phaseName + '): ' + bv.fixedNotes.length + ' 件修正（state/reviews/batch-verify.md）');
+  // 修正内容は人間可視チャネルへ載せる（CR-CODE を通らない直接コミットのため、log() だけでは
+  // review-mode=full の全履歴提示から漏れる — adversarial H-3）
+  for (const n of (bv.fixedNotes || [])) {
+    unresolvedFindings.push(phaseName + '[batch-verify修正・CR-CODE非経由] ' + n);
   }
   for (const u of (bv.unresolved || [])) {
     unresolvedFindings.push('[BLOCKER] ' + phaseName + '[batch-verify] ' + u);
   }
-  if (bv.ok !== true) {
-    if ((bv.unresolved || []).length === 0) {
+  if (bv.ok !== true || (bv.unresolved || []).length > 0) {
+    if (bv.ok !== true && (bv.unresolved || []).length === 0) {
       unresolvedFindings.push('[BLOCKER] ' + phaseName + ': バッチ検証が合格に未到達（詳細は state/reviews/batch-verify.md）');
     }
-    log('batch-verify(' + phaseName + '): 不合格（エスカレーション）');
+    log('batch-verify(' + phaseName + '): 不合格または未解決あり（エスカレーション）');
     return false;
   }
   log('batch-verify(' + phaseName + '): 合格');
@@ -325,6 +328,7 @@ async function implementStoryWithReview(story, phaseName) {
   const assignee = ENGINEERS.indexOf(story.assignee) >= 0 ? story.assignee : 'gameplay-engineer';
 
   const impl = await agent(
+    laneContextWarn +
     'story ' + story.id + '「' + story.title + '」を実装せよ。\n' +
     '読むこと: state/stories.yaml（該当story）、design/gdd.md、design/concept.md（ピラー ' + (story.pillar || 'P-xx') + '）、docs/architecture.md、docs/conventions.md、' + EP.techStackDoc + '。\n' +
     '手順:\n' +
@@ -352,7 +356,7 @@ async function implementStoryWithReview(story, phaseName) {
         : '対象: game/ 配下の story ' + story.id + ' に対応する直近の実装変更（コミットhash不明のため state/reviews/' + sid + '.md と実装ファイルから対象を特定）。\n') +
       '観点は ' + DOCS + '/gates.md の CR-CODE 節に従う。加えて ' + EP.techStackDoc + ' の' + EP.reviewRulesLine + 'を確認。\n' +
       'acceptance「' + story.acceptance + '」がコード上で満たされるかも確認。\n' +
-      '前提（並走レーン設計）: 他レーンの story が提供予定の API への参照は、docs/architecture.md の設計に合致していれば「実体未実装」だけを理由に blocker としない（コンパイル整合はレーン合流後のバッチ検証が保証する。設計との不一致・誤用は通常どおり指摘してよい）。\n' +
+      '前提（並走レーン設計）: 他レーンの story が提供予定の API への参照は、docs/architecture.md の設計に合致していれば「実体未実装」だけを理由に blocker としない（コンパイル整合はレーン合流後のバッチ検証が保証する。設計との不一致・誤用は通常どおり指摘してよい）。**このレビューは読み取り専用 — エンジン起動・ビルド/テストコマンドの実行禁止**（並走レーン中の単一インスタンスロック/dist 競合）。\n' +
       'findings は severity（blocker=設計欠陥 / major / minor）付きで返せ。0件なら空配列。';
     const reviews = await parallel([
       () => agent(reviewPrompt, { label: 'cr-' + sid + '-' + iter, phase: phaseName, agentType: 'pr-review-toolkit:code-reviewer', schema: CODE_REVIEW_SCHEMA }),
@@ -761,6 +765,9 @@ if (polishPlan === null) {
   unresolvedFindings.push('Polish: game-designer が計画を返さなかった（polish未実施）');
 }
 log('Polish story ' + polishStories.length + '件を実装する（assignee レーン並走）');
+// Build バッチ検証不合格のまま Polish に入る場合、レーン実装 agent にも警告を届ける（adversarial L-11 —
+// 「他レーン WIP 由来のエラーは無視してよい」の指示が既存破損を覆い隠さないように）
+laneContextWarn = BUILD_VERIFY_WARN;
 const polishGameplay = polishStories.filter(function (s) { return s.assignee !== 'ui-engineer'; });
 const polishUi = polishStories.filter(function (s) { return s.assignee === 'ui-engineer'; });
 await parallel([
