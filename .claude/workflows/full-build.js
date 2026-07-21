@@ -56,7 +56,7 @@ const IMPL_SCHEMA = {
   type: 'object',
   required: ['commitHash'],
   properties: {
-    commitHash: { type: 'string', description: '今回の変更をコミットした git hash（git log --format="%H %s" -5 の自メッセージ一致行から取得 — rev-parse HEAD は並走レーンのコミットを拾い得る）' },
+    commitHash: { type: 'string', description: '今回の変更をコミットした git hash（git log --format="%H %s" -20 の自メッセージ一致・最新行から取得 — rev-parse HEAD は並走レーンのコミットを拾い得る）' },
     notes: { type: 'string' }
   }
 };
@@ -212,7 +212,7 @@ const ENGINE_PROFILES = {
     rawAssetDir: 'game/assets/',
     assets3d: false,
     verifyCmd: 'cd game && npm run typecheck && npm run build',
-    laneVerifyLine: '`cd game && npm run typecheck` が exit 0 になるまで修正（**並走レーン中は `npm run build` を実行しない** — dist/ が他レーンと衝突する。フルビルドはレーン合流後のバッチ検証区間で一括実行される — tech-stack.md「検証」節）',
+    laneVerifyLine: '`cd game && npm run typecheck` を実行し、**自分の編集ファイル起因のエラーのみ** 0 にする（他レーンの書きかけ WIP・他レーンが提供予定の API 参照に起因するエラーは無視してよい — レーン合流後のバッチ検証が最終確認する。**並走レーン中は `npm run build` を実行しない** — dist/ が他レーンと衝突する — tech-stack.md「検証コマンド」節）',
     implRulesLine: '2) game/src を tech-stack.md 規約で実装（マジックナンバーは config.ts に集約 / delta-time必須 / Sceneは薄くロジックはsystems/ / systems/はPhaserをimportしない / 資産参照はASSET_KEYS経由）',
     reviewRulesLine: 'コード規約違反（マジックナンバー・delta-time未使用・Scene肥大・systems/のPhaser依存・パスのハードコード）',
     codeAddExample: 'git add game/src state/stories.yaml state/reviews',
@@ -259,16 +259,17 @@ const MANIFEST = EP.manifestPath;
 const CODE_COMMIT_RULE =
   'コミット規律: git add は自分が編集した**個別ファイルパス**のみ（ディレクトリ指定・git add -A は禁止 — 単一 index を共有する並走レーン/資産トラックの staged 変更や未コミット WIP を巻き込む）。' +
   'commit は必ずパス指定形 `git commit -m "<msg>" -- <自分の編集ファイル...>` を使う（並走 agent が同時刻に stage した無関係ファイルを除外できる唯一の形）。' +
-  'コミット hash は `git rev-parse HEAD` ではなく `git log --format="%H %s" -5` から**自分のコミットメッセージに一致する行**の hash を取る（rev-parse HEAD は並走レーンの直後コミットを拾い得る）。' + GIT_RETRY_NOTE;
+  'コミット hash は `git rev-parse HEAD` ではなく `git log --format="%H %s" -20` から**自分のコミットメッセージに一致する最上（最新）の行**の hash を取る（rev-parse HEAD は並走レーンの直後コミットを拾い得る。一致行が窓に無ければ -50 で再取得）。' + GIT_RETRY_NOTE;
 const ASSET_COMMIT_RULE =
-  'コミット規律: git add は ' + EP.rawAssetDir.replace(/\/$/, '') + ' design docs state のパス限定で行い git commit（git add -A は禁止 — 並走する実装トラックの変更を巻き込まない）。' + GIT_RETRY_NOTE;
+  'コミット規律: git add は ' + EP.rawAssetDir.replace(/\/$/, '') + ' design docs state のパス限定で行い、**commit も必ずパス指定形** `git commit -m "<msg>" -- ' + EP.rawAssetDir.replace(/\/$/, '') + ' design docs state`（git add -A・素の git commit は禁止 — 並走する実装トラックの staged 変更を巻き取らない）。' + GIT_RETRY_NOTE;
 
 // 並走レーン規律（retro-e2 案A: assignee レーン並列。コード編集と review agent のみ並列 —
 // エンジン起動を伴う検証はレーン合流後のバッチ検証区間に集約（案B）。tech-stack 文書「検証」節が正本）
 const LANE_RULE =
   '並走レーン規律: あなたの assignee の担当領域以外のコードを書き換えない（gameplay-engineer=ゲーム機構・システム・永続化層 / ui-engineer=UI・シーン表示層。境界は docs/architecture.md）。' +
   '共有ファイル（' + EP.configPath + '・共有型定義）は**自 story に必要な定数/型の追記のみ**（既存行の変更・削除は禁止 — 並走レーンと衝突する。例外: story の acceptance/指示が明示するバランス調整はその対象定数の**値変更のみ**許可）。' +
-  'state/stories.yaml は自 story の status 行のみをピンポイント Edit（ファイル全面書き直し禁止 — 並走レーンの更新を消す）。' +
+  'やむを得ず他レーン担当領域の既存シーン/配線ファイルに触れる場合（例: Result 到達時の persist 配線）は**ピンポイント Edit のみ・ファイル全面 Write 禁止・Edit 直前に必ず再 Read**（並走レーンのコミット済み変更を巻き戻さない）。' +
+  'state/stories.yaml は自 story のブロック内のみ（status 行・注記）をピンポイント Edit（ファイル全面書き直し禁止 — 並走レーンの更新を消す）。' +
   'state/active.md には触らない（並走レーンと衝突する — 現在地更新はレーン合流後の直列区間の責務）。' +
   '他レーンの story が提供予定の API に依存する場合は docs/architecture.md の設計に合わせた呼び出しで実装してよい（コンパイル整合はレーン合流後のバッチ検証が最終確認する）。';
 
@@ -291,13 +292,13 @@ async function batchVerify(phaseName, contextNote) {
     '手順:\n' +
     '1) ' + EP.verifyCmd + ' を実行\n' +
     '2) 失敗があれば、エラーのファイルパスと `git log --oneline -- <該当パス>` で原因 story を特定する（切り分け困難ならレーン中の story コミット単位で二分探索）\n' +
-    '3) 最小修正で合格に到達させる（他 story の設計を作り替えない。チューニング値の変更は ' + EP.configPath + ' のみ）\n' +
-    '4) 修正した場合は state/reviews/batch-verify.md に「phase / 原因 story / 修正内容 / ISO8601 日時」を追記し、git commit -m "batch-verify fix (' + phaseName + ')"。' + CODE_COMMIT_RULE + '\n' +
+    '3) 最小修正で合格に到達させる（他 story の設計を作り替えない。チューニング値の変更は ' + EP.configPath + ' のみ。**直列区間の例外として、バッチ検証の最小修正に限り担当領域外のファイル — ui 層含む — も編集してよい**）\n' +
+    '4) 修正した場合は state/reviews/batch-verify.md に「phase / 原因 story / 修正内容 / ISO8601 日時」を追記し、git commit -m "batch-verify fix (' + phaseName + ')"。state/active.md の現在地を「' + phaseName + ' バッチ検証完了」に更新（直列区間 — レーン規律の対象外）。' + CODE_COMMIT_RULE + '\n' +
     '構造化返却: ok（最終合格で true。到達できなければ false を正直に）/ fixedNotes / unresolved。',
     { label: 'batch-verify-' + phaseName.toLowerCase(), phase: phaseName, agentType: 'gameplay-engineer', schema: BATCH_VERIFY_SCHEMA, effort: 'high' }
   );
   if (bv === null) {
-    unresolvedFindings.push('[BLOCKER] ' + phaseName + ': バッチ検証 agent が結果を返さなかった（ビルド健全性未確認のまま先へ進めない — 後段 QA が検出する）');
+    unresolvedFindings.push('[BLOCKER] ' + phaseName + ': バッチ検証 agent が結果を返さなかった（ビルド健全性未確認のまま続行 — 後段 QA が検出する）');
     return false;
   }
   if ((bv.fixedNotes || []).length > 0) {
@@ -559,7 +560,7 @@ const replanResults = await parallel([
     'Phase 3 再計画（tech-director）。\n' +
     '読むこと: ' + feedbackPath + '、state/stories.yaml、design/gdd.md、design/concept.md、design/assets.md、docs/architecture.md、' + DOCS + '/contract.md（§7 stories.yaml スキーマ・§8 安定ID）。\n' +
     '手順:\n' +
-    '1) checkpoint-b-feedback の各項目を story に落とす。新storyのIDは既存の最大 S-xx の続番（振り直し・削除禁止）、phase: build、status: todo、pillar は design/concept.md の P-xx を必ず参照、assignee は contract §2 のagent名、acceptance は検証可能な文で書く\n' +
+    '1) checkpoint-b-feedback の各項目を story に落とす。新storyのIDは既存の最大 S-xx の続番（振り直し・削除禁止）、phase: build、status: todo、pillar は design/concept.md の P-xx を必ず参照、assignee は contract §2 のagent名、acceptance は検証可能な文で書く。バランス調整系 story は**変更対象の定数名を acceptance に明示**し、同一定数を複数 story・複数 assignee に割り当てない（並走レーンの共有ファイル規律 — 実装側の値変更例外はこの明示が条件）\n' +
     '2) 資産（画像/SFX/BGM/MDL/ANM）に関わる feedback は design/assets.md にもエントリ追加/修正で反映せよ（AssetGen フェーズは design/assets.md を生成対象の真実とする。assignee が art-director / audio-designer の story は生成対象リストとしても渡される。**既生成資産の再生成**が必要な場合は design/assets.md の該当行の状態を must-replace または rejected に変更すること — MANIFEST 記載済み資産の再生成はこの状態変更が唯一のトリガー）\n' +
     '3) 既存の phase: build 未完了storyと合わせ、依存順（先に必要なものが先）に整理して state/stories.yaml を更新\n' +
     '4) state/active.md を更新（現在地: Phase3 Replan完了）\n' +
@@ -695,11 +696,14 @@ await parallel([
 ]);
 
 // ===== バッチ検証（Build レーン合流後の直列区間 — retro-e2 案B。エンジン起動はここから直列） =====
+let buildVerifyOk = true;
 if (codeStories.length > 0) {
-  await batchVerify('Build',
+  buildVerifyOk = await batchVerify('Build',
     'ここまで Build レーン（gameplay ' + gameplayStories.length + '件 / ui ' + uiStories.length + '件）が並走でコード story を実装しており、' +
     'レーン中はエンジン検証を実行していない（' + EP.techStackDoc + '「検証」節の検証バッチ化）。全 story のコミット済みコードを一括検証・修正せよ。');
 }
+// 後段プロンプトへの警告注入用（integrate3d の縮退注入と同じパターン — レビュー指摘 F3）
+const BUILD_VERIFY_WARN = buildVerifyOk ? '' : '【警告: Build バッチ検証が不合格のまま — state/reviews/batch-verify.md 参照。ビルドが壊れている前提で作業せよ】\n';
 
 // ===== 3D 資産のエンジン取込（直列区間。エンジンは単一インスタンスロック — tech-stack 文書） =====
 let integrate3d = null; // FullQA が縮退報告を QA プロンプトへ注入するため関数スコープ外で保持
@@ -714,6 +718,7 @@ if (EP.assets3d) {
     },
   };
   integrate3d = await agent(
+    BUILD_VERIFY_WARN +
     '生成済み 3D 資産（MDL/ANM）を game/ に取り込め（engine: ' + engine + '。直列区間 — 他に Unity/UE を起動する処理は走っていない）。\n' +
     '読むこと: ' + MANIFEST + '（今回追記分）、design/assets.md、' + EP.techStackDoc + '「資産の取り扱い」、' + DOCS + '/gates.md の AR-ASSET ※節（エンジン取込後検証はあなたの責務）。\n' +
     (engine === 'unity'
@@ -739,6 +744,7 @@ if (EP.assets3d) {
 // ===== Phase: Polish =====
 phase('Polish');
 const polishPlan = await agent(
+  BUILD_VERIFY_WARN +
   'Phase 3 Polish 計画（game-designer）。\n' +
   '読むこと: ' + EP.configPath + '、design/gdd.md（数値の初期値＋調整レンジ）、design/concept.md（ピラー P-xx）、' + feedbackPath + '、state/stories.yaml、' + DOCS + '/contract.md（§7 スキーマ・§8 ID・§11 エンジン）。\n' +
   '手順:\n' +
@@ -770,11 +776,14 @@ await parallel([
   }
 ]);
 // Polish レーン合流後のバッチ検証（この後の FullQA が最初のエンジン起動にならないようにする）
+let polishVerifyOk = true;
 if (polishStories.length > 0) {
-  await batchVerify('Polish',
+  polishVerifyOk = await batchVerify('Polish',
     'ここまで Polish レーン（gameplay ' + polishGameplay.length + '件 / ui ' + polishUi.length + '件）が並走で polish story を実装しており、' +
     'レーン中はエンジン検証を実行していない。全 polish story のコミット済みコードを一括検証・修正せよ。');
 }
+const QA_VERIFY_WARN = (buildVerifyOk && polishVerifyOk) ? '' :
+  '【警告: バッチ検証（' + (!buildVerifyOk ? 'Build' : '') + (!buildVerifyOk && !polishVerifyOk ? '・' : '') + (!polishVerifyOk ? 'Polish' : '') + '）が不合格のまま — state/reviews/batch-verify.md の診断を先に読んでから QA せよ】\n';
 
 // ===== Phase: FullQA =====
 phase('FullQA');
@@ -815,6 +824,7 @@ await parallel([
   async () => {
     for (let round = 1; round <= 2; round++) {
       const qa = await agent(
+        QA_VERIFY_WARN +
         'フルQA（qa-lead、round ' + round + '/2）。' + DOCS + '/gates.md の QA-PLAY 節（engine=' + engine + ' の実行手段）に従い、' + EP.qaTarget + '。\n' +
         (integrate3d && (integrate3d.degradations || []).length > 0
           ? '【Integrate からの縮退報告あり — 該当箇所は重点検証（特にリグ縮退時はアニメ再生の目視確認必須）】: ' + integrate3d.degradations.join(' / ') + '\n'
