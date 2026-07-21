@@ -103,7 +103,7 @@ state/stage.txt                    # §1 の5値のいずれか1語のみ
 state/review-mode.txt              # full | lean | solo の1語のみ
 state/active.md                    # セッションハンドオフ（現在地/次アクション/未解決事項）
 state/stories.yaml                 # ストーリー一覧（下記スキーマ）
-state/reviews/<artifact>.md        # レビュー履歴（artifact例: concept, gdd, art-bible, s-03, qa）
+state/reviews/<artifact>.md        # レビュー履歴（artifact例: concept, gdd, art-bible, s-03, qa, batch-verify）
 state/reviews/checkpoint-a.md      # CD-CHECKPOINT 履歴（Checkpoint A）
 state/reviews/checkpoint-b.md      # CD-CHECKPOINT 履歴（Checkpoint B）
 state/reviews/checkpoint-c.md      # CD-CHECKPOINT 履歴（Checkpoint C）
