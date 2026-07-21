@@ -50,6 +50,15 @@ or `.claude/docs/tech-stack-unreal.md`.
 If those commands are unavailable because no game has been generated yet, state
 that clearly in the pull request.
 
+For harness workflow changes (`.claude/workflows/*.js`), run the DSL stub test
+suite in addition to the syntax check:
+
+```bash
+node --check .claude/workflows/prototype.js .claude/workflows/full-build.js 2>/dev/null || \
+  for f in .claude/workflows/*.js; do node --check "$f"; done
+node --test '.claude/tests/workflows/**/*.test.mjs'
+```
+
 ## Change Guidelines
 
 - Preserve file-backed state semantics: `state/` is the source of truth during a
