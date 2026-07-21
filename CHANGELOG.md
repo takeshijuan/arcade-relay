@@ -30,7 +30,8 @@ artifact contracts stabilize.
 - Batched engine verification: lanes never launch Unity/Unreal (single-instance
   lock) or `npm run build`; a serial batch-verification step at each lane join
   point runs the full engine checks, isolates failures to the offending story
-  via commit history bisection, and records diagnoses in
+  via per-file commit history (bisecting story commits when attribution is
+  unclear), and records diagnoses in
   `state/reviews/batch-verify.md`. Failures escalate as `[BLOCKER]` items and
   inject warnings into all downstream phase prompts.
 - Parallel-lane discipline (LANE_RULE) enforced in every lane-side agent
@@ -51,6 +52,9 @@ artifact contracts stabilize.
   verification and `state/active.md` updates defer to the workflow's lane
   rules; code reviewers are read-only during lanes and treat cross-lane
   forward references per the new CR-CODE premise in `gates.md`.
+- QA fix loops are resume-safe: fix prompts now carry round-scoped labels
+  (`fix-qa-r<N>-...`), so resuming a workflow can no longer replay a previous
+  round's cached fix result and silently skip a re-fix.
 
 ## [0.2.0.0] - 2026-07-17
 

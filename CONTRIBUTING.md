@@ -54,10 +54,14 @@ For harness workflow changes (`.claude/workflows/*.js`), run the DSL stub test
 suite in addition to the syntax check:
 
 ```bash
-node --check .claude/workflows/prototype.js .claude/workflows/full-build.js 2>/dev/null || \
-  for f in .claude/workflows/*.js; do node --check "$f"; done
+node --check .claude/workflows/concept-design.js
+node --check .claude/workflows/prototype.js
+node --check .claude/workflows/full-build.js
 node --test '.claude/tests/workflows/**/*.test.mjs'
 ```
+
+(`node --check` validates only its first file argument, so check each script
+with its own command.)
 
 ## Change Guidelines
 
