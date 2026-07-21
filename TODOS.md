@@ -78,6 +78,20 @@
 **Priority:** P3
 **Depends on:** None
 
+### Workflow resume キャッシュと再実行 story の二重適用ガード（adversarial M-8b）
+**What:** Workflow ツールのキャッシュキー仕様（(prompt, opts) 一致）を前提に、途中編集→resume で実装済み story の impl agent が再実行された場合の「config への同一定数二重追記」を防ぐガード（プロンプトに「既に自 story の定数が存在すれば追記しない」等の冪等化）を検討する。
+**Why:** 並列化後は agent 数が増え resume 確率が上がる。二重追記は batchVerify の重複定義エラーとして無実の story に誤帰属し得る（adversarial レビュー M-8b・INVESTIGATE）。
+**Effort:** S
+**Priority:** P3
+**Depends on:** None
+
+### 並走レーン規律の実走検証（E3 検証負債）
+**What:** レーン規律（LANE_RULE / laneVerify / パス指定 commit / hash 実証検証）の agent 遵守率と batch-verify 失敗率・レーン競合率を E3 ランで実測し、逸脱があればプロンプトではなく機械強制（hook / ツール制限）へ昇格する。
+**Why:** DSL スタブテストはスクリプト側分岐を検証するが、プロンプト強制の遵守はライブ実行でしか測れない（/ship coverage 監査 GAPS 4・6）。
+**Effort:** M
+**Priority:** P2
+**Depends on:** E3 ラン実施
+
 ### P-5: UrpShaderUtil warn-once の観測性
 **What:** UrpShaderUtil の shader フォールバック warn-once が縮退発生の観測を妨げないか調査し、必要なら発生カウントを QA レポートへ集約する。
 **Why:** adversarial レビュー INVESTIGATE 項目 P-5。warn-once は spam 防止と観測性のトレードオフ。
@@ -89,5 +103,5 @@
 
 ### Build Phase の並列化（retro-e2 案A+B）
 **What:** prototype.js / full-build.js の story 実装を assignee 2レーン（gameplay/ui）並走にし、エンジン検証をレーン合流後のバッチ検証区間（直列・story 単位切り分け付き）へ集約した。
-**Why:** ユーザーフィードバック「Build Phase はとても時間がかかっている」。E2 実測 Build ≈ 6h / Phase 3 ≈ 9h+9h の主因が story 直列 × story ごとの Unity 検証（3〜8 分）だった。期待短縮 5〜6 割。
-**Completed:** v0.2.0.0 後継 (2026-07-21)
+**Why:** ユーザーフィードバック「Build Phase はとても時間がかかっている」。E2 実測 Build ≈ 6h / Phase 3 ≈ 9h+9h の主因が story 直列 × story ごとの Unity 検証（3〜8 分）だった。期待短縮 5〜6 割。DSL スタブテスト（.claude/tests/workflows/・15件）で batchVerify 全分岐とレーン分配を機械検証済み。
+**Completed:** v0.3.0.0 (2026-07-21)
