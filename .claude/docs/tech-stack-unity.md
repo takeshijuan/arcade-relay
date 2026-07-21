@@ -73,6 +73,8 @@ game/
 
 **単一インスタンスロック（重要）**: Unity は同一プロジェクトを同時に1エディタプロセスしか開けない。**Unity を起動する工程（テスト実行・ビルド・エディタスクリプトによる資産取込）は全て直列化すること**。並走レーン設計（Build∥AssetGen）では、AssetGen 側は生成と Unity 外の機械検証（gltf validate / Blender 検査）までに留め、エンジン取込は Integrate フェーズ（直列区間）で行う。
 
+**検証バッチ化（Build/Polish 並走レーン規約 — retro-e2 案A+B）**: コード story の実装は assignee レーン（gameplay/ui）で並走するため、**レーン中の agent は Unity を一切起動しない**（上記ロックと衝突する）。story ごとの検証は「参照する型・メンバ・アセットキー・シリアライズ対象の実在を Read/Grep で静的確認」までとし、EditMode+build の一括検証は**レーン合流後のバッチ検証区間（直列）**で行う。バッチ検証で失敗した場合はエラーのファイルパスと `git log --oneline -- <path>` で原因 story を特定（困難なら story コミット単位の二分探索）し、最小修正と原因 story を `state/reviews/batch-verify.md` に記録する。検証粒度が粗くなるトレードオフはこの切り分け規約で緩和する（正本実装は workflow の batchVerify）。
+
 ## コード規約（rules/unity-code.md が編集時に強制する内容の正本）
 
 1. **マジックナンバー禁止** — 全ゲームパラメータは `Assets/Scripts/GameConfig.cs` の静的定数クラスに集約。チューニングは GameConfig.cs だけで完結させる

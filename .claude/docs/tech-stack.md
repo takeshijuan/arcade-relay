@@ -61,10 +61,10 @@ game/
 - **保存タイミング**: Result 到達時に `applyRunResult` → 即 persist を1回（リスタート連打で二重保存しない）
 - **テスト規約**: 実 `localStorage` を使わずインメモリ Storage モックを注入（保存→新規インスタンスで再ロード→復元一致、破損→`.bak`+エラー1回+既定値復旧、の両テスト必須）
 
-## 検証（実装ストーリーごと）
+## 検証（実装ストーリーごと + バッチ）
 
-- `npm run typecheck` が exit 0
-- `npm run build` が exit 0
+- 実装ストーリーごと（並走レーン中）: `npm run typecheck` が exit 0（`tsc --noEmit` は読み取りのみで並走安全）。**レーン中は `npm run build` を実行しない**（dist/ が他レーンと衝突する — retro-e2 案A+B の検証バッチ化）
+- レーン合流後のバッチ検証区間（直列）: `npm run typecheck && npm run build` が exit 0。失敗はエラーのファイルパスと `git log --oneline -- <path>` で原因 story を特定し、最小修正と原因 story を `state/reviews/batch-verify.md` に記録（正本実装は workflow の batchVerify）
 - headless ブラウザで console エラー 0（QA-PLAY ゲートで実施。必須シーン遷移 Title→Menu→Game→Result→Menu と永続化検証を含む — gates.md QA-PLAY 観点2/5）
 
 ## 将来のエンジン非依存化に向けた線引き
