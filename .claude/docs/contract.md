@@ -129,6 +129,8 @@ stories:
     acceptance: "..."      # 検証可能な受け入れ条件
 ```
 
+時刻記入規約: `state/`・`qa/` 等リポジトリ成果物へ記す日時は必ず `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を貼る（推測・記憶による時刻記入は禁止 — E3 で実時系列と5時間ズレの実績）。
+
 ## 8. 安定ID形式
 
 - ピラー: `P-01`〜（design/concept.md で定義。3〜5個。全成果物がこれを参照）
@@ -184,8 +186,9 @@ phaser | unity | unreal
 （unreal の場合: `binary` = `RunUAT.sh` のフルパス、加えて `ue_root` = `/Users/Shared/Epic Games/UE_5.x` のエンジンルートを必須で持つ）
 
 - **検証コマンドの正本**: 各 tech-stack 文書の「## 検証コマンド」節。スキル・workflow・agent はコマンドをハードコードせず、engine に対応する tech-stack 文書の同節を読む（workflow スクリプト内の定型プロンプトは例外的に engine 別プロファイル定数として持ってよいが、内容は tech-stack 文書と一致させる）。
-- **生成資産の置き場**: raw 生成物＋MANIFEST は phaser=`game/assets/`、unity/unreal=`game/_generated/`。エンジン取込先は unity=`game/Assets/Generated/`、unreal=`game/Content/Generated/`（取込後も raw と MANIFEST は残す＝provenance の正本）。
+- **生成資産の置き場**: raw 生成物＋MANIFEST は phaser=`game/assets/`、unity/unreal=`game/_generated/`。エンジン取込先は unity=`game/Assets/Resources/Generated/`（`Resources.Load` 方式。AssetKeys の値は Resources 相対パス — tech-stack-unity.md「資産の取り扱い」）、unreal=`game/Content/Generated/`（取込後も raw と MANIFEST は残す＝provenance の正本）。
 - **unreal のプロジェクト名は `ForgeGame` 固定**（`game/ForgeGame.uproject`。マーカー検査とビルドコマンドを機械化するため）。
 - **エンジン非依存コアの線引き**（tech-stack.md「将来のエンジン非依存化に向けた線引き」の一般化）: ゲームロジックはエンジンAPI非依存の純粋コード層（phaser: `game/src/systems/` / unity: `game/Assets/Scripts/Systems/`（MonoBehaviour 非依存の pure C#）/ unreal: `game/Source/ForgeGame/Systems/`（UObject 非依存の pure C++。ただし基本型は可））に置き、エンジン依存はシーン/コンポーネント層に閉じ込める。
 - **必須シーン集合（全エンジン共通・全ゲーム必須）**: `Boot / Title / Menu / Game / Result` の5状態。phaser=`BootScene/TitleScene/MenuScene/GameScene/ResultScene`、unity=`Assets/Scenes/` の5シーン、unreal=`Content/Maps/` のレベル分割または状態遷移（どちらでも可。ただし5状態すべての実在と遷移を Automation テストで検証可能にすること — 「単一レベルだから Title/Menu 省略」は不可）。正準フロー: `Boot → Title → Menu → Game → Result → { Game（リスタート） | Menu }`。Menu の必須要素はプレイ開始・アウトゲーム表示（アンロック/実績/統計）・設定（音量・操作表示）・終了導線（ui-engineer の責務）。**Title と Menu のストーリーが `assignee: ui-engineer` で state/stories.yaml に存在しない分解は不合格**（workflow の Setup が機械検証し tech-director に差し戻す）。
+- **prototype 縦串の必須スコープに「環境の最低限ビジュアル」を含める**（`assignee: gameplay-engineer` の story として発行する。地面/背景の可視化・ライト・カメラ構図の確定 — engine=phaser（2D）は背景の可視化+画面レイアウト確定で可。engine=unity/unreal はプレースホルダ地形でも可視の地面必須）— Checkpoint B の体感評価を成立させるため。対応 story が state/stories.yaml に存在しない分解は不合格（workflow の Setup が機械検証）。
 - **メタ進行（アウトゲーム）必須**: design/gdd.md に「メタ進行（アウトゲーム）」節が必須（templates/gdd.md。ハイスコア/ベストタイム+統計=全ゲーム必須、通貨/アンロック/実績/ラン間アップグレードから2つ以上選択。DR-GDD 観点6 が判定）。ロジックはエンジン非依存コア層のサブフォルダ（phaser: `game/src/systems/meta/` / unity: `game/Assets/Scripts/Systems/Meta/` / unreal: `game/Source/ForgeGame/Systems/Meta/`）に、永続化 I/O は**永続化層**（phaser: `game/src/persistence/` / unity: `game/Assets/Scripts/Persistence/` / unreal: `game/Source/ForgeGame/Persistence/` — UObject/MonoBehaviour/ブラウザ API を許す唯一の I/O 層）に閉じる。セーブ規約は §6。

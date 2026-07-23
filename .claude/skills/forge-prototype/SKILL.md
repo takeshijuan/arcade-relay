@@ -32,6 +32,15 @@ Workflow ツールで起動する:
 
 起動後ユーザーに伝える: 「Phase 2 をバックグラウンドで開始しました。完了すると通知が届きます。進捗は `/workflows` で確認できます。」**ポーリング禁止**、完了通知を待つ。ストーリー実装ループ（CR-CODE）と QA-PLAY はスクリプト側の責務。実行中の verdict 都度提示は行わない。reviewMode=`full` の場合、ワークフローが戻り値に蓄積した verdictHistory（全ループの verdict 履歴）を Phase 3 の Checkpoint B 提示に全件含める（contract §9）。
 
+## セッション断からの再開（retro-e3 指摘3）
+
+ワークフロー実行中にセッションが断たれた場合の正式手順:
+
+1. まず state/（`state/stories.yaml` の status・`state/active.md`・`state/stage.txt`）と `git log` で**最後に完了したフェーズ境界**（Setup 完了 / レーン合流+batchVerify 完了 / Integrate 完了 / QA round N 完了）を特定する。
+2. **第一選択は尾部再構成**: 残工程だけを同一プロンプト・同一スキーマで新規 Workflow として起動する（インライン tail script）。
+3. `resumeFromRunId` の直行再開は、未完了 agent の再実行結果が変わるとキャッシュ分岐が連鎖し重複コミット・重複作業を生むリスクがある（E3 実測: 約 1h の浪費）— **完了直後の再開（分岐面が小さい）に限って使う**。
+4. いずれの場合も再開前に `git log --oneline -20` で重複コミットの有無を確認する。
+
 ## Phase 2: 完了確認
 
 完了通知の戻り値を読む。**失敗終了**: エラーと `/workflows` のログ参照を報告し、stage は変更せず停止。
@@ -67,7 +76,7 @@ Checkpoint B は承認ゲートではなく**1回のフィードバック回収*
 
 ```markdown
 # Checkpoint B フィードバック
-- 日時: <ISO8601>
+- 日時: <ISO8601 — `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を貼る（推測記入禁止 — contract §7）>
 - モード: <full|lean|solo>
 ## フィードバック
 <本文。無い場合は「フィードバックなし。そのまま本実装へ進行」。solo の場合は「solo モードのため未回収」>

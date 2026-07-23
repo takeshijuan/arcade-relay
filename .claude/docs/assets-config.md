@@ -18,6 +18,8 @@
 
 ## 3D ルーティング表（engine=unity/unreal のみ。MDL/ANM 資産）
 
+> **fallback 全段試行の義務**: Primary の API 失敗時、fallback を 1 段も試さずにローカル縮退/プレースホルダ/must-replace 化することを禁止する。ルーティング表の fallback を上から順に全段試行し、各試行の「ルート名 + HTTP ステータス（または失敗理由）」を必ず記録・報告する（全段失敗の場合のみローカル縮退可 — retro-e3 指摘7）。
+
 2D 表の画像行は 3D エンジンでも UI・テクスチャ・コンセプト画用に併用する。3D モデル/アニメは **全行 Meshy Primary**（contract §10）— `MESHY_API_KEY` 有効時は直API を第一候補、無効/未設定時は `FAL_KEY` 経由の fal ホスト版 Meshy を第一候補に繰り上げる（Meshy の二重化）:
 
 | 資産種別 | Primary（Meshy 直API・キー有効時） | 第二候補（Meshy 二重化: fal 経由） | Fallback（Meshy 全滅時のみ） | キー無しローカル縮退 |
@@ -70,7 +72,7 @@
 
 画像: 即時DL（fal URL≈10分・Ideogram≈24hで失効）→ アルファ検証 → (必要なら)背景除去 → トリム → タイルはオフセット重ね合わせ継ぎ目検査 → `free-tex-packer-cli` で Phaser atlas JSON（phaser のみ。unity/unreal はエンジン側のテクスチャ/スプライト機構に任せる）
 音声: `ffmpeg loudnorm`（-16 LUFS）+ 無音トリム → BGMは**ループ検証**（小節境界クロスフェード→2連結してシームのクリック/RMS段差スキャン。失敗は再生成）→ 出力形式はエンジン別（phaser: OGG Vorbis 128-160kbps + M4A/AAC（Safari）/ unity: OGG / unreal: WAV）
-3Dモデル（MDL/ANM）: 即時DL → **スキーマ検証**（GLB: `npx @gltf-transform/cli validate <file>.glb` でエラー0確認。Khronos validator 互換。機械可読の保存は `--format md` + "No errors" のテキストマッチが現実的 — JSON 出力は無い。**FBX: Blender headless で import → GLB export → 同じ validate を通す** — 変換不能・エラーは不合格。FBX を素通りさせない）→ Blender headless でポリゴン数・ボーン数・マテリアル数・非多様体検査 → **authoring-time 寸法計測**（第一情報源。実施手順: (a) プロバイダ API レスポンスに寸法/bbox があれば MANIFEST の `bbox_authoring_m` に転記、無ければ (b) Blender headless で `obj.dimensions` を計測して `bbox_authoring_m: [x,y,z]`（m 単位）を MANIFEST に記録。**Integrate 前に必須** — FBX は leaf bone の tail が roundtrip で再現されないため、reimport 計測は構造検査＝トポロジ・ボーン名・クリップ有無専用に限定）（1 unit 基準でヒト型 1.6–2.0m 相当。glTF=m / UE=cm の換算に注意）→ ポリゴン予算チェック（hero ≤ 50k tri / prop ≤ 10k tri / 環境 ≤ 100k tri。超過は `gltfpack -si` で自動 decimate）→ エンジン取込（unity: Assets/Generated/ へコピー / unreal: Interchange Python でインポート）→ 取込後にエンジン内バウンディングボックスを `bbox_authoring_m` と突合して再検証
+3Dモデル（MDL/ANM）: 即時DL → **スキーマ検証**（GLB: `npx @gltf-transform/cli validate <file>.glb` でエラー0確認。Khronos validator 互換。機械可読の保存は `--format md` + "No errors" のテキストマッチが現実的 — JSON 出力は無い。**FBX: Blender headless で import → GLB export → 同じ validate を通す** — 変換不能・エラーは不合格。FBX を素通りさせない）→ Blender headless でポリゴン数・ボーン数・マテリアル数・非多様体検査 → **authoring-time 寸法計測**（第一情報源。実施手順: (a) プロバイダ API レスポンスに寸法/bbox があれば MANIFEST の `bbox_authoring_m` に転記、無ければ (b) Blender headless で `obj.dimensions` を計測して `bbox_authoring_m: [x,y,z]`（m 単位）を MANIFEST に記録。**Integrate 前に必須** — FBX は leaf bone の tail が roundtrip で再現されないため、reimport 計測は構造検査＝トポロジ・ボーン名・クリップ有無専用に限定）（1 unit 基準でヒト型 1.6–2.0m 相当。glTF=m / UE=cm の換算に注意）→ ポリゴン予算チェック（hero ≤ 50k tri / prop ≤ 10k tri / 環境 ≤ 100k tri。超過は `gltfpack -si` で自動 decimate）→ エンジン取込（unity: Assets/Resources/Generated/ へコピー / unreal: Interchange Python でインポート）→ 取込後にエンジン内バウンディングボックスを `bbox_authoring_m` と突合して再検証
 
 ## Provenance（必須）
 
