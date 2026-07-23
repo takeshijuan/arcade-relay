@@ -103,7 +103,7 @@ test('M-8a: 同一バグが round を跨いでも fix-qa label が round 一意'
 
 // ---- retro-e3 追随: agentR リトライ ----
 
-test('agentR リトライ: 初回 null は -retry label で同一プロンプトを1回だけ再試行し回復する', async () => {
+test('agentR リトライ: 初回 null は -retry label + resume ガード前置で1回だけ再試行し回復する', async () => {
   let crosscheckCalls = 0;
   const routes = [
     R(/^setup-scaffold-stories/, SETUP),
@@ -120,7 +120,9 @@ test('agentR リトライ: 初回 null は -retry label で同一プロンプト
   assert.equal(callsBy(calls, /^setup-crosscheck-stories$/).length, 1);
   const retry = callsBy(calls, /^setup-crosscheck-stories-retry$/);
   assert.equal(retry.length, 1, '-retry 付き label で再呼び出しされない');
-  assert.equal(retry[0].prompt, callsBy(calls, /^setup-crosscheck-stories$/)[0].prompt, 'リトライは同一プロンプトを使う');
+  // 盲目再実行の禁止: リトライは resume ガード（完了済み作業の確認・重複実行禁止）を前置した上で元プロンプトを保持する
+  assert.ok(retry[0].prompt.startsWith('【リトライ実行】'), 'リトライに resume ガードが前置されない');
+  assert.ok(retry[0].prompt.endsWith(callsBy(calls, /^setup-crosscheck-stories$/)[0].prompt), 'リトライが元プロンプトを保持しない');
   // 回復して実装フェーズへ続行している（エスカレーションに落ちない）
   assert.equal(callsBy(calls, /^implement-/).length, 4);
   assert.ok(!result.unresolvedFindings.some((f) => f.includes('独立突合')));

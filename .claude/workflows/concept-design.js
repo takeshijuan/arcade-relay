@@ -100,7 +100,10 @@ async function agentR(prompt, opts) {
   let r = await agent(prompt, opts);
   if (r === null) {
     log('agent null（transient の可能性）→ 1回リトライ: ' + ((opts && opts.label) || ''));
-    r = await agent(prompt, Object.assign({}, opts, { label: (((opts && opts.label) || 'agent') + '-retry') }));
+    // 盲目再実行の禁止: 初回呼び出しが「作業完了後に構造化応答だけ喪失」した可能性があるため、
+    // 完了済み作業（コミット・資産生成・課金 API 呼び出し）の重複実行を防ぐ resume ガードを前置する
+    const guarded = '【リトライ実行】直前の同一タスク呼び出しが構造化応答を失って中断した可能性がある。作業開始前に既存の成果（git log の直近コミット・生成済みファイル・MANIFEST 追記）を確認し、完了済みの操作（コミット・資産生成・課金 API 呼び出し）は繰り返すな。未完了分のみ実行し、全て完了済みなら再実行せず結果の構造化返却のみを行え。\n\n' + prompt;
+    r = await agent(guarded, Object.assign({}, opts, { label: (((opts && opts.label) || 'agent') + '-retry') }));
   }
   return r;
 }

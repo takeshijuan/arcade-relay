@@ -193,7 +193,10 @@ async function agentR(prompt, opts) {
   let r = await agent(prompt, opts);
   if (r === null) {
     log('agent null（transient の可能性）→ 1回リトライ: ' + ((opts && opts.label) || ''));
-    r = await agent(prompt, Object.assign({}, opts, { label: (((opts && opts.label) || 'agent') + '-retry') }));
+    // 盲目再実行の禁止: 初回呼び出しが「作業完了後に構造化応答だけ喪失」した可能性があるため、
+    // 完了済み作業（コミット・資産生成・課金 API 呼び出し）の重複実行を防ぐ resume ガードを前置する
+    const guarded = '【リトライ実行】直前の同一タスク呼び出しが構造化応答を失って中断した可能性がある。作業開始前に既存の成果（git log の直近コミット・生成済みファイル・MANIFEST 追記）を確認し、完了済みの操作（コミット・資産生成・課金 API 呼び出し）は繰り返すな。未完了分のみ実行し、全て完了済みなら再実行せず結果の構造化返却のみを行え。\n\n' + prompt;
+    r = await agent(guarded, Object.assign({}, opts, { label: (((opts && opts.label) || 'agent') + '-retry') }));
   }
   return r;
 }
@@ -1210,7 +1213,7 @@ for (let round = 1; round <= QA_MAX; round++) {
           '詳細: ' + bug.detail,
           bug.storyId ? '関連 story: ' + bug.storyId : '',
           '参照: ' + ART.qaReport + '（QA 所見全文）/ ' + ART.conventions + ' / ' + DOCS.techStack + '。',
-          '修正後 ' + EP.verifyCmd + ' が exit 0 を確認し、パス限定で add してコミット: `git add game state .claude/docs && git commit -m "phase2: fix QA — ' + bug.title + '"`（`git add -A` 禁止。`.claude/docs` は下記の落とし穴昇格を同一コミットに含めるため）。',
+          '修正後 ' + EP.verifyCmd + ' が exit 0 を確認し、パス限定で add してコミット: `git add game state ' + DOCS.techStack + ' && git commit -m "phase2: fix QA — ' + bug.title + '"`（`git add -A`・`.claude/docs` ディレクトリ丸ごと指定は禁止。' + DOCS.techStack + ' は下記の落とし穴昇格を同一コミットに含めるため — 追記した場合のみ stage される）。',
           '修正原因がエンジン/テストランナー起因の一般則（環境の落とし穴）だった場合は、tech-stack 文書の「既知の落とし穴」節へ即時追記せよ（無ければ新設 — gates.md QA-PLAY）。',
           '修正内容を簡潔に返せ。',
         ].filter(Boolean).join('\n'),
@@ -1230,7 +1233,7 @@ for (let round = 1; round <= QA_MAX; round++) {
           '未通過一覧:',
           qaResult.failedAcceptance.map(function (fa, idx) { return (idx + 1) + '. ' + fa; }).join('\n'),
           '参照: ' + ART.qaReport + '（QA 所見全文）/ ' + STATE.stories + '（acceptance 原文）/ ' + ART.conventions + ' / ' + DOCS.techStack + '。',
-          '修正後 ' + EP.verifyCmd + ' が exit 0 を確認し、パス限定で add してコミット: `git add game state .claude/docs && git commit -m "phase2: fix QA — failed acceptance"`（`git add -A` 禁止。`.claude/docs` は落とし穴昇格を同一コミットに含めるため）。',
+          '修正後 ' + EP.verifyCmd + ' が exit 0 を確認し、パス限定で add してコミット: `git add game state ' + DOCS.techStack + ' && git commit -m "phase2: fix QA — failed acceptance"`（`git add -A`・`.claude/docs` ディレクトリ丸ごと指定は禁止。' + DOCS.techStack + ' は落とし穴昇格を同一コミットに含めるため）。',
           '修正原因がエンジン/テストランナー起因の一般則（環境の落とし穴）だった場合は、tech-stack 文書の「既知の落とし穴」節へ即時追記せよ（無ければ新設 — gates.md QA-PLAY）。',
           '修正内容を簡潔に返せ。',
         ].join('\n'),
