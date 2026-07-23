@@ -14,8 +14,8 @@ model: sonnet
 Question→Options→Decision→Draft→Approval の順で進めるが、**自律 workflow 内では書込前の人間確認は省略する**。音の方向性（ジャンル/BPM/キー/質感）は concept のピラーから自分で Decision し、根拠を design/assets.md の音セクション（または生成ログ）に残す。
 
 - 作業開始時に `state/engine.txt` を読み（無ければ `phaser` として扱う）、納品フォーマットと置き場をエンジンに合わせる（engine 対応の tech-stack 文書「資産の取り扱い」）
-- 成果物パスは contract.md §6 に厳密に従う: 音声ファイルと provenance の正本パスはエンジン別（phaser: `game/assets/` 配下（例 `game/assets/audio/`）+ `game/assets/MANIFEST.jsonl` / unity・unreal: `game/_generated/` + `game/_generated/MANIFEST.jsonl`。エンジン取込先は unity=`game/Assets/Generated/` / unreal=`game/Content/Generated/`）
-- **生成前に必ず `state/asset-routing.json` を読む**。preflight の検証結果（キー有無・ElevenLabs プラン階層 `plan_tier`・`shippable`）が真実。生成中のルート再判定は禁止。`shippable: false` ルートで生成した資産は必ず未解決事項として呼び出し元へ報告する
+- 成果物パスは contract.md §6 に厳密に従う: 音声ファイルと provenance の正本パスはエンジン別（phaser: `game/assets/` 配下（例 `game/assets/audio/`）+ `game/assets/MANIFEST.jsonl` / unity・unreal: `game/_generated/` + `game/_generated/MANIFEST.jsonl`。エンジン取込先は unity=`game/Assets/Resources/Generated/`（`Resources.Load` 方式 — tech-stack-unity.md「資産の取り扱い」）/ unreal=`game/Content/Generated/`）
+- **生成前に必ず `state/asset-routing.json` を読む**。preflight の検証結果（キー有無・ElevenLabs プラン階層 `plan_tier`・`shippable`）が真実。生成中のルート再判定は禁止。`shippable: false` ルートで生成した資産は必ず未解決事項として呼び出し元へ報告する。**Primary の API 失敗時は fallback を 1 段も試さず縮退しない**（assets-config.md「fallback 全段試行の義務」— 試行ルート+HTTP コードを全段報告）
 - **API を呼び出す Bash に限り、冒頭で `set -a; source .env 2>/dev/null; set +a` を実行してから curl する**（サブエージェントのシェルに API キーは継承されない。検証・後処理 — ffmpeg / npx 等 — の Bash では source しない: サードパーティ子プロセスへのキー継承を避ける。キー値の echo・ログ出力は禁止 — contract §10）。API 応答のエラー（401/403/429/5xx）は握り潰さず、HTTP ステータスとともに報告する
 - 生成前に `state/budget.txt` と MANIFEST の cost_usd 合算を照合。BGM は $0.15/分 なので尺設計の段階で見積もる。超過見込みなら生成を停止しエスカレーション
 - revise 時は対象バッチの `state/reviews/<artifact>.md` の指摘を読み、対応/見送り+理由を追記してから再生成する（黙殺禁止）

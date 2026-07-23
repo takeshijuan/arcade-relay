@@ -1,25 +1,47 @@
-## QA-PLAY iteration 1 — APPROVE
-- 日時: 2026-07-12T23:17:37Z
-- 指摘要約: 重大バグなし。中優先度の既知の妥協点2件を記録（MDL-02 swarmerのアニメーション未実装＝rig_type=none縮退による静止移動、BootLoaderのend-to-end PlayMode検証未整備）。いずれも acceptance 判定・重大バグには該当せず APPROVE。
-- 対応: （該当なし・iteration 1 で APPROVE のため revise 不要）
+# state/reviews/qa.md — QA-PLAY レビュー履歴
 
-## QA-PLAY iteration 2 — APPROVE（フルQA round 1・全story回帰）
-- 日時: 2026-07-13T11:47:10Z
-- 対象: state/stories.yaml 全23story（prototype S-01〜S-11 + build S-12〜S-23）の acceptance 回帰検証。build 相当（ForgeBuild.BuildMac）exit0、EditMode 160/160、PlayMode 109/109、いずれも exit0・console/ログエラー0（NullReferenceException/MissingReferenceException 0件）。Title→Menu→Game→Result→Menu 1周（`ResultSceneTests.FullLoop_...`）、メタ進行永続化（保存→新規インスタンスLoad一致／破損4種（パース不能・save_version欠落=スキーマ不正ケース・ゼロ版・未来版）→.bak退避+`[SaveCorruption]`1回+recovered=true）を全てPlayModeテストで確認。9枚のスクリーンショットをmagick機械検知（SUSPECT_BLANK 0件）→全件Readで目視、8枚は判読可能・意図した被写体を確認、1枚（qa-swarmer-closeup.png）は被写体欠落を確認。
+## QA-PLAY iteration 1 — CONCERNS
+- 日時: 2026-07-21T13:50:00Z
 - 指摘要約（優先度順）:
-  1. [minor / gameplay-engineer] `QaPlayEvidenceTests.Capture_Swarmer_Closeup` のQA証跡スクリーンショットが空/地平線のみで swarmer モデルが写っていない。S-23 で追加された `ArenaCameraRig.Update()` の毎フレーム位置上書きが、テストのカメラ手動配置を無効化する回帰。swarmer自体の健全性は `EnemyVisualMotionSceneTests`（機械検証・pass）で別途確認済みのため acceptance には非影響。詳細・再現手順は `qa/report.md`「フルQA round 1 追記」中・軽微バグ#1。
-  2. [継続・新規ではない] S-20/S-22 の南側可視性残存制約（ARENA_RADIUS南端の完全カバー未達）。既に state/reviews/s-20.md・state/active.md で開示・Checkpoint C 申し送り済みのため今回新規指摘としては計上せず、ピラー検証所見(P-01/P-03)で確認継続を記録。
-  3. [開示のみ] S-01/S-08/S-19 が stories.yaml 上 status=review のまま（CR-CODE手続き上の持ち越し）。acceptance自体は全通過。
-- 判定根拠: 重大バグ0・acceptance 23/23 pass（fail 0）のため review-loops.md 合格基準を満たし APPROVE。中優先度バグ1件はQA証跡の内容欠落でありゲームプレイ・acceptance判定に影響しないため非ブロッキング。
-- 対応: （qa-lead 発行のiteration。gameplay-engineer側の対応は次回サイクルまたはPolishで記入予定）
+  1. [重大・優先1] Title/Menu/GameHud のクリック起点の遷移・パネル開閉が PlayMode テストで9/45件 fail（`TitleScreenPlayModeTests.LeftClick_TransitionsToMenu`/`AnyKey_TransitionsToMenu`、`MenuScreenPlayModeTests.ClickPlayButton_TransitionsToGame`/`ClickBackToTitleButton_TransitionsToTitle`、`GameHudPlayModeTests` 5件）。S-02/S-03/S-08 の acceptance が直接この失敗テストを指定しているため acceptance FAIL 扱い。3回の独立実行全てで同一内容が再現（pre-existing・Integrate起因ではないことをstash比較で確認済み）。同一クリック機構を使う `ResultScreenPlayModeTests` とフルループテストは pass しており、実行文脈依存の再現条件が疑われる（ui-engineer要調査）。
+  2. [参考] 実機ビルド（`game/Build/ForgeGame.app`）でのマウス実操作確認は本サンドボックス環境（画面収録権限なし）では実施不能だったため、PlayModeテストの`InputTestFixture`擬似発行のみで判定した旨を明記。
+  3. [軽微] 視覚証跡PlayModeテストが未整備だったため qa-lead が `game/Assets/Tests/PlayMode/QaVisualEvidencePlayModeTests.cs` を新規追加（Title/Menu/Game/Result の RenderTexture スクリーンショット＋マテリアル欠落/NaN/カメラ向き検査）。4件全pass、証跡はqa/evidence/qa-visual-*.pngで目視確認済み。
+- 対応: 未対応（次ラウンドでui-engineerが指摘1を修正すること。指摘3はqa-lead側で追加実装済みのためengineer対応不要）。
 
-## QA-PLAY iteration 3 — APPROVE（フルQA round 2・Phase 3 Visual Brushup 全33story回帰）
-- 日時: 2026-07-14T15:07:39Z
-- 対象: state/stories.yaml 全33story（prototype S-01〜S-11 + build S-12〜S-33。今回追加分 S-22改修・S-24〜S-33）の acceptance 回帰検証。build相当（ForgeBuild.BuildMac）exit0、EditMode 181/181（round1の160から+21）、PlayMode 142/142（round1の109から+33）、いずれもexit0・console/ログエラー0（NullReferenceException/MissingReferenceException/InternalErrorShader 0件）。Title→Menu→Game→Result→Menu 1周、メタ進行永続化（保存→新規インスタンスLoad一致／破損4種→.bak退避+`[SaveCorruption]`1回+recovered=true）を全てPlayModeテストで再確認。12枚のスクリーンショットをmagick機械検知（SUSPECT_BLANK 0件）→全件Readで目視、11枚は判読可能・意図した被写体を確認、1枚（qa-swarmer-closeup.png）はround1既報の被写体欠落バグが継続。
-- 指摘要約（優先度順）:
-  1. [minor / gameplay-engineer / 継続] `QaPlayEvidenceTests.Capture_Swarmer_Closeup` の証跡スクリーンショットにswarmerモデルが写っていない回帰（`ArenaCameraRig.Update()`によるカメラ位置上書き）。round1 iteration2から継続、未対応。swarmer健全性自体は`EnemyVisualMotionSceneTests`で機械検証済みでacceptance非影響。
-  2. [開示のみ・重要・コード外] S-27後半〜S-33の実装一式が1Password SSH署名ブロッカーによりgit commit未達のままworking treeに残存（`git status --short`250件超）。QA自体はworking treeに対し実施し機能面は全て確認済みだが、Checkpoint Cで最優先の人間申し送り事項とすべき。
-  3. [開示のみ] `state/stories.yaml` S-24/S-25のstatus表記が`todo`のまま（実体はAR-ASSET iteration4でAPPROVE済み・S-26/S-30が依存実装済み）。記帳漏れ、acceptance内容自体は充足。
-  4. [継続・新規ではない] S-20/S-22 南側可視性残存制約（ARENA_RADIUS南端の完全カバー未達）。既存開示継続、新規指摘としては非計上。
-- 判定根拠: 重大バグ0・acceptance 33/33 pass（fail 0）のためreview-loops.md合格基準を満たしAPPROVE。中・軽微バグ1件（継続・証跡内容欠落のみ）は非ブロッキング。プロセスリスク（git commit未反映）はQA-PLAY判定対象（実際に動くgame/working tree）には影響しないため非ブロッキングとしつつ、Checkpoint Cへの最優先申し送り事項として明記。
-- 対応: （qa-lead発行のiteration。gameplay-engineer/tech-directorへの対応は次サイクルで記入予定）
+## QA-PLAY iteration 2 — APPROVE
+- 日時: 2026-07-22T03:26:16Z
+- 指摘要約: なし。iteration 1 の重大バグ#1（Title/Menu/GameHud のクリック起点遷移9件failure）は解消を確認した。
+  qa-lead が独立に `game/Build` 削除→再ビルド（exit 0）→EditMode（48/48 passed, exit 0）→PlayMode（50/50 passed,
+  exit 0・安定性確認のため2回連続実行）を実行し、iteration 1 で fail していた
+  `TitleScreenPlayModeTests.LeftClick_TransitionsToMenu`/`AnyKey_TransitionsToMenu`、
+  `MenuScreenPlayModeTests.ClickPlayButton_TransitionsToGame`/`ClickBackToTitleButton_TransitionsToTitle`、
+  `GameHudPlayModeTests` 5件すべてが pass することを一次証跡（`qa/evidence/playmode-results-qa2.xml`・
+  `qa/evidence/playmode-results-qa2-rerun.xml`）で確認した。prototype phase 全9ストーリー（S-01〜S-09）の
+  acceptance 全通過、必須シーン遷移1周（Title→Menu→Game→Result→Menu）pass、永続化（復元一致・破損復旧3種）pass、
+  視覚証跡4枚を機械検知（mean値）＋Read目視で確認（黒画面・文字欠落・ピンクマテリアルなし）。
+  P-03（溶ける実感の演出）はS-13/S-19未実装のためconcern注記のまま持ち越すが、prototype範囲では許容（build phaseで再検証）。
+- 対応: 対応不要（APPROVE）。gameplay-engineer/ui-engineer による b3ad6e8 修正が有効であったことを本QAで確認した。
+
+## QA-PLAY iteration 3（フルQA round 1・phase:build 全story回帰） — APPROVE
+- 日時: 2026-07-22T20:53:08Z
+- 対象: state/stories.yaml 全story（phase:prototype S-01〜S-09 + phase:build S-10〜S-26、計26ストーリー）の
+  acceptance を1件ずつ回帰検証。バッチ検証（`state/reviews/batch-verify.md`「phase: build (Polish)」節）が
+  既に EditMode 93/93・PlayMode 117/117 を報告していたが、qa-lead が独立に `$UNITY -batchmode -runTests`
+  （EditMode/PlayMode）と `ForgeBuild.BuildMac` を一次実行し、同一の合格結果（EditMode 93/93 passed・build
+  exit 0・PlayMode 117/117 passed）を再現・確認した。console/ログエラー0（ホワイトリスト済み想定内ログのみ）。
+  必須シーン遷移 Title→Menu→Game→Result→Menu の1周、永続化（保存/復元一致・破損セーブ2種の復旧プロトコル）も
+  全てpass。全26ストーリーでacceptance FAIL 0件。ピラー検証（P-01〜P-04）は全てok（P-03は前回prototype QAで
+  concern指摘した撃破演出未実装がbuild phaseのS-13/19/24/25/26で解消されたことを確認）。
+  qa-lead は視覚証跡の質向上のため `game/Assets/Tests/PlayMode/QaVisualEvidencePlayModeTests.cs` の
+  Game画面撮影テストへ `BuildSpotController.TryPlaceTower`（実ゲーム入口APIと同一）によるタワー2種設置を追加し、
+  「開始直後の空盤面」ではなくタワー設置後の盤面を撮影するよう修正した（変更後もPlayMode 117/117 pass再確認済み）。
+  全6スクリーンショットを機械検知（mean値0.02〜0.98範囲内）＋Read目視で確認（黒画面・文字欠落・ピンクマテリアルなし）。
+  詳細は `qa/report.md`（本ラウンドの正式版に更新）参照。
+- 既知の妥協点（重大バグではないがCheckpointで開示すべき事項）:
+  1. [INFRA] 1Password SSH signing agent 障害により、working tree上のS-22〜S-26・S-23等の変更がgit未コミットの
+     まま（HEAD `290839d`以降）。本QAはworking treeの実コードを対象に検証したためAPPROVE判定に影響しないが、
+     人間のサインイン復旧後にコミット確定が必要。
+  2. [ASSET] IMG-05/06/07（実績/UPG/敵インジケータのUIアイコン画像）がAR-ASSET承認済み・MANIFEST記録済みだが
+     `Assets/Resources/Generated/textures/`へ未Integrate（`ForgeAssetIntegration.cs`が引き続きPLANNED計上）。
+     該当UIはテキスト/プレースホルダ表示のみでacceptance自体は満たすが、意図されたアイコングラフィックは未反映。
+- 対応: 対応不要（APPROVE）。上記既知の妥協点はCD-CHECKPOINTでの開示対象として引き継ぐ。

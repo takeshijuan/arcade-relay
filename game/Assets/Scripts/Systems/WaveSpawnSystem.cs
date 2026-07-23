@@ -1,108 +1,240 @@
-// WaveSpawnSystem — pure C# wave/difficulty-curve derivation (gdd 難易度曲線 + 数値表「ウェーブ・
-// 難度カーブ」; P-03; S-05). Given elapsed run time, derives the current wave number and that wave's
-// spawn interval / simultaneous spawn count / enemy speed / enemy HP multiplier. Engine-independent:
-// no MonoBehaviour, no scene API, no RNG (rules/unity-code.md #3) — Components/WaveSpawner drives this
-// every frame with Time.deltaTime and owns the spawn-timer/RNG-angle/Instantiate side effects.
-//
-// Formulas verified against design/gdd.md "ウェーブ・難度カーブ" table (Wave 1/3/5/8/12 rows):
-//   SpawnInterval(1)=1.50s SpawnInterval(3)=1.34s SpawnInterval(5)=1.18s SpawnInterval(8)=0.94s SpawnInterval(12)=0.62s
-//   SpawnCount(1)=1        SpawnCount(3)=1        SpawnCount(5)=2        SpawnCount(8)=3        SpawnCount(12)=4
-//   EnemySpeed(1)=2.50     EnemySpeed(3)=2.70     EnemySpeed(5)=2.92     EnemySpeed(8)=3.29     EnemySpeed(12)=3.85
-//   EnemyHp(1)=40 (baseline, no growth before wave 4) EnemyHp(5)~=45 EnemyHp(8)~=54 EnemyHp(12)~=68
+// WaveSpawnSystem.cs — ウェーブ進行・敵スポーン・経路移動（純粋 C#・エンジン非依存。S-04 + S-12）。
+// gdd「ウェーブ進行・敵スポーン」節（P-03）+「難易度曲線」節。経路はタワー配置で変化しない固定直線
+// （GameConfig.Path.StartPoint → EndPoint、全長 GameConfig.Wave.PathLengthM — 経路の世界座標は S-04 実装判断。
+// GameConfig.Path のコメント参照）。
+// MonoBehaviour/シーン API は使わない（rules/unity-code.md 規約3）。Vector3/Mathf は値型として使用可。
+// 出現間隔は GameConfig.Wave.SpawnIntervalBase × 現在ウェーブの WaveDef.SpawnIntervalMultiplier
+// （gdd 難易度曲線表の「出現間隔◯%」列。S-12）。ウェーブ間の準備フェーズは GameConfig.Wave.WavePrepSec 固定。
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace ForgeGame.Systems
 {
-    public static class WaveSpawnSystem
+    /// <summary>1体の敵インスタンス（純粋値。Transform は持たない — Components/EnemyView が描画を担う）。</summary>
+    public struct EnemyInstance
     {
-        /// <summary>Snapshot of a wave's derived spawn/enemy tuning. EnemyHp is the rounded absolute
-        /// HP (gdd table's "敵HP" column) for convenience; EnemyHpMultiplier is the raw multiplier a
-        /// later story (heavy-variant stacking) may want directly.</summary>
-        public readonly struct WaveParameters
-        {
-            public readonly int Wave;
-            public readonly float SpawnInterval;
-            public readonly int SpawnCount;
-            public readonly float EnemySpeed;
-            public readonly float EnemyHpMultiplier;
-            public readonly int EnemyHp;
+        public int Id;
+        public EnemyType Type;
+        public float DistanceTraveledM; // 経路始点(0)からの走行距離
+        public bool Active;             // false = ゴール到達済み or 撃破済み（いずれも移動/ターゲティング対象外）
+        public int Hp;                  // 現在HP（S-05）。0以下で撃破 — ApplyDamage/EnemyHealthSystem.IsDefeated 参照
+    }
 
-            public WaveParameters(
-                int wave, float spawnInterval, int spawnCount, float enemySpeed, float enemyHpMultiplier, int enemyHp)
+    /// <summary>WaveSpawnSystem.ApplyDamage の結果（S-05）。</summary>
+    public readonly struct EnemyDamageResult
+    {
+        public readonly bool Found;     // enemyId が生存中の敵として見つかったか
+        public readonly bool Defeated;  // このダメージで撃破（HP<=0）に至ったか
+        public readonly EnemyType Type;
+        public readonly int RemainingHp;
+
+        public EnemyDamageResult(bool found, bool defeated, EnemyType type, int remainingHp)
+        {
+            Found = found;
+            Defeated = defeated;
+            Type = type;
+            RemainingHp = remainingHp;
+        }
+    }
+
+    /// <summary>ゴール到達イベント（CoreDefenseSystem の入力）。</summary>
+    public readonly struct EnemyGoalReachedEvent
+    {
+        public readonly int EnemyId;
+        public readonly EnemyType Type;
+
+        public EnemyGoalReachedEvent(int enemyId, EnemyType type)
+        {
+            EnemyId = enemyId;
+            Type = type;
+        }
+    }
+
+    /// <summary>
+    /// ウェーブ進行・スポーン・経路移動を管理する純粋インスタンスクラス。
+    /// Components/WaveSpawnController が Update() の Time.deltaTime を渡して Tick を駆動する（規約2: delta-time 必須）。
+    /// </summary>
+    public sealed class WaveSpawnSystem
+    {
+        private readonly List<EnemyInstance> enemies = new List<EnemyInstance>();
+        private int nextEnemyId;
+
+        private int currentWaveIndex; // 0-based。GameConfig.WaveComposition.Waves のインデックス
+        private int marauderSpawnedInWave;
+        private int warbeastSpawnedInWave;
+        private float spawnTimer;
+        private float prepTimer;
+        private bool inPrepPhase = true; // WAVE 1 の出現前も準備フェーズ扱い
+        private int lastAnnouncedWaveIndex = -1; // S-13: ウェーブ開始（準備フェーズ突入）を1ウェーブ1回だけ通知するための既通知インデックス
+
+        /// <summary>
+        /// 1-based の現在ウェーブ番号（HUD表示用）。全ウェーブ消化後も最終ウェーブ番号（Waves.Length）に
+        /// クランプされたまま返す（Length+1 にはならない）。全消化の判定には CurrentWaveNumber を使わず
+        /// AllWavesSpawned を正とすること（CR-CODE S-04 iter1 対応: 旧コメントは Length+1 を返すと誤記していた）。
+        /// </summary>
+        public int CurrentWaveNumber => Math.Min(currentWaveIndex, GameConfig.WaveComposition.Waves.Length - 1) + 1;
+
+        /// <summary>全ウェーブのスポーンを消化済みか（消化済みでも既存の敵は経路上を移動し続ける）。</summary>
+        public bool AllWavesSpawned => currentWaveIndex >= GameConfig.WaveComposition.Waves.Length;
+
+        /// <summary>現在の全敵インスタンス（生存・消滅済み双方を含む。生存判定は Active を見る）。</summary>
+        public IReadOnlyList<EnemyInstance> Enemies => enemies;
+
+        /// <summary>生存中の敵数。</summary>
+        public int ActiveEnemyCount
+        {
+            get
             {
-                Wave = wave;
-                SpawnInterval = spawnInterval;
-                SpawnCount = spawnCount;
-                EnemySpeed = enemySpeed;
-                EnemyHpMultiplier = enemyHpMultiplier;
-                EnemyHp = enemyHp;
+                int count = 0;
+                for (int i = 0; i < enemies.Count; i++)
+                {
+                    if (enemies[i].Active) count++;
+                }
+                return count;
             }
         }
 
-        /// <summary>Current wave number from elapsed seconds (gdd セッション内進行の単位:
-        /// currentWave = 1 + floor(elapsedSec / WAVE_DURATION)). Mirrors ScoreSystem.CurrentWave —
-        /// kept here too so WaveSpawnSystem's own derivation chain has no cross-file dependency.</summary>
-        public static int CurrentWave(float elapsedSec)
+        /// <summary>
+        /// 1フレーム分（deltaTime 秒）進める。スポーン判定→経路移動の順で処理し、
+        /// このフレームでゴールに到達した敵を goalEvents（呼び出し側が用意した空リスト）に積む。
+        /// waveStartEventsOut を渡すと、このフレームで新しいウェーブの準備フェーズに突入した場合に
+        /// 1-based のウェーブ番号を積む（gdd「ウェーブ進行・敵スポーン」節の「ウェーブ予告表示イベント」。
+        /// S-13。省略可 — 省略時は内部の既通知状態のみ更新し呼び出し側には何も返さない）。
+        /// </summary>
+        public void Tick(float deltaTime, List<EnemyGoalReachedEvent> goalEvents, List<int> waveStartEventsOut = null)
         {
-            return 1 + (int)Math.Floor(elapsedSec / GameConfig.Wave.WaveDuration);
+            if (deltaTime < 0f) throw new ArgumentOutOfRangeException(nameof(deltaTime), "deltaTime は 0 以上である必要がある。");
+            if (goalEvents == null) throw new ArgumentNullException(nameof(goalEvents));
+
+            AdvanceSpawning(deltaTime, waveStartEventsOut);
+            AdvanceMovement(deltaTime, goalEvents);
         }
 
-        /// <summary>Spawn interval for <paramref name="wave"/> (1-based). gdd: SPAWN_INTERVAL_BASE +
-        /// SPAWN_INTERVAL_DECAY_PER_WAVE * (wave - 1), clamped to SPAWN_INTERVAL_MIN. Wave 1 uses the
-        /// base interval unmodified (decay applies from wave 2 onward).</summary>
-        public static float SpawnInterval(int wave)
+        /// <summary>経路始点(距離0)〜終点(PathLengthM)の走行距離をワールド座標へ変換する（固定直線経路）。</summary>
+        public static Vector3 GetPathPosition(float distanceTraveledM)
         {
-            float raw = GameConfig.Wave.SpawnIntervalBase + GameConfig.Wave.SpawnIntervalDecayPerWave * (wave - 1);
-            return Mathf.Max(GameConfig.Wave.SpawnIntervalMin, raw);
+            float t = Mathf.Clamp01(distanceTraveledM / GameConfig.Wave.PathLengthM);
+            return Vector3.Lerp(GameConfig.Path.StartPoint, GameConfig.Path.EndPoint, t);
         }
 
-        /// <summary>Simultaneous spawn count for <paramref name="wave"/> (gdd: SPAWN_COUNT_PER_TICK_BASE
-        /// plus 1 for every SPAWN_COUNT_GROWTH_INTERVAL waves elapsed since wave 1).</summary>
-        public static int SpawnCount(int wave)
+        /// <summary>
+        /// 生存中の敵へダメージを適用する（HP減算は EnemyHealthSystem.ApplyDamage に委譲。S-05）。
+        /// HP<=0 になった場合は Active=false（撃破。以後の移動/ゴール判定/ターゲティング対象外）にする。
+        /// 既に非生存(Active=false) or 存在しない enemyId は Found=false を返す — 呼び出し側は同フレーム内で
+        /// 同一敵へ複数のダメージ適用イベントが届いた場合の2発目以降をここで自然に無効化できる
+        /// （conventions.md 撃破帰属ルール: final-hit のみを撃破に帰属させる仕組みの一部）。
+        /// </summary>
+        public EnemyDamageResult ApplyDamage(int enemyId, int damage)
         {
-            int growthSteps = (wave - 1) / GameConfig.Wave.SpawnCountGrowthInterval;
-            return GameConfig.Wave.SpawnCountPerTickBase + growthSteps;
+            for (int i = 0; i < enemies.Count; i++)
+            {
+                EnemyInstance e = enemies[i];
+                if (e.Id != enemyId || !e.Active) continue;
+
+                e.Hp = EnemyHealthSystem.ApplyDamage(e.Hp, damage);
+                bool defeated = EnemyHealthSystem.IsDefeated(e.Hp);
+                if (defeated) e.Active = false;
+                enemies[i] = e;
+                return new EnemyDamageResult(true, defeated, e.Type, e.Hp);
+            }
+            return new EnemyDamageResult(false, false, default, 0);
         }
 
-        /// <summary>Enemy move speed for <paramref name="wave"/> (gdd: ENEMY_MOVE_SPEED_BASE compounded
-        /// by ENEMY_SPEED_GROWTH_PER_WAVE every wave, starting from wave 1).</summary>
-        public static float EnemySpeed(int wave)
+        private void AdvanceSpawning(float deltaTime, List<int> waveStartEventsOut)
         {
-            return GameConfig.Enemy.MoveSpeedBase * Mathf.Pow(1f + GameConfig.Wave.EnemySpeedGrowthPerWave, wave - 1);
+            if (AllWavesSpawned) return;
+
+            // S-13: 準備フェーズへ突入した最初の Tick で1回だけウェーブ開始を通知する（WAVE 1 の初回 Tick も含む）。
+            // waveStartEventsOut が null（呼び出し側が未対応）でも既通知インデックスは進める — 呼び出し側の
+            // 対応有無に内部状態が依存しないようにするため。
+            if (inPrepPhase && currentWaveIndex != lastAnnouncedWaveIndex)
+            {
+                lastAnnouncedWaveIndex = currentWaveIndex;
+                waveStartEventsOut?.Add(currentWaveIndex + 1);
+            }
+
+            GameConfig.WaveComposition.WaveDef wave = GameConfig.WaveComposition.Waves[currentWaveIndex];
+            float intervalSec = GameConfig.Wave.SpawnIntervalBase * wave.SpawnIntervalMultiplier;
+
+            if (inPrepPhase)
+            {
+                prepTimer += deltaTime;
+                if (prepTimer < GameConfig.Wave.WavePrepSec) return;
+                inPrepPhase = false;
+                prepTimer = 0f;
+                spawnTimer = intervalSec; // 準備フェーズ終了直後に1体目を即スポーンさせる
+            }
+            else
+            {
+                spawnTimer += deltaTime;
+            }
+
+            while (spawnTimer >= intervalSec &&
+                   (marauderSpawnedInWave < wave.MarauderCount || warbeastSpawnedInWave < wave.WarbeastCount))
+            {
+                spawnTimer -= intervalSec;
+                SpawnNext(wave);
+            }
+
+            if (marauderSpawnedInWave >= wave.MarauderCount && warbeastSpawnedInWave >= wave.WarbeastCount)
+            {
+                currentWaveIndex++;
+                marauderSpawnedInWave = 0;
+                warbeastSpawnedInWave = 0;
+                inPrepPhase = true;
+                prepTimer = 0f;
+                spawnTimer = 0f;
+            }
         }
 
-        /// <summary>Enemy HP multiplier for <paramref name="wave"/> (gdd: HP成長はWave4から。
-        /// ENEMY_HP_GROWTH_PER_WAVE を (wave - ENEMY_HP_GROWTH_START_WAVE + 1) 回複利適用). Waves before
-        /// the start wave return a multiplier of 1 (baseline ENEMY_HP_BASE, no growth yet).</summary>
-        public static float EnemyHpMultiplier(int wave)
+        private void SpawnNext(GameConfig.WaveComposition.WaveDef wave)
         {
-            int growthSteps = Mathf.Max(0, wave - GameConfig.Wave.EnemyHpGrowthStartWave + 1);
-            return Mathf.Pow(1f + GameConfig.Wave.EnemyHpGrowthPerWave, growthSteps);
+            // Marauder → Warbeast の順に消化する決定論的な出現順（gdd「難易度曲線」表の構成をそのまま採用）。
+            EnemyType type;
+            if (marauderSpawnedInWave < wave.MarauderCount)
+            {
+                type = EnemyType.Marauder;
+                marauderSpawnedInWave++;
+            }
+            else
+            {
+                type = EnemyType.Warbeast;
+                warbeastSpawnedInWave++;
+            }
+
+            int hp = type == EnemyType.Marauder ? GameConfig.Marauder.Hp : GameConfig.Warbeast.Hp;
+            enemies.Add(new EnemyInstance
+            {
+                Id = nextEnemyId++,
+                Type = type,
+                DistanceTraveledM = 0f,
+                Active = true,
+                Hp = hp,
+            });
         }
 
-        /// <summary>Full derived parameter set for <paramref name="elapsedSec"/> of run time.</summary>
-        public static WaveParameters Compute(float elapsedSec)
+        private void AdvanceMovement(float deltaTime, List<EnemyGoalReachedEvent> goalEvents)
         {
-            int wave = CurrentWave(elapsedSec);
-            float hpMultiplier = EnemyHpMultiplier(wave);
-            int hp = Mathf.RoundToInt(GameConfig.Enemy.HpBase * hpMultiplier);
-            return new WaveParameters(
-                wave,
-                SpawnInterval(wave),
-                SpawnCount(wave),
-                EnemySpeed(wave),
-                hpMultiplier,
-                hp);
-        }
+            for (int i = 0; i < enemies.Count; i++)
+            {
+                EnemyInstance e = enemies[i];
+                if (!e.Active) continue;
 
-        /// <summary>Point on the ENEMY_SPAWN_RADIUS ring at <paramref name="angleRad"/> (gdd: 敵スポーン
-        /// はスポーンリング上のランダム点). Pure trig only — WaveSpawner (Components) supplies the random
-        /// angle so RNG stays out of the engine-independent Systems layer (mirrors ArenaCameraMath's
-        /// pure-trig approach for the fixed camera pose). Y is always 0 (アリーナは XZ 平面).</summary>
-        public static Vector3 SpawnPointOnRadius(float angleRad, float radius)
-        {
-            return new Vector3(Mathf.Cos(angleRad) * radius, 0f, Mathf.Sin(angleRad) * radius);
+                float speedMps = e.Type == EnemyType.Marauder
+                    ? GameConfig.Marauder.SpeedMps
+                    : GameConfig.Warbeast.SpeedMps;
+                e.DistanceTraveledM += speedMps * deltaTime;
+
+                if (e.DistanceTraveledM >= GameConfig.Wave.PathLengthM)
+                {
+                    e.DistanceTraveledM = GameConfig.Wave.PathLengthM;
+                    e.Active = false;
+                    goalEvents.Add(new EnemyGoalReachedEvent(e.Id, e.Type));
+                }
+
+                enemies[i] = e;
+            }
         }
     }
 }

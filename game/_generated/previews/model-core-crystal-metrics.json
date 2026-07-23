@@ -1,0 +1,29 @@
+{
+  "file": "model-core-crystal.glb",
+  "source_file": "model-core-crystal.glb",
+  "scale_factor_applied": 1.316796,
+  "triangle_count": 2955,
+  "vertex_count": 2604,
+  "material_count": 1,
+  "material_names": [
+    "Material_0"
+  ],
+  "bone_count": 0,
+  "non_manifold_verts": 26,
+  "bbox_authoring_m": [
+    1.3573,
+    1.359,
+    2.5
+  ],
+  "bbox_min": [
+    -0.6786,
+    -0.6795,
+    0.0
+  ],
+  "bbox_max": [
+    0.6786,
+    0.6795,
+    2.5
+  ],
+  "mesh_object_count": 1
+}

@@ -1,59 +1,59 @@
-# Conventions — Crystal Vanguard 固有コード規約（engine=unity）
+# Conventions — Crystal Bastion（仮）ゲーム固有コード規約
 
-> 正本は `.claude/docs/tech-stack-unity.md`「コード規約」（15項）と `.claude/rules/unity-code.md`。
-> ここでは**このゲーム固有の追加則のみ**を書く（tech-stack の重複は書かない）。違反は CR-CODE で CONCERNS 以上。
+正本は `.claude/docs/tech-stack-unity.md`「コード規約」節（15項目）と `rules/unity-code.md`。ここには**重複を避け、このゲーム固有の追加則のみ**を書く。tech-stack の規約（マジックナンバー禁止・delta-time・薄い Components・入力抽象化・AssetKeys・シーン構成固定・ScreenSpaceCamera・永続化 I/O 集約・batchmode 失敗の exit 昇格・InputTestFixture 等）は前提として全て適用される。
 
-## 1. 命名・名前空間
+## 1. 命名規約
 
-- ルート名前空間 `ForgeGame`。層ごとにサブ名前空間を付ける: `ForgeGame.Systems` / `ForgeGame.Systems.Meta` / `ForgeGame.Persistence` / `ForgeGame.Components` / `ForgeGame.InputLayer` / `ForgeGame.Ui` / `ForgeGame.EditorTools`。
-  - 注: 入力層は `ForgeGame.Input` にしない（`UnityEngine.Input` と紛らわしいため `ForgeGame.InputLayer`）。
-- Systems の型は「システム名＋役割」: `PlayerMovement` `DashSystem` `WaveSpawnSystem`。純粋計算は可能なら `static` クラスの純粋関数（例: `ScoreSystem`, `MetaProgression`）。状態を持つ System は `struct`/`class` で状態を明示的に受け渡す（MonoBehaviour 禁止）。
-- Components は「対象＋Controller/Driver/Agent/Rig」: `PlayerController` `WaveSpawner` `EnemyAgent` `ArenaCameraRig`。
+- **名前空間**: ルート `ForgeGame`。層ごとに `ForgeGame.Systems` / `ForgeGame.Systems.Meta` / `ForgeGame.Persistence` / `ForgeGame.Components` / `ForgeGame.Input` / `ForgeGame.Ui` / `ForgeGame.EditorTools` / テストは `ForgeGame.Tests.EditMode` / `ForgeGame.Tests.PlayMode`。
+- **System クラス**: `<機能>System`（例 `BuildSpotSystem`・`TowerCombatSystem`）。`static` クラス or 純粋インスタンスクラスとし、状態は引数と戻り値で受け渡す（内部可変状態を持つ場合もシーン API に触れない）。
+- **Component（MonoBehaviour）**: `<エンティティ><役割>`（例 `TowerView`・`EnemyView`・`CoreView`・`BuildSpotView`）。「View/Controller」でロジックでなく配線層であることを示す。
+- **UI クラス**: `<シーン/要素>Screen` または `<要素>Panel`（例 `TitleScreen`・`MenuScreen`・`ResultScreen`・`HudPanel`・`TowerSelectPanel`・`OutgamePanel`・`SettingsPanel`・`PausePanel`）。
+- **enum 値**: `design/gdd.md` の固有名詞に一致（`TowerType.BastionCannon`/`.ArcEmitter`、`EnemyType.Marauder`/`.Warbeast`）。表示名を勝手に変えない。
 
-## 2. GameConfig への集約（マジックナンバー禁止の具体則）
+## 2. GameConfig 集約の徹底（このゲーム固有）
 
-- gdd 数値表の全定数は `GameConfig` の**入れ子 static クラス**に定数名（gdd の `SNAKE_CASE` を C# の `PascalCase` に）で置く。例: `SPAWN_INTERVAL_BASE` → `GameConfig.Wave.SpawnIntervalBase`。コメントに元の定数名と単位を残す（既に scaffold 済み・追加時も踏襲）。
-- **初期値は必ず gdd 記載値**を写す（技術都合で変えない。変更が必要なら game-designer へ提案）。調整レンジは gdd 側が正本なので config には初期値のみ。
-- ウェーブ導出（スポーン間隔＝`base + decay*wave` を `min` でクランプ、敵HP成長は wave4+ 等）は `WaveSpawnSystem` の純粋関数に集約し、係数は必ず `GameConfig.Wave.*` から引く。式のリテラル直書き禁止。
+- 全数値は `GameConfig` の対応する入れ子クラス（`Core`/`Economy`/`Build`/`Wave`/`BastionCannon`/`ArcEmitter`/`Tower`/`Marauder`/`Warbeast`/`Score`/`Meta`/`Save`/`Presentation`）に**既に定義済み**。実装 story は**新しい数値リテラルを足す前に GameConfig を探す**。無ければ GameConfig に追加してから使う（story 内での直書き禁止）。
+- config の初期値は **gdd 数値表の初期値そのまま**。技術都合で変えたい場合は「提案＋根拠」を game-designer へ返す。実装で勝手に変えない（例: 「WAVE_COUNT を減らすとテストが速い」で 8→4 は禁止）。
+- 装飾専用の値（演出のボブ振幅・フラッシュ時間等）は `GameConfig.Presentation` に置く。gdd で調整レンジ不要と明記されたもののみここに入れてよい。
+- 資産パスは `GameConfig.AssetKeys`、シーン名は `GameConfig.Scenes` 経由。`"Generated/..."` や `"Game"` のような文字列直書きを Components/Ui/Systems に書かない。
 
-## 3. 単位と座標の規約
+## 3. 撃破帰属ルールの実装契約（ACH-04 の基盤・gdd 撃破の帰属ルール節）
 
-- 距離は**メートル**（1 unit = 1m）、速度は **m/s**、時間は**秒**、角度は**度**（`GameConfig.Camera.PitchDeg` 等）。混在禁止。
-- アリーナは XZ 平面（Y は上）。プレイヤー/敵の移動は `Vector3` の XZ 成分のみ（Y 固定）。移動ベクトルは合成後 `PLAYER_MOVE_SPEED` を超えないよう正規化してから速度を掛ける（斜め移動高速化バグの禁止・gdd 操作仕様）。
-- 前方軸 +Z / アップ軸 +Y（art-bible.json `scale` と一致）。モデル取込スケールは authoring 計測値基準。
+- `TowerCombatSystem` の全ダメージ適用イベントは**発生源タワー種別（`TowerType`）を必須フィールド**として持つ。省略した実装は CR-CODE 差し戻し対象。
+- 撃破帰属は **final-hit 方式**（HP を 0 以下にした最終ダメージの発生源）。貢献度按分は実装しない。
+- 同フレーム複数ヒットの決定は「シーン内タワーコンポーネントの登録順（ヒエラルキー順）」に従う決定論的順序。狙って操作可能な要素にしない。
+- `EnemyHealthSystem` は撃破時に **総撃破数**（`killCount`・種別問わず）と **AoE撃破数**（Arc Emitter 帰属のみ・単一ラン内）を**分離集計**する。AoE撃破数はラン開始/リスタートで 0 リセット。両方を `RunResult` に載せる。
 
-## 4. 入力（gdd 操作仕様の写し込み）
+## 4. メタ進行の純粋性（P-04 の実装契約）
 
-- 入力は `InputLayer/GameInput` の1箇所でコード生成（`.inputactions` 資産は編集しない）。Game 用マップ（Move/Dash）と UI 用マップ（Navigate/Adjust/Submit/Cancel/TabPrev/TabNext）を分離し、シーンに応じて `EnableGameplay`/`EnableUi` を排他的に切り替える。
-- キー割当は gdd「操作仕様」表と厳密一致: 移動=WASD/矢印、ダッシュ=Space、決定=Enter/Space、戻る/終了=Esc、タブ=Q/E、スライダー調整=A/D。**A/D をタブ切替に割り当てない**（設定タブのスライダー入力と衝突するため — gdd 決定）。
-- ダッシュ方向は hero の facing を参照しない（移動ベースの優先順位(1)(2)(3)のみ・gdd 決定）。この規約に反する facing 連動実装は不可。
+- `MetaProgression.ApplyRunResult` は**純粋 reducer**: 引数 `SaveData` を破壊せず（`Clone()` 経由）新インスタンスを返す。`Debug.*`・時刻取得・乱数・I/O を書かない。
+- 実績解放は**単調**（一度 true になったフラグを false に戻さない）: `next.achX = prev.achX || <条件>`。
+- essence・統計は**勝敗に関わらず確定加算**（P-04）。「敗北時は加算しない」実装は P-04 違反で REJECT。
+- UPG 効果は**ラン初期条件のみ**を変える（初期資金・設置/強化コスト割引・essence 獲得率）。敵側パラメータ（HP/速度/出現数）を弱化する UPG 効果を実装しない（concept 設計判断・gdd 明記）。
 
-## 5. シーン遷移と状態受け渡し
+## 5. セーブ SaveData の命名例外（このゲーム固有の明示）
 
-- 遷移は `SceneManager.LoadScene(GameConfig.Scenes.<Name>)` を使い、シーン名は必ず `GameConfig.Scenes` 定数経由（文字列直書き禁止）。
-- シーンをまたぐ状態（SaveData / 選択アップグレードLv / 直近 RunResult）は `DontDestroyOnLoad` の単一セッションホルダ（`Components/`）で保持。ホルダはデータ保持と Persistence 委譲のみ。Game/Menu/Result は起動時にホルダから読む。
-- Game 初期化時、アップグレードLv→`effectiveAttackDamage`/`effectiveMoveSpeed`/`effectiveMaxHp` は `MetaProgression.Effective*` で算出する（式の再実装禁止）。
+- `SaveData.save_version` の**このフィールドだけ** C# の PascalCase/camelCase を外れて snake_case とする。理由: contract §6 が JSON 先頭キーを `save_version` と規定し、`JsonUtility` はフィールド名をキーへそのまま写す（remap 不可）ため。他フィールドは gdd「セーブデータ方針」表の名称（`highScore`・`bestClearTimeSec` 等）に一致させる。
+- `SaveData` は `[System.Serializable]`・フラット・全プリミティブ（int/float/bool）を維持する。`Dictionary`・ネスト・配列を足さない（`JsonUtility` 制約）。フィールド追加時は `SaveData.CreateDefault()`・`MetaSchema.Validate()`・migration を同時に更新する。
+- `recovered` は SaveData に永続化しない（`LoadResult` のロード時フラグ）。
 
-## 6. 永続化（破損プロトコルの徹底）
+## 6. Game シーンの一時停止（gdd 操作仕様）
 
-- セーブ書込は Result 到達時に**1回**（`ApplyRunResult`→`Save`）、Menu 購入成功時、設定スライダー変更時のみ。毎フレーム保存禁止。Result→リスタート連打で二重保存しないため、メモリ上の SaveData を使い回す。
-- 破損時は必ず3点セット（`.bak` 退避 → `Debug.LogError("[SaveCorruption] reason=... backup=...")` 1回 → 既定値＋`recovered` フラグ伝播）。catch して既定値を返すだけ / フィールド単位で既定埋め は禁止（`FileSaveAdapter`/`MetaSchema` の既存実装を経由すること）。
-- SaveData のフィールド名は gdd「セーブデータ方針」表と完全一致（`save_version` は先頭・その他 camelCase）。JsonUtility 互換のためフラットなプレーン型のみ（Dictionary/ネスト非対応）。
+- Esc の一時停止は **Game シーンでのみ**有効。`Time.timeScale = 0` で全停止（タワー攻撃・敵移動・タイマー）。Systems 側は delta-time 駆動なので `timeScale=0` で自動停止する（フレーム固定加算を書かない前提が効く）。
+- Title/Menu/Result 中の Esc は無反応。
 
-## 7. 表現・フィードバックの制約（アセット予算由来）
+## 7. UI Canvas（tech-stack 規約14 の徹底）
 
-- hero アニメは idle/run/attack の3クリップ（ANM-01〜03）のみ。**死亡・被弾専用クリップを追加しない**。死亡はコード合成演出（マテリアルフェード＋回転チルト＋画面ディゾルブ）、被弾はマテリアルフラッシュ＋既存アニメ継続（gdd 決定）。
-- 自動攻撃は瞬間ヒット＋VFX（弾道オブジェクトを持たない）。attack アニメ長が `AUTO_ATTACK_INTERVAL` を超える場合は再生速度でスケール（gdd 決定）。
-- ウェーブ切替の演出は SFX（SFX-05）1回＋HUD数値の 0.3s パルス（`GameConfig.Fx.WavePulse*`）のみ。ゲーム一時停止・専用VFX/モデル追加禁止。
-- 敵ヘヴィ変種（MDL-03）は MDL-02 プレハブ複製＋マテリアル差し替えのみ（新規ジオメトリ生成禁止・gdd/art-bible 決定）。実装余力が無ければ省略可。
+- 全 UI Canvas は `UiCanvasHelper.ConfigureScreenSpaceCamera(canvas, mainCamera)` で構成する（`RenderMode.ScreenSpaceCamera` + `worldCamera`）。`ScreenSpaceOverlay` 禁止（QA の RenderTexture 撮影に写らない）。
+- 各 UI シーンの PlayMode テストに `Assert.AreEqual(RenderMode.ScreenSpaceCamera, canvas.renderMode)` のスモークチェックを置く。
 
-## 8. UI（Canvas/描画の規約）
+## 8. テスト配置
 
-- 全 UI Canvas は `RenderMode.ScreenSpaceCamera` ＋ `worldCamera` にメインカメラを割当（tech-stack-unity 規約14。QA の RenderTexture 撮影に写すため）。PlayMode テストに `renderMode` のスモークチェックを置く。
-- Menu の4タブ（はじめる/統計/アップグレード/設定）とフォーカス挙動は gdd「Menu 画面構成」と一致。フォーカスは項目リスト先頭/末尾で止まる（ラップしない）。統計タブは表示専用。
-- クリスタル残高/コスト表示には IMG-03 アイコンを使用。色・発光は art-bible.json のパレット/輝度差方針に従う。
+- **EditMode**（`Assets/Tests/EditMode/`）: Systems/Meta の純粋ロジック（設置判定・戦闘解決・スコア・reducer・スキーマ検証）を Unity 起動なしで検証。System を1つ足したらそのテストをここに追加する。
+- **PlayMode**（`Assets/Tests/PlayMode/`）: コアループ1周・必須シーン遷移（Title→Menu→Game→Result→Menu）・永続化（保存→再ロード→一致 / 破損→`.bak`+`[SaveCorruption]`）・視覚サニティ。入力擬似発行は `InputTestFixture` 継承必須（batchmode でのフォーカス握り潰し回避）。
+- 破損ログの検知は `LogAssert.Expect(LogType.Error, new Regex("^\\[SaveCorruption\\]"))` のホワイトリスト方式。
 
-## 9. テスト規約（このゲームの検証観点）
+## 9. Editor スクリプトの exit 規律（tech-stack 規約11 の徹底）
 
-- 新規 System（pure C#）を追加したら EditMode テストを同時に足す（回避無敵窓・スコア式・ウェーブ導出・アップグレード補正・セーブ検証はロジック中核なので必須）。
-- PlayMode テストは `InputTestFixture` 継承で入力を擬似発行（batchmode の Game View フォーカス問題回避・rule 8）。永続化テストは `Application.temporaryCachePath` の一時ファイルを使い `[TearDown]` で削除（`persistentDataPath` 直使用禁止）。
+- `Editor/` の `-executeMethod` 入口（`ForgeBuild.BuildMac`・`ForgeScaffold.GenerateScenes`・将来の資産取込）は、回復不能エラーを `Debug.LogError` + `return` で済ませず、`EditorApplication.Exit(1)` か例外 throw で**非0終了**させる。壊れた状態でシーン/アセットを保存しない。
+- `-executeMethod` は完全修飾名で呼ぶ（`ForgeGame.EditorTools.ForgeBuild.BuildMac`）。

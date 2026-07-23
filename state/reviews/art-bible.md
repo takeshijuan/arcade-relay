@@ -1,76 +1,70 @@
+# art-bible レビュー履歴
+
 ## key image ランク付け
+- 日時: 2026-07-21T07:22:17Z
+- 対象: `design/refs/key-image-candidate-1.png` 〜 `key-image-candidate-4.png`（全て1024x576）
+- 観点: `.claude/docs/gates.md` AR-BIBLE 観点2（ゲーム内可読性）・観点3（生成再現性）を流用 + `design/concept.md` ピラー P-01〜P-04 との整合
+- 補助的機械計測（python3 Pillow。目視のみで判定しないための裏付け値。値自体は最終判断根拠ではなく傍証）:
 
-- 日時: 2026-07-10T04:54:56Z
-- 対象: `design/refs/key-image-candidate-1.png` 〜 `-4.png`（各1024x768px）。`design/art-bible.md` / `design/art-bible.json` は本レビュー時点で未作成のため、これは正式な `AR-BIBLE` ゲート判定ではなく、Checkpoint A に向けた key image 選定のための事前検討である。art-bible.md/json 確定後に改めて `AR-BIBLE` ゲート判定を別途実施すること。
-- 観点: `.claude/docs/gates.md` AR-BIBLE 観点2（ゲーム内可読性）・観点3（生成再現性）を流用 + `design/concept.md` ピラー P-01〜P-04 との整合。参照した明文規定: `design/gdd.md`「アート方向」節 — 「スタイライズド・トゥーン。明るいファンタジー基調にネオン風のアクセント（クリスタルの発光色）。フラット寄りの塗りでシルエット可読性を最優先（hero=縦長・敵=低く横に広い・クリスタル=幾何学形状）」
-- 機械検査: Python3 + Pillow で hero領域／敵領域／背景領域の平均RGBを抽出し、ユークリッド距離で色分離度を計測（`/tmp` 相当のスクラッチ実行、対象ファイル・design/ 配下は非汚染）
-
-### 計測結果（サンプルボックス平均RGB色距離。大きいほど色分離が明瞭 = ゲーム内可読性が高い）
-
-| candidate | hero-敵(近傍側) | hero-敵(奥側) | 敵-背景(近傍側/奥側) | 全体輝度標準偏差 |
+| candidate | brightness(0-1, 高いほど明るい) | edge_score(隣接画素差分平均, 高いほど背景が煩雑) | contrast_std(グレースケール標準偏差) | quantize後上位色 |
 |---|---|---|---|---|
-| 1 | 169.4 | 65.9 | 72.4 / 220.0 | 73.9 |
-| 2 | 31.6 | 20.7 | 85.1 / 89.6 | 64.2 |
-| 3 | 104.7 | 164.0* | 61.4 / 3.0* | 47.3 |
-| 4 | 56.8 | 69.4 | 67.4 / 46.5 | 49.3 |
+| 1 | 0.63 | 1.71 | 51.63 | `#BFBEBA`系グレー主体（無地スタジオ背景） |
+| 2 | 0.23 | 2.73（4候補中最高＝最も背景が煩雑） | 36.65 | `#202118`等の暗色主体（森・夕景） |
+| 3 | 0.45 | 1.82 | 31.94 | `#7E8652`等オリーブ系背景色主体 |
+| 4 | 0.56 | 1.67 | 29.28（4候補中最低。ただしDoFボケによる平滑化の影響が大きく単純比較不可） | `#55584A`〜`#A5AC84`系（ぼかし背景の緑〜土色） |
 
-*candidate-3 の「奥側」ボックスは背景の隙間をサンプリングした誤差を含む（目視では敵と背景の分離自体は十分にある）。ただし candidate-3 は hero・敵が共にグレースケール系統の同系色であり、色相ではなく明度・形状差のみに可読性を依存している点は構造的な弱点として後述する。
+### 順位
 
-### 順位と根拠
+1. **candidate-1**
+2. **candidate-4**
+3. **candidate-3**
+4. **candidate-2**
 
-**1位: candidate-1**
-- gdd.md「アート方向」の明示指定（スタイライズド・トゥーン／明るいファンタジー基調／ネオン風のアクセント／フラット寄りの塗り）に4候補中もっとも忠実。太いアウトライン＋フラットな塗り分けのセルシェード調で、緑のアリーナ・青白のhero・紫の敵・シアン/ピンクのクリスタルが4系統の異なる色相で構成される。観点2（可読性）の計測でも hero-敵(近傍)169.4／敵-背景(上)220.0 と全候補中最高値。
-- 敵は低く横に広い四足シルエット（gdd「敵=低く横に広い」に一致。密集陣形はP-03「群れ密度の圧力」を視覚的に裏付ける）。heroは縦長の直立シルエット（gdd「hero=縦長」に一致）。
-- 太いアウトライン＋フラット色面のトゥーン様式はimage-to-3D／トゥーンシェーダのパイプラインで数十資産を安定再現しやすく、観点3（生成再現性）も良好。
-- **懸念（要対応）**: アリーナ内に人間サイズの「倒れたキャラクター」が4体（青/ピンク衣装、胸に番号状のエンブレム）描かれている。design/concept.md のスコープは「ヒーロー1体」「敵はスウォーマー（四足獣）1〜2種のみ」であり、人間の味方/対戦キャラは存在しない設計。style_block・character_reference を art-bible.json へ落とす際、この人間キャラクター群やスポーツユニフォーム調のモチーフを標準スタイルとして誤って抽出しないよう、art-director にクロップ範囲の限定（hero単体＋敵＋クリスタルの配色・シェーディング様式のみ抽出）を明示指示する必要がある。
+### 根拠
 
-**2位: candidate-4**
-- P-03（群れ密度の圧力）をもっとも強く可視化（画面のほぼ全域を埋める密集した敵の壁）。フラット寄りの低ポリシェーディングでgdd「フラット寄りの塗り」要件にはcandidate-1に次いで整合。
-- hero（オレンジ）・敵（暗赤系）・アリーナ床（薄紫）・クリスタル（ネオングリーン）で色相は分離されている。観点2の可読性は実用レベル（サンプルボックス起因で計測値はやや低めに出たが、目視ではオレンジheroと暗赤の敵群の分離は明瞭）。
-- **懸念**: 全体トーンが紫〜暗赤主体で沈んでおり、gdd指定の「明るいファンタジー基調」との整合がcandidate-1より弱い（SF/サイバー寄りの印象）。heroの意匠（オレンジの装甲スーツ）も"ファンタジー"というよりは近未来的で、brief/gddのファンタジートーンからやや外れる。art-bible.json化の際はこの点をart-directorと再確認すべき。
+**1位 candidate-1（採用推奨）**
+- 無地グレースタジオ背景に、タワーA（尖塔・格子脚＝単体高火力）／タワーB（丸屋根ドーム＝範囲低火力）／クリスタルコア／敵集団（紫+赤の同一系統モンスター）が同一ライティングで並置されたモデルシート的構図。前景と背景の分離が4候補中最大（contrast_std=51.63）で、P-02（二種の役割分担）が要求する「タワーA/Bのシルエットが常時区別できる」ことを最も明瞭に立証している。
+- 背景が無地のため、design/art-bible.json 導出時の `reference_images`/`character_reference` クロップ抽出やパレット抽出が背景色に汚染されず機械的に切り出しやすい＝観点3（生成再現性）に直結する実務上の優位。style_block も「フラットシェード低ポリ・3灯スタジオ照明・無地地面」という単純な言語で確定でき、30資産に反復前置しても破綻しにくい。
+- P-01（一手必中の配置）が要求する「置いた結果が即座に読める」判断、P-03（溶ける実感）が要求する被弾/撃破エフェクトの視認性も、最大コントラストの背景でこそ検証しやすい。
 
-**3位: candidate-3**
-- 低ポリ・フェイセット調のジオメトリックスタイル自体は3Dパイプラインと親和性が高いが、シェーディングがグラデーション主体でgdd指定の「フラット寄りの塗り」からは外れる。
-- **観点2の構造的弱点**: hero（白灰）と敵（灰）が共にグレースケール系統の同系色で、色相による瞬時識別ができず、輝度・形状差のみに依存する。固定俯瞰視点で敵が密集した際、同系色の集団は個体の輪郭が溶け合い判別しづらくなるリスクが高く、P-03（群れの密度・位置を視認できることが前提のピラー）と相性が悪い。
-- 全体トーンも暗いネイビー基調で、gdd指定の「明るいファンタジー基調」との整合が4候補中もっとも弱い。
+**2位 candidate-4**
+- タワーA/B・クリスタル・敵（紫の角付き二足モンスター）の意匠は candidate-1 と同系統で一貫しており、候補間の資産デザイン一貫性を裏付ける良材料。芝生・岩・木という実際のゲーム背景に近い文脈を示せる点は candidate-1 に無い利点。
+- 一方でソフトなトゥーンシェーディング＋被写界深度ボケにより、輪郭のエッジが柔らかく、即座のシルエット判別という点では candidate-1 に劣る（本計測のcontrast_std/edge_scoreはボケの影響を受けるため単純比較はできないが、目視でも輪郭の切れは candidate-1 に及ばない）。背景に木・岩・草という環境要素が追加される分、30資産全てで同一の環境ディテール密度・DoF設定を再現し続けるコストも candidate-1 より高い。
 
-**4位（最下位）: candidate-2**
-- 観点2（可読性）の計測値が全指標で最低（hero-敵近傍31.6／hero-敵奥20.7）。hero・敵・背景がいずれも茶〜オレンジの近似色でまとまり、パレット計測上も視覚的にも三者の分離が4候補中もっとも弱い。
-- ペインタリー調の柔らかいシェーディング・毛並み等のディテールは、観点3（生成再現性）の観点でもっとも再現コストが高く、数十資産をブレなく短時間で安定生成する用途に不向き。
-- クリスタルも白〜クリーム色でネオン感が無く、gdd指定の「ネオン風のアクセント（クリスタルの発光色）」を満たさない。敵の数も他候補より少なく密集感が弱いためP-03の説得力ももっとも低い。
-- gdd「アート方向」への適合度・ゲーム内可読性・生成再現性のいずれでも4候補中最下位。
+**3位 candidate-3**
+- タワーA/Bは判別可能。敵表現は「群れで来る赤い牙持ち四足獣（数体）」対「単体で大きい紫の棘付き四足獣」という構図で、gdd.md の Marauder（速い・低HP・大量出現 x6〜x14）対 Warbeast（遅い・高HP・少数出現 x2〜x8）という役割分担を示唆する点は他候補に無い長所として評価した。
+- ただし、この敵デザイン（有機的なディテール・棘・牙の作り込み）は、同一フレーム内のタワー/クリスタルが持つフラットな低ポリ幾何学スタイルと質感の言語が食い違っており、単一の style_block に統合するのが他候補より難しい（観点3の生成再現性の減点材料）。背景はオリーブ単色でクラッター自体は少ないが、前景オブジェクトとのコントラストが4候補中最も弱く（contrast_std=31.94、候補1の約6割）、即時判別という点でも1位・2位に劣る。
 
-### 推奨アクション（art-director 宛）
-1. candidate-1 を key image 本命としてCheckpoint Aへ提示することを推奨するが、上記「倒れた人間キャラクター群」を除外/再クロップした上でart-bible.json化すること（style_block・character_referenceが人間キャラのスポーツユニフォーム調モチーフで汚染されないように）。
-2. candidate-4 は「明るいファンタジー基調」要件を満たす代替修正（暗赤・紫トーンを明るめに調整、hero意匠をよりファンタジー寄りに）ができれば次点候補として保持を推奨。
-3. candidate-2・candidate-3 は主要な観点（可読性 and/or アート方向整合）で明確に劣るため、そのままの採用は非推奨。
+**4位 candidate-2（不採用推奨）**
+- 4候補中最も暗く（brightness=0.23）最も背景が煩雑（edge_score=2.73、最大）。密な森・岩・薄暮ライティングは、本ゲームが要求する「固定俯瞰カメラでの瞬間判断」（P-01/P-03）に正面から反する仕様で、観点2（ゲーム内可読性）を明確に満たさない。
+- 決定的な問題として、敵として描かれているのが他3候補の角付きモンスター群ではなく人型の兵士ミニチュアであり、design/concept.md・gdd.md が定義する「敵2種（Marauder/Warbeast）」のモンスター路線と直接矛盾する。同一生成バッチ内での様式breakであり、この候補を採用すると敵デザインの参照元が他候補と非互換になる。
+- 森林環境の個々の葉・岩肌・大気遠近感の再現は4候補中もっとも生成コストが高く、30資産にわたる一貫再現の難度も最大（観点3で最下位）。
+
+### 総括
+candidate-1 を key image として採用し、design/art-bible.json の `style_block`/`palette`/`reference_images` の抽出元とすることを推奨する。candidate-3 の「群れ vs 単体」の敵ボリューム差による役割示唆は、art-bible 確定後の敵2種（Marauder/Warbeast）個別資産プロンプトのサイズ・頭数演出に反映する形で活かす余地がある（key image 自体の差し替え理由にはしない）。
 
 ## AR-BIBLE iteration 1 — CONCERNS
-
-- 日時: 2026-07-10T05:07:14Z
-- 対象: `design/art-bible.md` + `design/art-bible.json` + key image（`design/refs/key-image-candidate-1.png`、crop-01/02/03）。engine=unity（`state/engine.txt`）につき「3D スタイル方針」節を含めて審査。
-- 実施した機械照合: (1) `design/art-bible.json` の `palette` 13色を Python (colorsys) で RGB距離・HSV色相を全ロールペア総当たり計算 (2) `reference_images`/`character_reference`/key image の実ファイル存在確認（`ls design/refs/`） (3) `grep` によるart-bible.md引用元（gdd.md「アート方向」節）の実在確認 (4) `design/art-bible.json` の `palette`/`resolution`/`scale`/`polygon_budget_tri` と `design/art-bible.md` 本文・`.claude/docs/tech-stack-unity.md`「資産の取り扱い」節・`assets-config.md` 3D既定値との突合
+- 日時: 2026-07-21T16:40:00Z
+- 対象: `design/art-bible.md` + `design/art-bible.json`（+ key image `design/refs/key-image-candidate-1.png` と4クロップ）
+- 実施した機械検査:
+  - `design/art-bible.json` の `palette`（12色）を key image からPillowでリサイズ・色抽出し最近傍色距離を計測。灰色スタジオ背景を除いた被写体色12種のうち10種は距離0（完全一致）、`enemy_primary`(#973FA5)は距離1.4、`enemy_warning`(#C71A23)は距離3.2、`ui_panel`/`ui_text`はレンダリング内に直接現れないUI専用色のため距離9.8/27.2（許容 — MD側も「タワーteal系の最暗トーンを流用」等、画像内の直接ピクセルではなく既存パレットからの流用と明記済み）。→ 観点1（機械可読性）の palette は key image からの実測抽出であることを裏付け。
+  - `tech-stack-unity.md` 102行目「Unity は 1 unit = 1m」と art-bible.md「スケール規約: 1 unit = 1m（Unity既定）」の一致を確認。
+  - 3Dスタイル方針の bbox 初期値/レンジ表（Bastion Cannon 3.2–3.8m / Arc Emitter 2.0–2.5m / Marauder 0.7–1.0m / Warbeast 1.3–1.7m）とシルエット方針節の同数値が一致することを確認。Warbeast/Marauder比 1.5/0.85=1.76 ≈ 「約1.7倍」の記述と整合。
+  - `design/refs/crop-04-enemy-pack.png` を400%拡大し目視。
 - 指摘要約（優先度順）:
-  1. **[中] 敵主色とクリスタル・マゼンタの色相分離が不十分（P-03の群れ密集時にクリスタルと敵の混同リスク）** — 実測: `enemy_primary`(#8B12A5, hue=289.4°, val=0.65) と `crystal_magenta`(#D33FD4, hue=299.6°, val=0.83) の色相差はわずか10.2°、RGB距離は97.0のみ。art-bible.md「シルエット方針」は「敵は単一色相（紫）でまとまり hero（青）・クリスタル（シアン/マゼンタ）と混同しない配色を維持する」と明言するが、この2色は同一パレット中で自ら基準として使う分離値（key image計測: hero-敵169.4／敵-背景220.0）に遠く及ばない近似色相であり、P-03（最大40体同時出現・密集）でクリスタルが敵群の中に点在する場面での識別根拠が配色だけでは崩れる。対応案: (a) `crystal_magenta` の色相を敵主色から離す方向（例: 320〜340°付近のピンク〜赤紫）へ再指定するか、(b) 識別が配色ではなくエミッシブ発光輝度・Bloom（クリスタルのみ val=0.83 かつ発光ハロー付き）に依存する設計である旨を art-bible.md「シルエット方針」に明記し直す。
-  2. **[低] 引用元の誤り: 「gdd.md「アート方向」節」は実在しない** — art-bible.md 9-16行目（Key Image節）および `state/reviews/art-bible.md` 事前検討の双方が「gdd.md「アート方向」節」（スタイライズド・トゥーン／明るいファンタジー基調／ネオン風アクセント／フラット寄りの塗り／hero=縦長・敵=低く横に広い・クリスタル=幾何学形状）を引用しているが、`grep -n "アート方向" design/gdd.md` では該当節は存在せず（33-34行目に語句が2回登場するのみで、いずれも brief 由来の言及）、該当テキストの実在箇所は `design/brief.md`「アート方向」節（56-59行目）である。art-bible.md の引用元表記を `brief.md` に修正すること（内容自体は正確に転記されており実害は小さいが、下流のトレーサビリティを壊す）。
-  3. **[情報/低] `style_codes` の実Ideogramコードは未確定のプレースホルダのまま** — `style_codes` 配列の3件目が `"pending:ideogram_style_code_capture_on_first_generation"` であり、実際に再現性を担保するIdeogram発行のstyle codeはまだ捕捉されていない。プロセス自体は art-bible.md 86行目で文書化されており本judgmentをブロックする理由にはしないが、AR-ASSET初回バッチレビュー時に実コードがpinされ `pending:` が解消されているか必ず確認すること。
-- 検証済みで問題なしと判断した項目: palette 13色とjson配列の1:1対応（順序含め完全一致）／`reference_images`・`character_reference`・key image の実ファイル存在（`design/refs/` に4候補+crop3枚とも存在）／`resolution`（concept_art_px 1024・ui_sprite_px 512・texture_px 2048・tile_px null）と art-bible.md 本文の一致／「3D スタイル方針」節がgates.md観点4の4要素（ポリゴン予算・テクスチャ/PBR・リグ方針・スケール規約）を full に備え、`scale.engine_unit_to_meter=1.0`・`up_axis=+Y`・`hero_height_range_m=[1.6,2.0]` が tech-stack-unity.md「資産の取り扱い」節・assets-config.md既定と矛盾なし／polygon_budget_tri（hero 50000, enemy 20000, prop 10000, environment 100000）がassets-config.md既定内かつenemy枠を絞った理由（`MAX_CONCURRENT_ENEMIES=40`の実行時負荷）が明記済み／key image に混入していた人間キャラクターモチーフをstyle_block本文で明示除外し、reference_images/character_referenceも汚染の無い再クロップのみを使用（既知欠陥への対応が具体的）／design/assets.md は本ゲート時点で未作成（パイプライン順序上、art-bible確定後に起票される想定のため技術整合の一部検証は次工程で実施）
-- 対応:
-  1. **[中] 敵-クリスタル色相分離 → 対応済み（両方の対応案を実施）**。(a) `design/art-bible.json` `palette[9]`（crystal_magenta）を `#D33FD4`（hue≈299.6°）から `#E62284`（hue≈330.0°, val≈0.90, sat≈0.85）へ再指定し、`enemy_primary` `#8B12A5`（hue≈289.4°）との色相差を10.2°→40.6°に拡大（colorsys実測で確認）。`design/art-bible.md` の「パレット」表・`design/art-bible.json` `notes.crystal_magenta_revision` に根拠を追記。(b) 色相のみに識別を依存させない設計として `design/art-bible.md`「シルエット方針」節に新規段落を追加し、クリスタルは常時エミッシブ発光（val≈0.90+Bloomハロー）で敵の非発光マット面（val≈0.65）と輝度差で区別できること、加えて形状（小型ファセット vs 四足シルエット）・スケール・動き（自転+浮遊 vs 接近移動）でも識別軸が重複しないことを明記した。
-  2. **[低] 引用元誤り（gdd.md「アート方向」節は非実在）→ 対応済み**。`design/art-bible.md` の該当4箇所（Key Image節の承認理由・差し替え候補表・シルエット方針「形での区別ルール」・3Dスタイル方針「テクスチャ解像度とPBR方針」）の引用元表記を `gdd.md「アート方向」節` から `brief.md「アート方向」節`（brief.md 56-59行目、実在確認済み）に修正した。`grep -n "gdd.*アート方向\|アート方向.*gdd" design/art-bible.md` で残存参照が無いことを確認済み。内容（スタイライズド・トゥーン等の記述内容）自体は brief.md の実テキストと一致しており変更していない。`state/reviews/art-bible.md` 内の事前検討セクション（本ファイル冒頭の「key image ランク付け」）にも同種の誤記があるが、これは art-reviewer 自身の過去出力でありレビュー履歴の改ざん防止のため revise 対象外として原文のまま保持する（今後の参照はart-bible.md側の正しい引用元表記を正本とする）。
-  3. **[情報/低] `style_codes` の実Ideogramコード未確定 → 見送り（意図的）**。指摘の通りブロッキング事由ではないと reviewer 自身が明記しており、`pending:ideogram_style_code_capture_on_first_generation` は「初回生成バッチでstyle codeを捕捉してpinする」というプロセスをart-bible.md 86行目で既に文書化済み。プレースホルダのまま値を先取りで確定させると実際のIdeogram応答と食い違うリスクがあるため、現時点では変更せず、AR-ASSET初回バッチレビュー時に `pending:` が実コードへ解消されているかの確認を art-director/art-reviewer 双方の申し送り事項として維持する。
+  1. [P1] `character_reference`（`design/refs/crop-04-enemy-pack.png`）が art-bible.md 自身の「シルエット方針」と矛盾する。同節は Marauder=小型**二足**シルエット（体高0.7–1.0m、脚が細く頭部が大きい）／Warbeast=大型**四足**シルエット（体高1.3–1.7m、Marauder比約1.7倍、胴が水平に長い）とし「二足 vs 四足という骨格そのものの違いにより、動いていなくても即座に種別判別できる」ことを必須要件としている。しかし400%拡大目視の結果、crop-04 に写る3体は**全て四足接地（オールフォース）姿勢・ほぼ同一の身体サイズ**で、色のみ（紫1体+赤系2体）が異なる同系統の意匠であり、二足のMarauder形状を1体も示していない（本ファイル冒頭「key image ランク付け」自体が candidate-1 の敵を「同一系統モンスター」、不採用の candidate-4 の敵を「紫の角付き**二足**モンスター」と記述しており、選定された candidate-1 側に二足個体が無いことは当時の記録からも裏付けられる）。`character_reference` は art-bible.md「機械可読スタイルロック」節で明示的に「2種の敵資産生成プロンプトはこの1枚を共通参照として使う」と定義されているため、このままではMDL-03（Marauder）生成時に参照画の四足姿勢へ引きずられ、シルエット方針が求める二足シルエットを実現できないリスクが高い（観点2: ゲーム内可読性、観点3: 生成再現性の双方に抵触）。
+     再生成指示（文書修正で対応可・画像再生成必須ではない）: art-bible.md の `character_reference` 説明に一文追加し、「本クロップは色・素材・表面処理（スタイル言語）のみを継承する参照とし、骨格・ポーズ（二足/四足・寸法比）はシルエット方針節の数値仕様を優先すること」を明記する。あわせて Marauder（MDL-03）のコンセプト画生成プロンプトには二足シルエットを明示的に指定し、character_reference の四足ポーズをそのまま模倣しないよう注記すること。
+- 対応: 対応済み。`design/art-bible.md` の「機械可読スタイルロック」表 `character_reference` 行に注記を追加し、本クロップから継承してよいのは色・素材・表面処理（スタイル言語）のみであり、骨格・ポーズ（二足/四足の別・寸法比）は「シルエット方針」節の数値仕様（Marauder=小型二足シルエット・Warbeast=大型四足シルエット、体高比約1.7倍）を必ず優先する旨を明記した。あわせて「3D スタイル方針」節の「コンセプト画プロトコル」に例外規定を追加し、MDL-03 Marauder のコンセプト画生成プロンプトは crop-04 の四足ポーズをそのまま継承せず二足シルエット仕様を明示指定すること、`design/assets.md` の MDL-03 プロンプト起草時にこの一文をそのまま転記することを指示した。指摘は「文書修正で対応可（画像再生成必須ではない）」との判断だったため、`design/art-bible.json` の `character_reference`（`design/refs/crop-04-enemy-pack.png`）自体は変更していない（key image・クロップの再生成は行っていない）。
 
 ## AR-BIBLE iteration 2 — APPROVE
-
-- 日時: 2026-07-10T05:13:32Z
-- 対象: `design/art-bible.md` + `design/art-bible.json` + key image（`design/refs/key-image-candidate-1.png` + crop-01/02/03。engine=unity のため「3D スタイル方針」節を含めて審査）
-- 実施した機械照合:
-  1. `design/refs/` の実ファイル存在確認（`ls`）— key-image-candidate-1〜4.png・crop-01-hero.png・crop-02-scene.png・crop-03-enemy.png すべて実在
-  2. `design/art-bible.json` の JSON構文検証（`python3 json.load`）— 正常パース、キー9件（style_block/palette/style_codes/reference_images/character_reference/resolution/scale/polygon_budget_tri/notes）、`palette` 13件全て `#RRGGBB` 形式で妥当
-  3. iteration 1 指摘1（敵主色とクリスタル・マゼンタの色相近接）の修正実測再検証（Python colorsys で全13色の RGB距離・HSV色相・彩度・明度を再計算）— `enemy_primary`(#8B12A5, hue=289.4°) と `crystal_magenta`(#E62284, hue=330.0°) の色相差は実測40.61°、RGB距離98.1であり、art-bible.json `notes.crystal_magenta_revision` の記載値（約40.6°）と一致。対応済みと確認
-  4. iteration 1 指摘2（`gdd.md「アート方向」節`という非実在引用）の修正確認（`grep -n "アート方向" design/gdd.md` / `design/brief.md` / `design/art-bible.md`）— `design/art-bible.md` 内の該当4箇所（5, 12, 22, 49, 74行目）は全て `brief.md「アート方向」節`表記に修正済みで、`gdd.md`側にはそもそも「アート方向」節が存在しない（33-34行目の地の文中の語句のみ）ことを再確認。誤引用の残存なし
-  5. `resolution`（concept_art_px 1024 / ui_sprite_px 512 / texture_px 2048 / tile_px null）・`scale`（units meters, engine_unit_to_meter 1.0, up +Y, forward +Z, hero_height_m 1.8 [1.6–2.0], swarmer 1.0m/1.4m）・`polygon_budget_tri`（hero 50000 / enemy 20000 / prop 10000 / environment 100000）を art-bible.md 本文・`.claude/docs/tech-stack-unity.md`「資産の取り扱い」節（ヒト型 1.6–2.0m・1 unit = 1m）・`assets-config.md` 3D既定（hero ≤50k/prop ≤10k/環境 ≤100k）と突合し矛盾なし。enemy=20000（既定の character 予算より意図的に絞った値）は `MAX_CONCURRENT_ENEMIES=40` の実行時負荷を理由に art-bible.md 本文で明記済み
-  6. `state/asset-routing.json` の `routes.model_character`（`meshy:direct-image-to-3d+rigging`）と art-bible.md「3D スタイル方針」節のリグ方針記述（Meshy image-to-3D→rigging/multi-animation, humanoid/quadruped 使い分け）の整合を確認
-- 追加検証（新規・iteration 1 では未計測）: 敵ヘヴィ変種差し色 `enemy_heavy_accent`(#6B1030, hue=338.9°, val=0.42) と `crystal_magenta`(#E62284, hue=330.0°, val=0.90) の色相差を計測したところ実測8.9°と近接している。ただし (a) RGB距離は150.0で iteration 1 で問題視した旧配色（enemy_primary-crystal_magenta間 距離98.1）より離れている、(b) 明度差は0.48（enemy_primary-crystal間の0.25より大）でクリスタルのエミッシブ発光（val≈0.90+Bloom）とヘヴィ敵の非発光マット面（val≈0.42）の輝度分離は主色enemy_primaryとの分離より明瞭、(c) art-bible.md「シルエット方針」節の識別ロジック（「色相分離はこれら複数の識別軸の一つであり、単独の生命線ではない」）は「敵」を主色・差し色問わず総称して記述しており、形状・スケール・動きによる分離もヘヴィ変種に等しく適用される。ヘヴィ変種は任意採用かつ出現はWave3以降・混入率15%と発生頻度も低い。以上からブロッキング事由とは判断せず、次回 AR-ASSET（実アセット生成時）でヘヴィ変種の見た目確定時に再計測することを申し送り事項とする（本ゲートの findings には計上しない）
-- 判定: iteration 1 の指摘3件（[中]敵-クリスタル色相分離、[低]引用元誤り、[情報/低]style_codes pending）はいずれも実測・grep で対応確認済み。gates.md AR-BIBLE の4観点（機械可読性/ゲーム内可読性/生成再現性/技術整合）を全て満たす。APPROVE。
-- 対応: —（reviewer 判定のため対応欄なし）
+- 日時: 2026-07-21T17:55:00Z
+- 対象: `design/art-bible.md` + `design/art-bible.json`（+ key image `design/refs/key-image-candidate-1.png`、4クロップ）。関連コンテキスト: `design/concept.md`（P-01〜P-04）、`design/gdd.md`、`state/asset-routing.json`
+- 実施した機械検査:
+  - iteration 1 の P1 指摘（`character_reference` の四足ポーズと「シルエット方針」の二足仕様の矛盾）の対応箇所2点（117行目付近「機械可読スタイルロック」表 `character_reference` 行／97行目付近「3D スタイル方針」節「コンセプト画プロトコル」例外規定）をテキスト照合し、指示どおりの注記（色・素材・表面処理のみ継承／骨格・ポーズはシルエット方針の数値仕様優先／MDL-03プロンプトへの明示指定）が実際に追記されていることを確認。`design/refs/crop-04-enemy-pack.png` を再度目視（400%相当）し、3体とも四足接地姿勢であることを再確認した上で、注記が正しくこのリスクをカバーしていることを検証。
+  - `design/art-bible.json` の `palette`（12色・配列順）と `design/art-bible.md` パレット表（12行・上から順）を突合し完全一致を確認。`resolution.sprite=1024`/`resolution.tile=512` も本文の「解像度・タイルサイズ」節の記載と一致を確認。
+  - Python3 Pillow で key image 全体（1024x576）の低解像度量子化トップ色、および `crop-01〜04` 各クロップの量子化トップ色を独自抽出し declared palette と近傍色距離を再計測。地形基調 `#9DC03A`（クロップ内 `#9BBE44`/`#9DC25E`/`#9ABE36`/`#9EBF39` 等と近接）、地形パス `#A26836`（クロップ内 `#9E6438`/`#A26C3D` と近接）、敵陰影色 `#3A0104`（クロップ内 `#39041A` と距離約22）、コアエネルギー色 `#ABFFFF`（クロップ内 `#9CE8D9` と距離約47、量子化による特ハイライト希釈の範囲内）は独立検証でも矛盾なし。タワー系の一部トーンは低解像度量子化のノイズで厳密一致は確認できなかったが、iteration 1 側のより精密な計測（10/12色で距離0）と矛盾する結果ではなく、再指摘の根拠には至らないと判断。
+  - `tech-stack-unity.md`「資産の取り扱い」節「Unity は 1 unit = 1m」と art-bible.md「スケール規約」の一致を再確認。gdd.md 数値表の `PATH_LENGTH_M=40`/`BASTION_CANNON_RANGE_M=6`/`ARC_EMITTER_RADIUS_M=3`/`ARC_EMITTER_RANGE_M=4.5` と art-bible.md「スケール規約」表の根拠記述が数値一致することを確認。gdd.md「対応資産 id」列（MDL-01〜05）と art-bible.md 3Dスタイル方針のポリゴン予算表・スケール表の対象資産名が1対1で一致することを確認。
+  - `state/asset-routing.json` の `meshy.plan_tier: "pro+"` と art-bible.md「3D スタイル方針」節「コンセプト画プロトコル」の `state/asset-routing.json 実測 plan_tier: pro+` 記載の一致を確認。
+  - gates.md AR-BIBLE 観点1〜4を全項目チェック: 観点1（機械可読性）= style_block/palette/style_codes/resolution 全キー具備、観点2（ゲーム内可読性）= シルエット方針が体高・幅比・骨格差・稜線数の数値基準で規定、観点3（生成再現性）= style_block が検証可能な具体語彙のみで構成（曖昧形容詞なし）、観点4（技術整合）= 解像度/タイル/透過方針が tech-stack-unity.md と整合し「3D スタイル方針」節がポリゴン予算・テクスチャ/PBR・リグ方針・スケール規約を全て充足し assets-config.md の3D既定と矛盾しない（ポリゴン予算は既定より意図的に縮小、根拠明記済み）。
+- 指摘要約: なし（iteration 1 の指摘は解消済み。新規の観点1〜4逸脱は検出されず）
+- 対応: —

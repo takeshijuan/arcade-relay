@@ -1,24 +1,21 @@
-// ForgeScaffold — one-shot scaffolder that materializes the 5 required scenes (contract §11:
-// Boot/Title/Menu/Game/Result) and registers them in EditorBuildSettings in flow order.
-// Invoke: -executeMethod ForgeGame.EditorTools.ForgeScaffold.SetupScenes
-// Rule 11: any failure escalates to a non-zero exit.
-using System;
+// ForgeScaffold.cs — 5シーン（Boot/Title/Menu/Game/Result・contract §11 必須シーン集合）を生成し
+// EditorBuildSettings を正準フロー順に構成する scaffold ユーティリティ。
+// 実行: "$UNITY" -batchmode -projectPath game -executeMethod ForgeGame.EditorTools.ForgeScaffold.GenerateScenes -quit
+// 各シーンには最小の Main Camera + Directional Light を置く（story が中身を肉付けする土台）。
 using System.Collections.Generic;
-using System.IO;
-using ForgeGame;
-using ForgeGame.Components;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using ForgeGame.Components;
 
 namespace ForgeGame.EditorTools
 {
     public static class ForgeScaffold
     {
-        private const string ScenesDir = "Assets/Scenes";
+        private const string SceneDir = "Assets/Scenes";
 
-        // Flow order (gdd ゲームフロー). Boot must be index 0 (first loaded scene).
+        // 正準フロー順（contract §11）。EditorBuildSettings のインデックス順に一致させる。
         private static readonly string[] SceneNames =
         {
             GameConfig.Scenes.Boot,
@@ -28,48 +25,55 @@ namespace ForgeGame.EditorTools
             GameConfig.Scenes.Result,
         };
 
-        public static void SetupScenes()
+        public static void GenerateScenes()
         {
-            try
+            if (!AssetDatabase.IsValidFolder(SceneDir))
+                AssetDatabase.CreateFolder("Assets", "Scenes");
+
+            var buildScenes = new List<EditorBuildSettingsScene>();
+
+            foreach (string name in SceneNames)
             {
-                Directory.CreateDirectory(ScenesDir);
-                var buildScenes = new List<EditorBuildSettingsScene>();
+                Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
-                foreach (string name in SceneNames)
+                // Main Camera
+                var camGo = new GameObject("Main Camera");
+                camGo.tag = "MainCamera";
+                Camera cam = camGo.AddComponent<Camera>();
+                cam.clearFlags = CameraClearFlags.SolidColor;
+                cam.backgroundColor = new Color(0.08f, 0.10f, 0.12f);
+                camGo.AddComponent<AudioListener>();
+                camGo.transform.position = new Vector3(0f, 10f, -10f);
+                camGo.transform.rotation = Quaternion.Euler(45f, 0f, 0f);
+
+                // Directional Light
+                var lightGo = new GameObject("Directional Light");
+                Light light = lightGo.AddComponent<Light>();
+                light.type = LightType.Directional;
+                lightGo.transform.rotation = Quaternion.Euler(50f, -30f, 0f);
+
+                // Boot シーンだけ入口コンポーネントを置く（正準フロー Boot→Title の起点）
+                if (name == GameConfig.Scenes.Boot)
                 {
-                    string path = $"{ScenesDir}/{name}.unity";
-                    var scene = EditorSceneManager.NewScene(
-                        NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
-
-                    if (name == GameConfig.Scenes.Boot)
-                    {
-                        var go = new GameObject("BootLoader");
-                        go.AddComponent<BootLoader>();
-                    }
-
-                    if (!EditorSceneManager.SaveScene(scene, path))
-                    {
-                        Fail($"Failed to save scene: {path}");
-                        return;
-                    }
-                    buildScenes.Add(new EditorBuildSettingsScene(path, true));
+                    var boot = new GameObject("GameBootstrap");
+                    boot.AddComponent<GameBootstrap>();
                 }
 
-                EditorBuildSettings.scenes = buildScenes.ToArray();
-                AssetDatabase.SaveAssets();
-                AssetDatabase.Refresh();
-                Debug.Log($"ForgeScaffold: created {SceneNames.Length} scenes and set EditorBuildSettings.");
+                string path = $"{SceneDir}/{name}.unity";
+                bool saved = EditorSceneManager.SaveScene(scene, path);
+                if (!saved)
+                {
+                    Debug.LogError($"[ForgeScaffold] シーン保存失敗: {path}");
+                    EditorApplication.Exit(1);
+                    return;
+                }
+                buildScenes.Add(new EditorBuildSettingsScene(path, true));
             }
-            catch (Exception e)
-            {
-                Fail("Exception during scaffold: " + e);
-            }
-        }
 
-        private static void Fail(string message)
-        {
-            Debug.LogError("[ForgeScaffold] " + message);
-            EditorApplication.Exit(1);
+            EditorBuildSettings.scenes = buildScenes.ToArray();
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            Debug.Log($"[ForgeScaffold] {SceneNames.Length} scenes generated and registered in EditorBuildSettings.");
         }
     }
 }

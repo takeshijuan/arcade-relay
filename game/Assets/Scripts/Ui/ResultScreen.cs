@@ -1,185 +1,313 @@
-// ResultScreen — Result シーンの表示専任コンポーネント (ui-engineer, S-11). Builds the ScreenSpaceCamera
-// Canvas + Text UI entirely in code at Awake (engine=unity 方針: uGUI をコード中心に構築), mirroring
-// Ui/TitleScreen and Ui/MenuScreen's code-first pattern. All sizes/colors/text content come from
-// GameConfig.Ui (no magic numbers/hardcoded strings here).
-//
-// Display-only: SetRunResult only formats and applies the RunResult/highScoreUpdated values handed in
-// by Components/ResultController, which reads the authoritative Components/SessionHolder.LastRunResult —
-// this component never reads game state itself and holds no duplicate copy of it beyond the last values
-// passed in (display cache, not a second source of truth; conventions.md role「UI は表示専任・状態は
-// game state が正」).
+// ResultScreen.cs — Result シーンの表示・入力配線（S-09。薄い Component。ロジックは持たない）。
+// docs/architecture.md §2: Result は今回スコア/勝敗・新規実績・ハイスコア比較を表示し、
+// 「もう一度」→Game（新規ラン） / 「メニューへ」→Menu の2導線を持つ。
+// S-20 追記: ベストクリアタイム（data.bestClearTimeSec）を表示する。未記録（-1、Menu の HighScoreText 行
+// と同じ判定式）は「--」表示にする。ハイスコア更新時の強調表示（isNewHighScore）は S-09 実装済みのため
+// 本 story での変更は無い。
+// 表示専任: 勝敗・統計・実績は GameFlow（Game→Result 間の RunResult キャリー、および
+// Persistence.Save 実施側〔S-06〕が保存直後に更新する GameFlow.CurrentSaveData）から読むだけで、
+// UI 側に値を複製・二重計算しない（役割宣言の鉄則）。finalScore の算出は ScoreSystem の純粋関数を
+// 再呼び出しするのみ（Systems/ 層のロジックを Ui に移植しない）。
+// Canvas は ScreenSpaceCamera 固定（tech-stack-unity.md 規約14）。全数値/色は GameConfig.Ui。
 using UnityEngine;
 using UnityEngine.UI;
+using ForgeGame.Components;
+using ForgeGame.Input;
+using ForgeGame.Systems;
+using ForgeGame.Systems.Meta;
 
 namespace ForgeGame.Ui
 {
+    /// <summary>
+    /// Result シーンに1つだけ置く。UI 生成・入力購読・シーン遷移の配線のみを行う。
+    /// </summary>
     public sealed class ResultScreen : MonoBehaviour
     {
-        /// <summary>S-30: baked by Editor/SceneWiring.WireResultUiFrameKit — same null-degrades-gracefully
-        /// pattern as Ui/TitleScreen's IMG-05 fields.</summary>
-        [SerializeField] private Sprite _panelSprite;
-        [SerializeField] private Sprite _ribbonSprite;
-        [SerializeField] private Sprite _cornerSprite;
+        // ACH-01〜05（gdd「実績（採用時のみ）」節の固有名詞・順序。MenuScreen の一覧と同一の表示語彙）。
+        private static readonly (string Id, string Label)[] AchievementDefs =
+        {
+            ("ACH-01", "初勝利"),
+            ("ACH-02", "完全防衛"),
+            ("ACH-03", "累計撃破"),
+            ("ACH-04", "範囲特化"),
+            ("ACH-05", "倹約防衛"),
+        };
 
-        public Canvas Canvas { get; private set; }
-        public Text TitleText { get; private set; }
-        public Text FinalScoreText { get; private set; }
-        public Text SurvivalTimeText { get; private set; }
-        public Text WaveReachedText { get; private set; }
-        public GameObject HighScoreNoticeObject { get; private set; }
-        public Text HighScoreNoticeText { get; private set; }
-        public Text RestartHintText { get; private set; }
-        public Text MenuHintText { get; private set; }
+        private InputReader inputReader;
+        private Camera uiCamera;
+        private bool transitioning;
 
-        /// <summary>S-30: decorative Images built from IMG-05 (panel background + heading ribbon + two
-        /// mirrored corner ornaments) — mirrors Ui/TitleScreen's fields of the same shape.</summary>
-        public Image PanelImage { get; private set; }
-        public Image RibbonImage { get; private set; }
-        public Image[] CornerImages { get; private set; }
+        private Transform infoPanel;
+        private Text outcomeText;
+        private Text scoreText;
+        private Text highScoreText;
+        private Text bestClearTimeText; // S-20: 未記録(-1)は「--」表示
+        private Text saveFailedNoticeText; // CR-CODE iter1 #1(major)対応: GameFlow.SaveFailed の通知表示
+        private Text newAchievementsText;
+        private RectTransform playAgainButtonRect;
+        private RectTransform backToMenuButtonRect;
+
+        /// <summary>テスト用の読み取り専用状態公開（表示専任の原則: 内部状態そのものは複製しない）。</summary>
+        public Transform InfoPanel => infoPanel;
+        public RectTransform PlayAgainButtonRect => playAgainButtonRect;
+        public RectTransform BackToMenuButtonRect => backToMenuButtonRect;
+        public Camera UiCamera => uiCamera;
+
+        /// <summary>
+        /// テスト用の読み取り専用状態公開（CR-CODE iter1 #1。MenuScreen.SaveFailedNoticeVisible と同型）。
+        /// </summary>
+        public bool SaveFailedNoticeVisible => saveFailedNoticeText != null && saveFailedNoticeText.gameObject.activeSelf;
+        public bool SaveFailedNoticeTextExists => saveFailedNoticeText != null;
 
         private void Awake()
         {
-            BuildCanvas();
+            inputReader = new InputReader();
+            uiCamera = Camera.main;
+            BuildUi();
         }
 
-        private void BuildCanvas()
+        private void OnEnable()
         {
-            var canvasGo = new GameObject("ResultCanvas");
-            canvasGo.transform.SetParent(transform, false);
+            inputReader?.Enable();
+        }
 
-            Canvas = canvasGo.AddComponent<Canvas>();
-            Canvas.renderMode = RenderMode.ScreenSpaceCamera;
-            var mainCamera = Camera.main;
-            if (mainCamera == null)
+        private void OnDisable()
+        {
+            inputReader?.Disable();
+        }
+
+        private void Update()
+        {
+            if (transitioning) return;
+            if (!inputReader.ClickPressedThisFrame) return;
+
+            Vector2 pointer = inputReader.PointerScreenPosition;
+            if (IsPointerOverRect(playAgainButtonRect, pointer))
             {
-                Debug.LogError("[Wiring] ResultScreen: no MainCamera-tagged camera in scene; canvas will silently render as Overlay and be invisible to QA RenderTexture capture");
+                transitioning = true;
+                // 消費済み RunResult は破棄する（GameFlow.ClearRunResult の呼び出し契機 — GameFlow.cs 参照）。
+                // Game シーンは新規ロードされ、CORE_HP_MAX/STARTING_GOLD 等の初期値は各 System が
+                // GameConfig から都度読むため、シーン再ロードそのものが新規ランのリセットになる。
+                GameFlow.ClearRunResult();
+                GameFlow.GoToGame();
+                return;
             }
-            Canvas.worldCamera = mainCamera;
-            Canvas.planeDistance = GameConfig.Ui.CanvasPlaneDistance;
 
-            var scaler = canvasGo.AddComponent<CanvasScaler>();
+            if (IsPointerOverRect(backToMenuButtonRect, pointer))
+            {
+                transitioning = true;
+                GameFlow.ClearRunResult();
+                GameFlow.GoToMenu();
+            }
+        }
+
+        private bool IsPointerOverRect(RectTransform rect, Vector2 screenPos) =>
+            rect != null && RectTransformUtility.RectangleContainsScreenPoint(rect, screenPos, uiCamera);
+
+        private void BuildUi()
+        {
+            var canvasGo = new GameObject("ResultCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
+            canvasGo.transform.SetParent(transform, false);
+            var canvas = canvasGo.GetComponent<Canvas>();
+            var scaler = canvasGo.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(GameConfig.Ui.ReferenceWidth, GameConfig.Ui.ReferenceHeight);
+            scaler.matchWidthOrHeight = GameConfig.Ui.CanvasScalerMatchWidthOrHeight;
+            UiCanvasHelper.ConfigureScreenSpaceCamera(canvas, uiCamera);
 
-            canvasGo.AddComponent<GraphicRaycaster>();
+            CreateFullScreenPanel(canvasGo.transform, "Background", GameConfig.Ui.PanelBackground);
 
-            UiFactory.CreateBackground(canvasGo.transform, ownerName: nameof(ResultScreen));
-            BuildDecoration(canvasGo.transform);
-
-            TitleText = UiFactory.CreateText(
-                canvasGo.transform, "TitleText", GameConfig.Ui.ResultTitleText,
-                GameConfig.Ui.ResultTitleFontSize, GameConfig.Ui.ColorTextPrimary,
-                anchor: new Vector2(0.5f, GameConfig.Ui.ResultTitleAnchorY), anchoredPos: Vector2.zero,
-                size: GameConfig.Ui.ResultTitleSize, ownerName: nameof(ResultScreen));
-
-            FinalScoreText = UiFactory.CreateText(
-                canvasGo.transform, "FinalScoreText", $"{GameConfig.Ui.ResultFinalScoreLabel}: 0",
-                GameConfig.Ui.ResultStatFontSize, GameConfig.Ui.ColorTextPrimary,
-                anchor: new Vector2(0.5f, GameConfig.Ui.ResultFinalScoreAnchorY), anchoredPos: Vector2.zero,
-                size: GameConfig.Ui.ResultStatSize, ownerName: nameof(ResultScreen));
-
-            SurvivalTimeText = UiFactory.CreateText(
-                canvasGo.transform, "SurvivalTimeText", $"{GameConfig.Ui.ResultSurvivalTimeLabel}: 0.0 秒",
-                GameConfig.Ui.ResultStatFontSize, GameConfig.Ui.ColorTextPrimary,
-                anchor: new Vector2(0.5f, GameConfig.Ui.ResultSurvivalTimeAnchorY), anchoredPos: Vector2.zero,
-                size: GameConfig.Ui.ResultStatSize, ownerName: nameof(ResultScreen));
-
-            WaveReachedText = UiFactory.CreateText(
-                canvasGo.transform, "WaveReachedText", $"{GameConfig.Ui.ResultWaveReachedLabel}: 0",
-                GameConfig.Ui.ResultStatFontSize, GameConfig.Ui.ColorTextPrimary,
-                anchor: new Vector2(0.5f, GameConfig.Ui.ResultWaveReachedAnchorY), anchoredPos: Vector2.zero,
-                size: GameConfig.Ui.ResultStatSize, ownerName: nameof(ResultScreen));
-
-            HighScoreNoticeText = UiFactory.CreateText(
-                canvasGo.transform, "HighScoreNotice", GameConfig.Ui.ResultHighScoreUpdatedText,
-                GameConfig.Ui.ResultHighScoreNoticeFontSize, GameConfig.Ui.ColorFocusHighlight,
-                anchor: new Vector2(0.5f, GameConfig.Ui.ResultHighScoreNoticeAnchorY), anchoredPos: Vector2.zero,
-                size: GameConfig.Ui.ResultHighScoreNoticeSize, ownerName: nameof(ResultScreen));
-            HighScoreNoticeObject = HighScoreNoticeText.gameObject;
-            HighScoreNoticeObject.SetActive(false);
-
-            RestartHintText = UiFactory.CreateText(
-                canvasGo.transform, "RestartHintText", GameConfig.Ui.ResultRestartHintText,
-                GameConfig.Ui.ResultHintFontSize, GameConfig.Ui.ColorTextSecondary,
-                anchor: new Vector2(0.5f, GameConfig.Ui.ResultRestartHintAnchorY), anchoredPos: Vector2.zero,
-                size: GameConfig.Ui.ResultHintSize, ownerName: nameof(ResultScreen));
-
-            MenuHintText = UiFactory.CreateText(
-                canvasGo.transform, "MenuHintText", GameConfig.Ui.ResultMenuHintText,
-                GameConfig.Ui.ResultHintFontSize, GameConfig.Ui.ColorTextSecondary,
-                anchor: new Vector2(0.5f, GameConfig.Ui.ResultMenuHintAnchorY), anchoredPos: Vector2.zero,
-                size: GameConfig.Ui.ResultHintSize, ownerName: nameof(ResultScreen));
-        }
-
-        /// <summary>S-30: mirrors Ui/TitleScreen.BuildDecoration's panel/ribbon/corner treatment for the
-        /// other "headline" screen — built right after UiFactory.CreateBackground so text draws on top.</summary>
-        private void BuildDecoration(Transform parent)
-        {
-            PanelImage = UiFrameKitVisuals.CreateSlicedImage(
-                parent, "Panel", _panelSprite,
-                anchor: GameConfig.Ui.ResultPanelAnchor, anchoredPos: GameConfig.Ui.ResultPanelAnchoredPos,
-                size: GameConfig.Ui.ResultPanelSize);
-
-            RibbonImage = UiFrameKitVisuals.CreateSimpleImage(
-                parent, "Ribbon", _ribbonSprite,
-                anchor: GameConfig.Ui.ResultPanelAnchor, anchoredPos: GameConfig.Ui.ResultRibbonAnchoredPos,
-                size: GameConfig.Ui.ResultRibbonSize);
-
-            var cornerLeft = UiFrameKitVisuals.CreateSimpleImage(
-                parent, "CornerLeft", _cornerSprite,
-                anchor: GameConfig.Ui.ResultPanelAnchor, anchoredPos: GameConfig.Ui.ResultCornerAnchoredPos,
-                size: GameConfig.Ui.ResultCornerSize);
-
-            Vector2 mirroredPos = new Vector2(-GameConfig.Ui.ResultCornerAnchoredPos.x, GameConfig.Ui.ResultCornerAnchoredPos.y);
-            var cornerRight = UiFrameKitVisuals.CreateSimpleImage(
-                parent, "CornerRight", _cornerSprite,
-                anchor: GameConfig.Ui.ResultPanelAnchor, anchoredPos: mirroredPos,
-                size: GameConfig.Ui.ResultCornerSize);
-            if (cornerRight != null)
+            // RunResult 未キャリー（Result シーン単体ロード等）は Error ではなく Warning で記録し
+            // 敗北ランとして安全に既定表示する（MenuScreen の CurrentSaveData==null 分岐と同じ方針 —
+            // 製品フローでは GameFlow.GoToResult 経由以外に Result へ来ないため異常時のみ発生）。
+            bool hasRunResult = GameFlow.TryGetLastRunResult(out RunResult runResult);
+            if (!hasRunResult)
             {
-                cornerRight.rectTransform.localScale = new Vector3(-1f, 1f, 1f);
+                Debug.LogWarning("[ResultScreen] GameFlow に RunResult が無い状態で Result シーンへ到達した; " +
+                    "既定の敗北表示にフォールバックする（想定: Result シーン単体テスト/直接ロード時のみ）。");
+                runResult = default;
             }
-            CornerImages = new[] { cornerLeft, cornerRight };
+
+            SaveData data = GameFlow.CurrentSaveData;
+            if (data == null)
+            {
+                Debug.LogWarning("[ResultScreen] GameFlow.CurrentSaveData is null; rendering defaults (expected only when Result is entered without going through Boot/Game, e.g. isolated PlayMode tests).");
+                data = SaveData.CreateDefault();
+            }
+
+            // hasRunResult==false のフォールバックは「敗北ラン」として中立表示する必要があり、
+            // runResult=default（ClearTimeSec=0）を ScoreSystem.ComputeFinalScore に通すと
+            // TimeParSec 由来のボーナスだけで非ゼロスコアが出てしまう（成功に見える偽装）ため、
+            // このケースに限りスコアは 0 で固定する（CR-CODE iter1 M指摘対応）。
+            int finalScore = hasRunResult ? ScoreSystem.ComputeFinalScore(runResult) : 0;
+            // next.highScore = max(prev.highScore, finalScore) という MetaProgression の式より、
+            // 「finalScore が現在の highScore と一致」は「このランが highScore を更新/更新に並んだ」ことを
+            // 過不足なく意味する（前回値の別キャリーが無くてもここだけで判定できる — GameFlow.CurrentSaveData
+            // が Persistence.Save 直後の値であることが前提。GameFlow.cs の SetCurrentSaveData 呼び出し契約参照）。
+            bool isNewHighScore = finalScore > 0 && finalScore == data.highScore;
+
+            infoPanel = new GameObject("InfoPanel", typeof(RectTransform)).transform;
+            infoPanel.SetParent(canvasGo.transform, false);
+            StretchFullScreen((RectTransform)infoPanel);
+
+            int row = 0;
+            float NextY() => GameConfig.Ui.ResultTopAnchorY - (row++ * GameConfig.Ui.ResultRowStepY);
+
+            Color outcomeColor = runResult.IsWin ? GameConfig.Ui.ResultWinColor : GameConfig.Ui.ResultLossColor;
+            string outcomeLabel = runResult.IsWin ? "勝利" : "敗北";
+            outcomeText = CreateText(infoPanel, "OutcomeText", outcomeLabel,
+                GameConfig.Ui.ResultOutcomeFontSize, outcomeColor, NextY());
+
+            scoreText = CreateText(infoPanel, "ScoreText", $"スコア: {finalScore}",
+                GameConfig.Ui.BodyFontSize, GameConfig.Ui.TextPrimary, NextY());
+
+            string highScoreLabel = isNewHighScore
+                ? $"ハイスコア: {data.highScore}（更新！）"
+                : $"ハイスコア: {data.highScore}";
+            Color highScoreColor = isNewHighScore ? GameConfig.Ui.ResultHighScoreHighlightColor : GameConfig.Ui.TextPrimary;
+            highScoreText = CreateText(infoPanel, "HighScoreText", highScoreLabel,
+                GameConfig.Ui.BodyFontSize, highScoreColor, NextY());
+
+            // S-20: ベストクリアタイム。MenuScreen の HighScoreText 行（S-15）と同じ判定式（未記録=-1→「--」。
+            // CR-CODE iter1 #3 対応: UiText.FormatBestClearTime に共通化して drift を防ぐ）。
+            string bestClearTime = UiText.FormatBestClearTime(data.bestClearTimeSec);
+            bestClearTimeText = CreateText(infoPanel, "BestClearTimeText", $"ベストクリアタイム: {bestClearTime}",
+                GameConfig.Ui.BodyFontSize, GameConfig.Ui.TextPrimary, NextY());
+
+            string newAchievementsLabel = BuildNewAchievementsLabel(runResult, data);
+            newAchievementsText = CreateText(infoPanel, "NewAchievementsText", newAchievementsLabel,
+                GameConfig.Ui.BodyFontSize, GameConfig.Ui.AccentTeal, NextY());
+
+            // CR-CODE iter1 #1（major）対応: RunOutcomeController.FinalizeRun が Persistence.Save に失敗した
+            // 場合、GameFlow.SaveFailed を読んで通知する（黙って通常の Result 表示にしない — contract §6 の
+            // recovered パターンをエラー系にも踏襲）。Result 到達前に一度だけ確定する値のため、Menu の
+            // RefreshSaveFailedNotice() のような動的更新は不要（BuildUi 時の1回読みで足りる）。
+            saveFailedNoticeText = CreateText(infoPanel, "SaveFailedNoticeText", string.Empty,
+                GameConfig.Ui.BodyFontSize, GameConfig.Ui.ResultLossColor, NextY());
+            bool saveFailed = GameFlow.SaveFailed;
+            saveFailedNoticeText.gameObject.SetActive(saveFailed);
+            if (saveFailed)
+            {
+                saveFailedNoticeText.text = UiText.BuildSaveFailedMessage("今回の結果");
+            }
+
+            playAgainButtonRect = CreateButton(canvasGo.transform, "PlayAgainButton", "もう一度", NextY());
+            backToMenuButtonRect = CreateButton(canvasGo.transform, "BackToMenuButton", "メニューへ", NextY());
         }
 
-        /// <summary>Reflects the finished run's stats and whether it set a new high score (gdd Result
-        /// 画面: 今回の最終スコア・生存時間・到達ウェーブ + ハイスコア更新の有無). highScoreUpdated toggles a
-        /// dedicated notice on/off (mirrors Ui/TitleScreen.SetRecoveryNoticeVisible's show/hide pattern) —
-        /// it is never shown when the run did not beat the prior high score.
-        /// S-33: only the final score animates (count-up driven separately by Components/ResultController
-        /// via SetFinalScoreValue), so this seeds it at 0 rather than the final value — survival
-        /// time/wave-reached are not part of the count-up acceptance and stay immediate. The notice's
-        /// scale is reset to 1 up front so a fresh Result load never inherits a mid-pulse scale from a
-        /// stale instance.</summary>
-        public void SetRunResult(RunResult run, bool highScoreUpdated)
+        /// <summary>
+        /// 今回解放した新規実績の表示文字列を組む。
+        /// gdd の実績条件は「累積値の閾値到達（ACH-01/03）」と「単一ラン内条件（ACH-02/04/05）」の2種。
+        /// 累積系は post 保存値から加算前の値を逆算でき「今回初めて条件を満たしたか」を厳密に判定できる。
+        /// 単一ラン系は履歴（このランの前から解放済みだったか）を GameFlow が保持しないため、
+        /// 「このランの RunResult が条件を満たしたか」を新規解放の近似として採用する
+        /// （既に解放済みの実績を再度条件達成した場合も表示される既知の限界。実害は軽微な表示重複のみで、
+        /// SaveData 側のフラグは既存どおり単調〔一度trueは不変〕のため実績データそのものは破壊されない）。
+        /// </summary>
+        private static string BuildNewAchievementsLabel(RunResult r, SaveData post)
         {
-            FinalScoreText.text = $"{GameConfig.Ui.ResultFinalScoreLabel}: 0";
-            SurvivalTimeText.text = $"{GameConfig.Ui.ResultSurvivalTimeLabel}: {run.SurvivalTimeSec:F1} 秒";
-            WaveReachedText.text = $"{GameConfig.Ui.ResultWaveReachedLabel}: {run.WaveReached}";
-            HighScoreNoticeObject.SetActive(highScoreUpdated);
-            HighScoreNoticeText.transform.localScale = Vector3.one;
+            int prevTotalWins = post.totalWins - (r.IsWin ? 1 : 0);
+            int prevTotalKills = post.totalKills - r.KillCount;
+
+            // 負値は「post が今回ランを反映した post-save 値ではない」ことの証拠
+            // （GameFlow.CurrentSaveData の SetCurrentSaveData 契約 — GameFlow.cs 参照 — の退行）。
+            // 検出は部分的（新規解放の誤判定は防げない）で契約責務は S-06 側にあるため、
+            // ここでは記録のみ行い表示は既存の（stale な）近似ロジックを続行する（CR-CODE iter1 L指摘対応）。
+            if (prevTotalWins < 0 || prevTotalKills < 0)
+            {
+                Debug.LogWarning("[ResultScreen] carried SaveData appears stale — SetCurrentSaveData contract regression?");
+            }
+
+            bool[] newlyUnlocked =
+            {
+                r.IsWin && prevTotalWins == 0 && post.achFirstVictory,                                   // ACH-01
+                post.achPerfectDefense && r.IsWin && r.CoreHpRemaining >= GameConfig.Core.HpMax,          // ACH-02
+                post.achCenturySlayer && prevTotalKills < GameConfig.Meta.CenturySlayerKills
+                    && post.totalKills >= GameConfig.Meta.CenturySlayerKills,                             // ACH-03
+                post.achAoeSpecialist && r.AoeKillCount >= GameConfig.Meta.AoeSpecialistKills,            // ACH-04
+                post.achFrugalArchitect && r.IsWin && r.UsedBuildSpots <= GameConfig.Meta.FrugalMaxSpots, // ACH-05
+            };
+
+            string labels = string.Empty;
+            for (int i = 0; i < AchievementDefs.Length; i++)
+            {
+                if (!newlyUnlocked[i]) continue;
+                (string id, string label) = AchievementDefs[i];
+                labels += (labels.Length > 0 ? " / " : string.Empty) + $"{id} {label}";
+            }
+
+            return labels.Length > 0 ? $"新規実績: {labels}" : "新規実績: なし";
         }
 
-        /// <summary>S-33: applies the current count-up frame's displayed value to FinalScoreText (driven
-        /// by Components/ResultController + Systems/ResultCountUpSystem — this component holds no score
-        /// state of its own beyond the last value it was told to show, per conventions.md's display-cache
-        /// rule).</summary>
-        public void SetFinalScoreValue(int displayedScore)
+        private static void CreateFullScreenPanel(Transform parent, string name, Color color)
         {
-            FinalScoreText.text = $"{GameConfig.Ui.ResultFinalScoreLabel}: {displayedScore}";
+            var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(parent, false);
+            StretchFullScreen((RectTransform)go.transform);
+            go.GetComponent<Image>().color = color;
         }
 
-        /// <summary>S-33: applies the current high-score notice pulse frame's uniform scale (driven by
-        /// Components/ResultController + Systems/WavePulseSystem.ComputeScale, reused as-is from S-15).
-        /// Unconditionally sets the scale (mirrors Ui/GameHud.SetWaveScale's unconditional-apply style) —
-        /// unlike SetWaveScale's target, the notice GameObject may be inactive for a run that did not beat
-        /// the high score, but that guard is the caller's responsibility: Components/ResultController only
-        /// invokes this while its own _highScoreNoticePulseActive flag is true, which is only ever set when
-        /// highScoreUpdated is true (i.e. exactly when the notice was activated in SetRunResult). This
-        /// setter itself performs no activeSelf check.</summary>
-        public void SetHighScoreNoticeScale(float scale)
+        private static void StretchFullScreen(RectTransform rect)
         {
-            HighScoreNoticeText.transform.localScale = new Vector3(scale, scale, scale);
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+        }
+
+        private static Text CreateText(Transform parent, string name, string content, int fontSize, Color color, float anchorY)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(Text));
+            go.transform.SetParent(parent, false);
+            var rect = (RectTransform)go.transform;
+            Vector2 anchor = new Vector2(0.5f, anchorY);
+            rect.anchorMin = anchor;
+            rect.anchorMax = anchor;
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = Vector2.zero;
+            rect.sizeDelta = new Vector2(
+                GameConfig.Ui.ReferenceWidth * GameConfig.Ui.TextBoxWidthFraction,
+                fontSize * GameConfig.Ui.TextLineHeightFactor);
+
+            var text = go.GetComponent<Text>();
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.fontSize = fontSize;
+            text.alignment = TextAnchor.MiddleCenter;
+            text.color = color;
+            text.text = content;
+            text.horizontalOverflow = HorizontalWrapMode.Overflow;
+            text.verticalOverflow = VerticalWrapMode.Overflow;
+            return text;
+        }
+
+        private static RectTransform CreateButton(Transform parent, string name, string label, float anchorY)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(parent, false);
+            var rect = (RectTransform)go.transform;
+            Vector2 anchor = new Vector2(0.5f, anchorY);
+            rect.anchorMin = anchor;
+            rect.anchorMax = anchor;
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = Vector2.zero;
+            rect.sizeDelta = new Vector2(GameConfig.Ui.MenuButtonWidth, GameConfig.Ui.MenuButtonHeight);
+            go.GetComponent<Image>().color = GameConfig.Ui.AccentTeal;
+
+            var labelGo = new GameObject("Label", typeof(RectTransform), typeof(Text));
+            labelGo.transform.SetParent(go.transform, false);
+            var labelRect = (RectTransform)labelGo.transform;
+            labelRect.anchorMin = Vector2.zero;
+            labelRect.anchorMax = Vector2.one;
+            labelRect.offsetMin = Vector2.zero;
+            labelRect.offsetMax = Vector2.zero;
+            var text = labelGo.GetComponent<Text>();
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.fontSize = GameConfig.Ui.BodyFontSize;
+            text.alignment = TextAnchor.MiddleCenter;
+            text.color = GameConfig.Ui.PanelBackground;
+            text.text = label;
+
+            return rect;
         }
     }
 }

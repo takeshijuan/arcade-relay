@@ -3,8 +3,9 @@
     "rootNamespace": "ForgeGame",
     "references": [
         "Unity.InputSystem",
-        "Unity.RenderPipelines.Core.Runtime",
-        "Unity.RenderPipelines.Universal.Runtime"
+        "Unity.RenderPipelines.Universal.Runtime",
+        "glTFast",
+        "UnityEngine.UI"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

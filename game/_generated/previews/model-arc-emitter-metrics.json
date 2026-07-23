@@ -1,0 +1,31 @@
+{
+  "file": "model-arc-emitter.glb",
+  "source_file": "model-arc-emitter.glb (regenerated 2026-07-21 AR-ASSET iteration1 revise: color+emissive fix)",
+  "scale_factor_applied": 1.1582902022282366,
+  "triangle_count": 4941,
+  "poly_budget": 6000,
+  "vertex_count": 4401,
+  "material_count": 1,
+  "material_names": [
+    "Material_0"
+  ],
+  "bone_count": 0,
+  "non_manifold_verts": 99,
+  "bbox_authoring_m": [
+    2.1629,
+    2.1634,
+    2.2
+  ],
+  "bbox_min": [
+    -1.0815,
+    -1.0817,
+    0.0
+  ],
+  "bbox_max": [
+    1.0815,
+    1.0817,
+    2.2
+  ],
+  "mesh_object_count": 1,
+  "island_count": 1
+}

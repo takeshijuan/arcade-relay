@@ -1,28 +1,18 @@
-# レビュー履歴 — Checkpoint B（CD-CHECKPOINT）
+# CD-CHECKPOINT 履歴 — Checkpoint B（プロトタイプ縦串提示 / Crystal Bastion）
 
-## CD-CHECKPOINT iteration 1 — REJECT
-- 日時: 2026-07-13T11:20:00+09:00
-- 対象: design/brief.md / design/concept.md / design/gdd.md / state/stories.yaml / game/_generated/MANIFEST.jsonl / state/reviews/*.md（engine=unity・review-mode=lean・Checkpoint B 遊べる縦串）
-- 判定観点（gates.md CD-CHECKPOINT）:
-  1. **ビジョン一貫性 — 合格**: 縦串 S-01〜S-11 が P-01〜P-04 を実装（移動/ダッシュ回避=P-01、自動攻撃=P-02、敵接近+ウェーブ=P-03、クリスタル+メタ=P-04）。Title→Menu→Game→Result→Menu の1周が FullLoop テストで成立。qa-game-swarm.png で HUD（HP/WAVE/SCORE/DASH）・敵・クリスタル・hero の実描画を確認。brief の盛らない宣言・資産上限の逸脱なし。
-  2. **提示品質 — 不合格（REJECT 主因）**: `qa/report.md` が不在。pipeline.yaml prototype stage で required:true、contract §6 の正本パス、gates.md QA-PLAY が「qa/report.md に結果を書け」と明記する必須成果物。QA-PLAY verdict は state/reviews/qa.md に APPROVE 記録があり証跡は qa/evidence/ に揃うが、人間が5分で読む QA 要約本体が無い。加えて qa.md の記述が Checkpoint B の主目的（P-02×P-01/P-03 均衡の面白さ仮説検証）に対して薄い。
-  3. **正直さ — 合格**: 縮退・妥協点は MANIFEST / active.md / 各 reviews に網羅開示（MDL-02 rig=none・ANM-04 未生成・must-replace、SFX-01 -17.45 LUFS 逸脱、SFX-02/04 測定不能、IMG-01 影ブロブ欠陥のエスカレーション、S-01/S-08 status=review 持ち越し、コミット原子性の運用是正）。隠蔽は検出されず。
-- 前段ゲート状況: DR-CONCEPT/DR-GDD/AR-BIBLE APPROVE 済（Checkpoint A）。QA-PLAY iter1 APPROVE（state/reviews/qa.md）。CR-CODE で S-01/S-08 が MAX_ITER 到達により status=review 持ち越し（open 指摘は正直に開示済）。
-- 指摘要約（優先度順・REJECT のため修正指示）:
-  1. **[BLOCKER][提示品質] qa/report.md を作成せよ（qa-lead）**。gates.md QA-PLAY の要求に従い (a) ビルド/起動結果（ForgeBuild.BuildMac exit 0・エラー0） (b) コアループ1周の検証結果（FullLoop・入力擬似発行の PlayMode 結果） (c) 対象ストーリー acceptance のカバレッジ一覧 (d) ピラー検証（特に Checkpoint A で最大リスクと明示された P-02×P-01/P-03 均衡が自動QAで検証できた範囲・できない範囲＝人間の実プレイ判断に委ねる点） (e) 既知の妥協点（MDL-02 静止スライド等）を qa/evidence の該当証跡に紐付けて明記する。
-  2. **[提示品質] Checkpoint B 提示要約に「何を作った/何を判断してほしい/既知の課題」を揃えよ**。既知の課題欄に本判定 knownIssues（縮退/開示の個別警告）を producer が転記すること（CD は転記確認のみ）。
-- 対応: （tech-director、2026-07-13）
-  1. **[BLOCKER][提示品質] 解消**: `qa/report.md` を作成した（QA-PLAY iteration 1 APPROVE=`state/reviews/qa.md` を正本とし、証跡から本文を構成）。gates.md QA-PLAY 要求を全て充足: (a) ビルド/起動＝ForgeBuild.BuildMac **exit 0**・`Build succeeded`・PlayMode ログエラー0 / (b) コアループ1周＝`FullLoop_TitleToMenuToGameToResultToMenu` 他 PlayMode 71 passed・0 failed（入力擬似発行）/ (c) 対象ストーリー S-01〜S-11 の acceptance カバレッジ一覧（各 acceptance を検証する PlayMode/EditMode テスト名を story ごとに対応付け・全 Passed）/ (d) ピラー検証＝最大リスク P-02×P-01/P-03 均衡を「自動QAで検証できた範囲（メカニクス成立）」と「人間の実プレイ判断に委ねる範囲（数値バランスの面白さ・体感）」に切り分けて明記 / (e) 既知妥協点（MDL-02 静止スライド等）を `qa/evidence/qa-swarmer-closeup.png`・`asset-integration-report.txt` 等の該当証跡に紐付け。門番（CD）は自作せず差し戻し、QA verdict は qa-lead の既存 APPROVE を正本にした。
-  2. **[提示品質] 解消**: Checkpoint B 提示要約に「何を作った/何を判断してほしい/既知の課題」を揃え、既知の課題欄へ本判定 knownIssues（MDL-02 rig=none・ANM-04 未生成 must-replace／SFX-01 -17.45 LUFS 逸脱・SFX-02/04 測定不能／SFX-05/06・BGM-01 未生成無音縮退／IMG-01 影ブロブ欠陥／S-01・S-08 status=review 持ち越し／コミット原子性運用是正／cost_estimated 間接証明）を producer（tech-director）が全件転記した（CD は転記確認のみ）。
-  3. **再判定用検証（tech-stack-unity.md「検証コマンド」）**: typecheck 相当（EditMode）**exit 0 かつ結果 XML failed=0**（80 passed・`qa/evidence/editmode-results-checkpointb.xml`）、build 相当（`ForgeGame.EditorTools.ForgeBuild.BuildMac` batchmode）**exit 0・`Build succeeded`**（`game/Build/ForgeGame.app` 生成・`game/Logs/build.log`）を実測。exit code 単独ではなく XML の failed=0 で二重確認。
-  - 再判定条件（本判定 item 3）: 必須の qa/report.md が実在し (a)〜(e) を満たすため APPROVE 相当を満たす。未解決の持ち越し（S-01/S-08 の CR-CODE オープン指摘・must-replace 資産）は隠さず qa/report.md §5 と本欄に開示済み＝パイプラインは止めない。
-
-## CD-CHECKPOINT iteration 2 — APPROVE
-- 日時: 2026-07-13T12:05:00+09:00
-- 対象: design/brief.md / design/concept.md / design/gdd.md / state/stories.yaml / qa/report.md / game/_generated/MANIFEST.jsonl / state/reviews/*.md（engine=unity・review-mode=lean・Checkpoint B 遊べる縦串・REJECT 後の再判定＝MAX_ITER=1 の最終判定）
-- 判定観点（gates.md CD-CHECKPOINT）:
-  1. **ビジョン一貫性 — 合格**（iter1 から不変）: 縦串 S-01〜S-11 が P-01〜P-04 を実装（移動/ダッシュ回避=P-01、自動攻撃=P-02、敵接近+ウェーブ=P-03、クリスタル+メタ=P-04）。Title→Menu→Game→Result→Menu の1周が FullLoop テストで成立。brief の盛らない宣言・資産上限の逸脱なし。concept の最大設計リスク（P-02×P-01/P-03 均衡）は qa/report.md §(d) で「自動QAでメカニクス成立を検証済み／数値バランスの面白さは人間の実プレイ判断へ委ねる」と明示的に切り分けられ、Checkpoint B の目的（面白さ仮説の実プレイ検証）と整合。
-  2. **提示品質 — 合格（iter1 の REJECT 主因を解消）**: iter1 REJECT の [BLOCKER] `qa/report.md` 不在が解消。実在を確認し gates.md QA-PLAY 要求 (a)〜(e) を全充足: (a) build exit 0・`Build succeeded`・EditMode 80-0・PlayMode 71-0 / (b) FullLoop 他コアループ1周の直接検証テスト列挙（全 Passed・視覚証跡6枚紐付け）/ (c) S-01〜S-11 acceptance を検証テスト名で story ごとに対応付け（全 Passed）/ (d) 最大リスクの自動検証範囲と人間判断範囲の切り分け / (e) 既知妥協点6件を qa/evidence の該当証跡に紐付け。全数値が証跡ファイルに追跡可能。
-  3. **正直さ — 合格**（iter1 から不変）: 縮退・妥協点は qa/report.md §(e)・MANIFEST・active.md・各 reviews に網羅開示（MDL-02 rig=none/ANM-04 未生成 must-replace、SFX-01 -17.45 LUFS 逸脱、SFX-02/04 測定不能、IMG-01 影ブロブ欠陥エスカレーション、S-01/S-08 status=review 持ち越し、cost_estimated 間接性、コミット原子性運用是正）。隠蔽・楽観的言い換えは検出されず。build フェーズ繰延（SFX-05/06・BGM-01・IMG-04）も planned として正直に明示。
-- 判定: **APPROVE**。iter1 REJECT の全指摘（BLOCKER=qa/report.md 作成、提示要約の3欄整備＋knownIssues 転記）が解消。残る縮退/開示項目はいずれも build フェーズ繰延 or 意図的許容逸脱であり Checkpoint B（遊べる縦串の提示・1回フィードバック）の妨げにならない。人間提示可。knownIssues は summary 冒頭で個別警告し箇条書きに埋没させない条件を満たして提示する。
-- 指摘要約: なし（APPROVE）。ただし提示時に [縮退] MDL-02 must-replace と各 [開示] 項目を knownIssues として人間に必ず提示（隠蔽禁止条件の充足を確認済み）。
+## CD-CHECKPOINT iteration 1 — CONCERNS
+- 日時: 2026-07-22T13:40:00Z
+- 対象提示物: design/brief.md / design/concept.md（P-01〜P-04）/ design/gdd.md / state/stories.yaml / qa/report.md（QA-PLAY iteration2 APPROVE）/ game/_generated/MANIFEST.jsonl / state/reviews/ 配下履歴 / qa/evidence/qa-visual-{title,menu,game,result}.png
+- 前提ゲート状況: QA-PLAY it2 APPROVE（build/EditMode48・PlayMode50×2 全 exit0・全pass、独立再実行で安定）。CR-CODE 全 story APPROVE。AR-ASSET（画像/音声/モデル）APPROVE。旧 [BLOCKER] PlayMode 9件失敗は b3ad6e8 で解消済み・QA-PLAY で独立再検証済み（active な [BLOCKER] なし）。
+- 判定観点（gates.md CD-CHECKPOINT）ごとの結論:
+  1. ビジョン一貫性 = 合格。縦串はコアループ（設置→自動攻撃→経済→勝敗→Result→即リトライ）と必須5シーン遷移（Title→Menu→Game→Result→Menu）を機械検証で成立。P-01（一手必中の配置）・P-02（二種の役割分担）・P-04（負けても伸びる防衛網＝永続化/破損復旧/実績表示）は PlayMode で裏付け済み。P-03（溶ける実感）の撃破VFX/演出は S-13/S-19（build phase）へ意図的に繰り延べ。ピラードリフト・スコープ逸脱なし（brief 資産上限内・盛らない宣言遵守）。
+  2. 提示品質 = 要改善（本 CONCERNS の主因）。QA報告・active.md・Integrate報告に妥協点が正直に記録されているが lean モードでは自動 surface されないため散在する。人間が縦串を正しく評価（＝「presentation が意図的に薄い prototype」と認識した上で Checkpoint B feedback を出す）できるよう、下記 known-issues を提示物冒頭へ個別転記する必要がある。
+  3. 正直さ = 合格（隠蔽なし）。縮退・プレースホルダ・cost_estimated・非多様体頂点等はすべて MANIFEST/review 履歴/QA報告に開示済み。全資産ルートは primary（shippable:true）で fallback/shippable:false 不使用。active な [BLOCKER] なし。
+- 指摘要約（優先度順・Checkpoint B「既知の課題」欄へ冒頭転記すること。いずれも revise 不要の縮退/繰り延べの開示）:
+  1. [縮退/プレースホルダ] MDL-04 Warbeast 未生成 → EnemyView は単色 Capsule プレースホルダ（WAVE3 初出＝build phase S-12 のため縦串の WAVE1 では未出現）。IMG-01/02（地形タイル）・IMG-05/06/07（実績/アップグレード/敵インジケータのアイコン）未生成でプレースホルダ/未使用。BGM-01 未生成で BGM 再生なし。SFX-05（ウェーブ開始）は境界イベント未実装で未配線（S-13 で解消見込み・資産自体は取込/検証済み）。
+  2. [ピラー未検証] P-03「溶ける実感」（本作のコアファンタジー中枢）の撃破VFX・ディゾルブ・派手な演出は S-13/S-19（build phase）未実装。縦串では敵が溶けるカタルシスを人間はまだ体感できない。Checkpoint B ではメカ成立の確認に留まり、P-03 の実プレイ検証は build phase 持ち越し。
+  3. [ピラー未検証] P-04 の核「ラン間アップグレードが暗記配置の単純流用を防ぐ」は設計上の賭け（concept 仮説3）。UPG 効果反映は S-14（build phase）未実装のため、初期条件がラン毎に変わる体感はまだ検証不能。土台（永続化・実績確定・敗北時 essence 加算）は成立。
+  4. [開示] 3Dモデル4体（MDL-01/02/03/05）・画像3点・SFX6点は cost_estimated:true（Meshy 直API クレジット→USD 換算および ElevenLabs クレジット→USD 換算が保守見積）。累計 約$2.80/$20 で残枠十分。MDL-01/02 は color_correction.applied:true（決定論HSVリマップの後処理を実施＝純AI一発生成ではない）。非多様体頂点は全4体で非ゼロだが gltf-validate エラー0・単一メッシュ島で実害なし。MDL-05 パレット距離50〜99 は emissive設計/AO付きレンダー由来の測定限界（資産欠陥ではない・非ブロッカー）。
+  5. [環境制約] 実機ビルド（game/Build/ForgeGame.app）でのマウス実操作クリアは本サンドボックス（画面収録権限なし）で未実施。QA は PlayMode InputTestFixture 擬似発行で判定。人間が Checkpoint B で実機プレイして体感を確認することが本チェックポイントの主目的。
+- 判定意味: CONCERNS = 提示可。上記 1〜5 を Checkpoint B 提示物「既知の課題」欄へ転記し冒頭で個別提示すること（箇条書きに埋没させない）。パイプラインは止めない。build phase（S-10〜S-20）で P-03/P-04 効果反映・全資産統合・難易度曲線完成を実装し再検証する。
+- 対応:

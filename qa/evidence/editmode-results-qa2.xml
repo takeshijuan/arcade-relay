@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="48" result="Passed" total="48" passed="48" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.0992282">
+  <test-suite type="TestSuite" id="1000" name="game" fullname="game" runstate="Runnable" testcasecount="48" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.099228" total="48" passed="48" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <test-suite type="Assembly" id="1057" name="ForgeGame.EditMode.Tests.dll" fullname="<repo>/game/Library/ScriptAssemblies/ForgeGame.EditMode.Tests.dll" runstate="Runnable" testcasecount="48" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.088812" total="48" passed="48" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="14060" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <test-suite type="TestSuite" id="1058" name="ForgeGame" fullname="ForgeGame" runstate="Runnable" testcasecount="48" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.088239" total="48" passed="48" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1059" name="Tests" fullname="ForgeGame.Tests" runstate="Runnable" testcasecount="48" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.087885" total="48" passed="48" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1060" name="EditMode" fullname="ForgeGame.Tests.EditMode" runstate="Runnable" testcasecount="48" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.087096" total="48" passed="48" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestFixture" id="1009" name="BuildSpotSystemTests" fullname="ForgeGame.Tests.EditMode.BuildSpotSystemTests" classname="ForgeGame.Tests.EditMode.BuildSpotSystemTests" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.031343" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1015" name="SpotPositions_CountMatchesNumBuildSpots_AndAreNaNFree" fullname="ForgeGame.Tests.EditMode.BuildSpotSystemTests.SpotPositions_CountMatchesNumBuildSpots_AndAreNaNFree" methodname="SpotPositions_CountMatchesNumBuildSpots_AndAreNaNFree" classname="ForgeGame.Tests.EditMode.BuildSpotSystemTests" runstate="Runnable" seed="1012657719" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.013252" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1010" name="TryPlace_EmptySpot_SufficientGold_Succeeds_DeductsGold_MarksOccupied" fullname="ForgeGame.Tests.EditMode.BuildSpotSystemTests.TryPlace_EmptySpot_SufficientGold_Succeeds_DeductsGold_MarksOccupied" methodname="TryPlace_EmptySpot_SufficientGold_Succeeds_DeductsGold_MarksOccupied" classname="ForgeGame.Tests.EditMode.BuildSpotSystemTests" runstate="Runnable" seed="1196633676" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.002640" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1011" name="TryPlace_InsufficientGold_Fails_NoGoldChange_NoOccupy" fullname="ForgeGame.Tests.EditMode.BuildSpotSystemTests.TryPlace_InsufficientGold_Fails_NoGoldChange_NoOccupy" methodname="TryPlace_InsufficientGold_Fails_NoGoldChange_NoOccupy" classname="ForgeGame.Tests.EditMode.BuildSpotSystemTests" runstate="Runnable" seed="2096321570" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000208" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1013" name="TryPlace_InvalidSpotIndex_Fails" fullname="ForgeGame.Tests.EditMode.BuildSpotSystemTests.TryPlace_InvalidSpotIndex_Fails" methodname="TryPlace_InvalidSpotIndex_Fails" classname="ForgeGame.Tests.EditMode.BuildSpotSystemTests" runstate="Runnable" seed="1210342190" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000202" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1014" name="TryPlace_NullEconomy_Throws" fullname="ForgeGame.Tests.EditMode.BuildSpotSystemTests.TryPlace_NullEconomy_Throws" methodname="TryPlace_NullEconomy_Throws" classname="ForgeGame.Tests.EditMode.BuildSpotSystemTests" runstate="Runnable" seed="261917215" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.002199" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1012" name="TryPlace_OccupiedSpot_Fails" fullname="ForgeGame.Tests.EditMode.BuildSpotSystemTests.TryPlace_OccupiedSpot_Fails" methodname="TryPlace_OccupiedSpot_Fails" classname="ForgeGame.Tests.EditMode.BuildSpotSystemTests" runstate="Runnable" seed="827529242" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000152" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1051" name="CoreDefenseSystemTests" fullname="ForgeGame.Tests.EditMode.CoreDefenseSystemTests" classname="ForgeGame.Tests.EditMode.CoreDefenseSystemTests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.006982" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1052" name="ApplyDamage_Marauder_SubtractsMarauderCoreDamage" fullname="ForgeGame.Tests.EditMode.CoreDefenseSystemTests.ApplyDamage_Marauder_SubtractsMarauderCoreDamage" methodname="ApplyDamage_Marauder_SubtractsMarauderCoreDamage" classname="ForgeGame.Tests.EditMode.CoreDefenseSystemTests" runstate="Runnable" seed="764606852" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000206" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1054" name="ApplyDamage_NeverGoesBelowZero" fullname="ForgeGame.Tests.EditMode.CoreDefenseSystemTests.ApplyDamage_NeverGoesBelowZero" methodname="ApplyDamage_NeverGoesBelowZero" classname="ForgeGame.Tests.EditMode.CoreDefenseSystemTests" runstate="Runnable" seed="1209895238" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000102" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1053" name="ApplyDamage_Warbeast_SubtractsWarbeastCoreDamage" fullname="ForgeGame.Tests.EditMode.CoreDefenseSystemTests.ApplyDamage_Warbeast_SubtractsWarbeastCoreDamage" methodname="ApplyDamage_Warbeast_SubtractsWarbeastCoreDamage" classname="ForgeGame.Tests.EditMode.CoreDefenseSystemTests" runstate="Runnable" seed="1333116054" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000111" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1055" name="IsDefeated_TrueOnlyAtOrBelowZero" fullname="ForgeGame.Tests.EditMode.CoreDefenseSystemTests.IsDefeated_TrueOnlyAtOrBelowZero" methodname="IsDefeated_TrueOnlyAtOrBelowZero" classname="ForgeGame.Tests.EditMode.CoreDefenseSystemTests" runstate="Runnable" seed="1672531636" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000110" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1056" name="RepeatedMarauderHits_FromCoreHpMax_ReachExactlyZero" fullname="ForgeGame.Tests.EditMode.CoreDefenseSystemTests.RepeatedMarauderHits_FromCoreHpMax_ReachExactlyZero" methodname="RepeatedMarauderHits_FromCoreHpMax_ReachExactlyZero" classname="ForgeGame.Tests.EditMode.CoreDefenseSystemTests" runstate="Runnable" seed="668720926" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.001433" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1001" name="EconomySystemTests" fullname="ForgeGame.Tests.EditMode.EconomySystemTests" classname="ForgeGame.Tests.EditMode.EconomySystemTests" runstate="Runnable" testcasecount="7" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.003140" total="7" passed="7" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1005" name="Add_IncreasesGold" fullname="ForgeGame.Tests.EditMode.EconomySystemTests.Add_IncreasesGold" methodname="Add_IncreasesGold" classname="ForgeGame.Tests.EditMode.EconomySystemTests" runstate="Runnable" seed="74739184" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000332" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1006" name="Add_NegativeAmount_Throws" fullname="ForgeGame.Tests.EditMode.EconomySystemTests.Add_NegativeAmount_Throws" methodname="Add_NegativeAmount_Throws" classname="ForgeGame.Tests.EditMode.EconomySystemTests" runstate="Runnable" seed="570656202" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000242" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1008" name="ComputeEffectiveCost_WithDiscount_RoundsToNearestInt" fullname="ForgeGame.Tests.EditMode.EconomySystemTests.ComputeEffectiveCost_WithDiscount_RoundsToNearestInt" methodname="ComputeEffectiveCost_WithDiscount_RoundsToNearestInt" classname="ForgeGame.Tests.EditMode.EconomySystemTests" runstate="Runnable" seed="2082788892" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000102" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1007" name="ComputeEffectiveCost_ZeroDiscount_ReturnsBaseCost" fullname="ForgeGame.Tests.EditMode.EconomySystemTests.ComputeEffectiveCost_ZeroDiscount_ReturnsBaseCost" methodname="ComputeEffectiveCost_ZeroDiscount_ReturnsBaseCost" classname="ForgeGame.Tests.EditMode.EconomySystemTests" runstate="Runnable" seed="1318227555" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000079" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1002" name="Constructor_NegativeStartingGold_Throws" fullname="ForgeGame.Tests.EditMode.EconomySystemTests.Constructor_NegativeStartingGold_Throws" methodname="Constructor_NegativeStartingGold_Throws" classname="ForgeGame.Tests.EditMode.EconomySystemTests" runstate="Runnable" seed="336149554" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000276" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1004" name="TrySpend_InsufficientGold_ReturnsFalse_AndDoesNotChangeGold" fullname="ForgeGame.Tests.EditMode.EconomySystemTests.TrySpend_InsufficientGold_ReturnsFalse_AndDoesNotChangeGold" methodname="TrySpend_InsufficientGold_ReturnsFalse_AndDoesNotChangeGold" classname="ForgeGame.Tests.EditMode.EconomySystemTests" runstate="Runnable" seed="1608917791" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000098" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1003" name="TrySpend_SufficientGold_DeductsAndReturnsTrue" fullname="ForgeGame.Tests.EditMode.EconomySystemTests.TrySpend_SufficientGold_DeductsAndReturnsTrue" methodname="TrySpend_SufficientGold_DeductsAndReturnsTrue" classname="ForgeGame.Tests.EditMode.EconomySystemTests" runstate="Runnable" seed="1127641049" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000126" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1024" name="EnemyHealthSystemTests" fullname="ForgeGame.Tests.EditMode.EnemyHealthSystemTests" classname="ForgeGame.Tests.EditMode.EnemyHealthSystemTests" runstate="Runnable" testcasecount="7" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.007198" total="7" passed="7" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1025" name="ApplyDamage_NeverGoesBelowZero" fullname="ForgeGame.Tests.EditMode.EnemyHealthSystemTests.ApplyDamage_NeverGoesBelowZero" methodname="ApplyDamage_NeverGoesBelowZero" classname="ForgeGame.Tests.EditMode.EnemyHealthSystemTests" runstate="Runnable" seed="1047958746" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000226" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1026" name="ApplyDamage_SubtractsDamage" fullname="ForgeGame.Tests.EditMode.EnemyHealthSystemTests.ApplyDamage_SubtractsDamage" methodname="ApplyDamage_SubtractsDamage" classname="ForgeGame.Tests.EditMode.EnemyHealthSystemTests" runstate="Runnable" seed="517524267" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000113" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1028" name="GoldReward_MatchesConfigPerType" fullname="ForgeGame.Tests.EditMode.EnemyHealthSystemTests.GoldReward_MatchesConfigPerType" methodname="GoldReward_MatchesConfigPerType" classname="ForgeGame.Tests.EditMode.EnemyHealthSystemTests" runstate="Runnable" seed="1416904902" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000172" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1027" name="IsDefeated_TrueOnlyAtOrBelowZero" fullname="ForgeGame.Tests.EditMode.EnemyHealthSystemTests.IsDefeated_TrueOnlyAtOrBelowZero" methodname="IsDefeated_TrueOnlyAtOrBelowZero" classname="ForgeGame.Tests.EditMode.EnemyHealthSystemTests" runstate="Runnable" seed="2061951905" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000366" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1031" name="RecordKill_Accumulates_AcrossMultipleCalls" fullname="ForgeGame.Tests.EditMode.EnemyHealthSystemTests.RecordKill_Accumulates_AcrossMultipleCalls" methodname="RecordKill_Accumulates_AcrossMultipleCalls" classname="ForgeGame.Tests.EditMode.EnemyHealthSystemTests" runstate="Runnable" seed="246963395" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000408" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1030" name="RecordKill_ArcEmitter_IncrementsBothKillCountAndAoeKillCount" fullname="ForgeGame.Tests.EditMode.EnemyHealthSystemTests.RecordKill_ArcEmitter_IncrementsBothKillCountAndAoeKillCount" methodname="RecordKill_ArcEmitter_IncrementsBothKillCountAndAoeKillCount" classname="ForgeGame.Tests.EditMode.EnemyHealthSystemTests" runstate="Runnable" seed="500047249" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000298" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1029" name="RecordKill_BastionCannon_IncrementsKillCountOnly" fullname="ForgeGame.Tests.EditMode.EnemyHealthSystemTests.RecordKill_BastionCannon_IncrementsKillCountOnly" methodname="RecordKill_BastionCannon_IncrementsKillCountOnly" classname="ForgeGame.Tests.EditMode.EnemyHealthSystemTests" runstate="Runnable" seed="1749055797" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000278" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1037" name="ScaffoldSmokeTests" fullname="ForgeGame.Tests.EditMode.ScaffoldSmokeTests" classname="ForgeGame.Tests.EditMode.ScaffoldSmokeTests" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.007858" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1038" name="GameConfig_CoreValues_AreWithinDesignRanges" fullname="ForgeGame.Tests.EditMode.ScaffoldSmokeTests.GameConfig_CoreValues_AreWithinDesignRanges" methodname="GameConfig_CoreValues_AreWithinDesignRanges" classname="ForgeGame.Tests.EditMode.ScaffoldSmokeTests" runstate="Runnable" seed="832855668" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000508" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1041" name="MetaProgression_ApplyRunResult_AccumulatesStatsIndependentOfOutcome" fullname="ForgeGame.Tests.EditMode.ScaffoldSmokeTests.MetaProgression_ApplyRunResult_AccumulatesStatsIndependentOfOutcome" methodname="MetaProgression_ApplyRunResult_AccumulatesStatsIndependentOfOutcome" classname="ForgeGame.Tests.EditMode.ScaffoldSmokeTests" runstate="Runnable" seed="624431672" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.001662" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1042" name="MetaProgression_ApplyRunResult_WinUnlocksAchievementsAndBestTime" fullname="ForgeGame.Tests.EditMode.ScaffoldSmokeTests.MetaProgression_ApplyRunResult_WinUnlocksAchievementsAndBestTime" methodname="MetaProgression_ApplyRunResult_WinUnlocksAchievementsAndBestTime" classname="ForgeGame.Tests.EditMode.ScaffoldSmokeTests" runstate="Runnable" seed="1574641024" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000412" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1040" name="MetaSchema_Validate_DefaultIsValid_AndFutureVersionIsCorruption" fullname="ForgeGame.Tests.EditMode.ScaffoldSmokeTests.MetaSchema_Validate_DefaultIsValid_AndFutureVersionIsCorruption" methodname="MetaSchema_Validate_DefaultIsValid_AndFutureVersionIsCorruption" classname="ForgeGame.Tests.EditMode.ScaffoldSmokeTests" runstate="Runnable" seed="804958590" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000385" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1039" name="SaveData_CreateDefault_MatchesGddInitialValues" fullname="ForgeGame.Tests.EditMode.ScaffoldSmokeTests.SaveData_CreateDefault_MatchesGddInitialValues" methodname="SaveData_CreateDefault_MatchesGddInitialValues" classname="ForgeGame.Tests.EditMode.ScaffoldSmokeTests" runstate="Runnable" seed="1340815242" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000339" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1043" name="ScoreSystem_ComputeFinalScore_MatchesFormula" fullname="ForgeGame.Tests.EditMode.ScaffoldSmokeTests.ScoreSystem_ComputeFinalScore_MatchesFormula" methodname="ScoreSystem_ComputeFinalScore_MatchesFormula" classname="ForgeGame.Tests.EditMode.ScaffoldSmokeTests" runstate="Runnable" seed="3184817" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000156" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1016" name="TowerCombatSystemTests" fullname="ForgeGame.Tests.EditMode.TowerCombatSystemTests" classname="ForgeGame.Tests.EditMode.TowerCombatSystemTests" runstate="Runnable" testcasecount="7" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.009991" total="7" passed="7" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1020" name="Tick_ArcEmitter_HitsAllEnemiesWithinRadius_WhenAnyEnemyWithinSearchRange" fullname="ForgeGame.Tests.EditMode.TowerCombatSystemTests.Tick_ArcEmitter_HitsAllEnemiesWithinRadius_WhenAnyEnemyWithinSearchRange" methodname="Tick_ArcEmitter_HitsAllEnemiesWithinRadius_WhenAnyEnemyWithinSearchRange" classname="ForgeGame.Tests.EditMode.TowerCombatSystemTests" runstate="Runnable" seed="1466132231" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.002240" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1019" name="Tick_BastionCannon_BeforeFireInterval_DoesNotFire" fullname="ForgeGame.Tests.EditMode.TowerCombatSystemTests.Tick_BastionCannon_BeforeFireInterval_DoesNotFire" methodname="Tick_BastionCannon_BeforeFireInterval_DoesNotFire" classname="ForgeGame.Tests.EditMode.TowerCombatSystemTests" runstate="Runnable" seed="1670453619" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000358" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1017" name="Tick_BastionCannon_NoEnemyInRange_NoEvents" fullname="ForgeGame.Tests.EditMode.TowerCombatSystemTests.Tick_BastionCannon_NoEnemyInRange_NoEvents" methodname="Tick_BastionCannon_NoEnemyInRange_NoEvents" classname="ForgeGame.Tests.EditMode.TowerCombatSystemTests" runstate="Runnable" seed="1981753790" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000421" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1018" name="Tick_BastionCannon_TargetsHighestProgressEnemyInRange_AfterFireInterval" fullname="ForgeGame.Tests.EditMode.TowerCombatSystemTests.Tick_BastionCannon_TargetsHighestProgressEnemyInRange_AfterFireInterval" methodname="Tick_BastionCannon_TargetsHighestProgressEnemyInRange_AfterFireInterval" classname="ForgeGame.Tests.EditMode.TowerCombatSystemTests" runstate="Runnable" seed="1182045440" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000579" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1021" name="Tick_IgnoresInactiveEnemies" fullname="ForgeGame.Tests.EditMode.TowerCombatSystemTests.Tick_IgnoresInactiveEnemies" methodname="Tick_IgnoresInactiveEnemies" classname="ForgeGame.Tests.EditMode.TowerCombatSystemTests" runstate="Runnable" seed="1012757602" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000284" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1022" name="Tick_NegativeDeltaTime_Throws" fullname="ForgeGame.Tests.EditMode.TowerCombatSystemTests.Tick_NegativeDeltaTime_Throws" methodname="Tick_NegativeDeltaTime_Throws" classname="ForgeGame.Tests.EditMode.TowerCombatSystemTests" runstate="Runnable" seed="1427664716" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000246" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1023" name="Tick_NullArgs_Throw" fullname="ForgeGame.Tests.EditMode.TowerCombatSystemTests.Tick_NullArgs_Throw" methodname="Tick_NullArgs_Throw" classname="ForgeGame.Tests.EditMode.TowerCombatSystemTests" runstate="Runnable" seed="2028904061" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000474" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1032" name="WaveSpawnSystemDamageTests" fullname="ForgeGame.Tests.EditMode.WaveSpawnSystemDamageTests" classname="ForgeGame.Tests.EditMode.WaveSpawnSystemDamageTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.005563" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1033" name="ApplyDamage_LethalDamage_DeactivatesEnemy_AndReportsDefeated" fullname="ForgeGame.Tests.EditMode.WaveSpawnSystemDamageTests.ApplyDamage_LethalDamage_DeactivatesEnemy_AndReportsDefeated" methodname="ApplyDamage_LethalDamage_DeactivatesEnemy_AndReportsDefeated" classname="ForgeGame.Tests.EditMode.WaveSpawnSystemDamageTests" runstate="Runnable" seed="135367006" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.001415" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1034" name="ApplyDamage_NonLethalDamage_KeepsEnemyActive" fullname="ForgeGame.Tests.EditMode.WaveSpawnSystemDamageTests.ApplyDamage_NonLethalDamage_KeepsEnemyActive" methodname="ApplyDamage_NonLethalDamage_KeepsEnemyActive" classname="ForgeGame.Tests.EditMode.WaveSpawnSystemDamageTests" runstate="Runnable" seed="85144318" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000254" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1035" name="ApplyDamage_SecondHitAfterDefeat_ReturnsNotFound_FinalHitOnlyCountsOnce" fullname="ForgeGame.Tests.EditMode.WaveSpawnSystemDamageTests.ApplyDamage_SecondHitAfterDefeat_ReturnsNotFound_FinalHitOnlyCountsOnce" methodname="ApplyDamage_SecondHitAfterDefeat_ReturnsNotFound_FinalHitOnlyCountsOnce" classname="ForgeGame.Tests.EditMode.WaveSpawnSystemDamageTests" runstate="Runnable" seed="610374262" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000235" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1036" name="ApplyDamage_UnknownEnemyId_ReturnsNotFound" fullname="ForgeGame.Tests.EditMode.WaveSpawnSystemDamageTests.ApplyDamage_UnknownEnemyId_ReturnsNotFound" methodname="ApplyDamage_UnknownEnemyId_ReturnsNotFound" classname="ForgeGame.Tests.EditMode.WaveSpawnSystemDamageTests" runstate="Runnable" seed="1513223444" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000085" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1044" name="WaveSpawnSystemTests" fullname="ForgeGame.Tests.EditMode.WaveSpawnSystemTests" classname="ForgeGame.Tests.EditMode.WaveSpawnSystemTests" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.010306" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1045" name="GetPathPosition_IsLinearAndNaNFree_AcrossFullRange" fullname="ForgeGame.Tests.EditMode.WaveSpawnSystemTests.GetPathPosition_IsLinearAndNaNFree_AcrossFullRange" methodname="GetPathPosition_IsLinearAndNaNFree_AcrossFullRange" classname="ForgeGame.Tests.EditMode.WaveSpawnSystemTests" runstate="Runnable" seed="124620009" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.001080" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1048" name="Tick_EnemyReachingGoal_FiresGoalEvent_AndBecomesInactive" fullname="ForgeGame.Tests.EditMode.WaveSpawnSystemTests.Tick_EnemyReachingGoal_FiresGoalEvent_AndBecomesInactive" methodname="Tick_EnemyReachingGoal_FiresGoalEvent_AndBecomesInactive" classname="ForgeGame.Tests.EditMode.WaveSpawnSystemTests" runstate="Runnable" seed="339547211" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.001154" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1047" name="Tick_MovesEnemy_ByDeltaTimeAndSpeed_NotFrameRateDependent" fullname="ForgeGame.Tests.EditMode.WaveSpawnSystemTests.Tick_MovesEnemy_ByDeltaTimeAndSpeed_NotFrameRateDependent" methodname="Tick_MovesEnemy_ByDeltaTimeAndSpeed_NotFrameRateDependent" classname="ForgeGame.Tests.EditMode.WaveSpawnSystemTests" runstate="Runnable" seed="985782472" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.001205" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1049" name="Tick_NegativeDeltaTime_Throws" fullname="ForgeGame.Tests.EditMode.WaveSpawnSystemTests.Tick_NegativeDeltaTime_Throws" methodname="Tick_NegativeDeltaTime_Throws" classname="ForgeGame.Tests.EditMode.WaveSpawnSystemTests" runstate="Runnable" seed="918461980" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000433" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1050" name="Tick_NullEventList_Throws" fullname="ForgeGame.Tests.EditMode.WaveSpawnSystemTests.Tick_NullEventList_Throws" methodname="Tick_NullEventList_Throws" classname="ForgeGame.Tests.EditMode.WaveSpawnSystemTests" runstate="Runnable" seed="1740064" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000415" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1046" name="Tick_SpawnsWave1MarauderCount_AfterPrepAndSpawnIntervals" fullname="ForgeGame.Tests.EditMode.WaveSpawnSystemTests.Tick_SpawnsWave1MarauderCount_AfterPrepAndSpawnIntervals" methodname="Tick_SpawnsWave1MarauderCount_AfterPrepAndSpawnIntervals" classname="ForgeGame.Tests.EditMode.WaveSpawnSystemTests" runstate="Runnable" seed="1745921704" result="Passed" start-time="2026-07-22 03:24:46Z" end-time="2026-07-22 03:24:46Z" duration="0.000811" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[Saving results to: <path-redacted> Support/DefaultCompany/game/TestResults.xml
+]]></output>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

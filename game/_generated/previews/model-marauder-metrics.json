@@ -1,0 +1,32 @@
+{
+  "file": "model-marauder.glb",
+  "source_file": "model-marauder.glb (regenerated 2026-07-21 AR-ASSET iteration1 revise: bipedal pose fix)",
+  "scale_factor_applied": 0.44773409518843493,
+  "decimate_ratio_applied": 0.98596,
+  "triangle_count": 4000,
+  "poly_budget": 4000,
+  "vertex_count": 4402,
+  "material_count": 1,
+  "material_names": [
+    "Material_0"
+  ],
+  "bone_count": 0,
+  "non_manifold_verts": 112,
+  "bbox_authoring_m": [
+    0.535,
+    0.393,
+    0.85
+  ],
+  "bbox_min": [
+    -0.2675,
+    -0.1965,
+    0.0
+  ],
+  "bbox_max": [
+    0.2675,
+    0.1965,
+    0.85
+  ],
+  "mesh_object_count": 1,
+  "island_count": 1
+}

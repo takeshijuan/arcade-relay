@@ -1,0 +1,29 @@
+{
+  "file": "model-warbeast-final.glb",
+  "source_file": "model-warbeast-recolored-raw.glb",
+  "scale_factor_applied": 1.356002,
+  "triangle_count": 5913,
+  "vertex_count": 5665,
+  "material_count": 1,
+  "material_names": [
+    "Material_0"
+  ],
+  "bone_count": 0,
+  "non_manifold_verts": 35,
+  "bbox_authoring_m": [
+    1.3003,
+    2.5747,
+    1.5
+  ],
+  "bbox_min": [
+    -0.6502,
+    -1.2874,
+    0.0
+  ],
+  "bbox_max": [
+    0.6502,
+    1.2874,
+    1.5
+  ],
+  "mesh_object_count": 1
+}

@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-07-10T04:05:00Z",
+  "generated_at": "2026-07-21T09:05:00Z",
   "checks": {
-    "fal":             {"key": true,  "auth": "ok",  "plan_tier": "prepaid", "note": "404 on status probe = 認証層OK（401/403でない）"},
-    "elevenlabs":      {"key": true,  "tier": "starter", "plan_tier": "starter", "commercial_ok": true, "character_count": 1030, "character_limit": 40000},
-    "retro_diffusion": {"key": true,  "credits": 50, "balance_usd": 10.5, "plan_tier": "prepaid"},
-    "ideogram":        {"key": true,  "auth": "ok",  "plan_tier": "unknown", "note": "405 on GET probe = 認証層OK（401/403でない）"},
-    "openai":          {"key": true,  "auth": "invalid", "plan_tier": "unknown", "note": "401 = キー無効。fallbacks から gpt-image-1.5 ルートを除外"},
-    "meshy":           {"key": true,  "auth": "ok",  "plan_tier": "pro+", "balance_credits": 3100, "note": "balance 200 = キー有効 ≒ Pro 以上（Free にキー発行なし — assets-config.md 3D 節）"},
-    "tripo":           {"key": true,  "auth": "ok",  "plan_tier": "unknown", "note": "balance 200 = 認証OK。プラン階層は実測不能（Tripo Free は商用不可のため出荷利用時は要確認 — Checkpoint で開示）"}
+    "fal":             {"key": true,  "auth": "ok",  "plan_tier": "prepaid"},
+    "elevenlabs":      {"key": true,  "tier": "starter", "plan_tier": "starter", "commercial_ok": true},
+    "retro_diffusion": {"key": true,  "credits": 50, "plan_tier": "prepaid"},
+    "ideogram":        {"key": false, "plan_tier": "unknown"},
+    "openai":          {"key": false, "plan_tier": "unknown"},
+    "meshy":           {"key": true,  "auth": "ok",  "plan_tier": "pro+", "note": "balance 200 = キー有効 ≒ Pro 以上（Free にキー発行なし）"},
+    "tripo":           {"key": true,  "auth": "ok",  "plan_tier": "unknown", "note": "balance 200 = 認証OK。クレジット残量・プラン階層は未実測（E2 時は生成時 403 だった — 使用時に再確認）"}
   },
   "routes": {
     "image_sprite":     "fal:ideogram-v3-transparent",
@@ -27,8 +27,8 @@
     "model_character": true, "model_prop": true, "model_environment": true, "anim": true
   },
   "fallbacks": {
-    "image_sprite":    ["ideogram:direct"],
-    "image_background": ["ideogram:direct"],
+    "image_sprite":    ["local:mflux-flux-schnell+rembg"],
+    "image_background": ["local:mflux-flux-schnell"],
     "sfx":             ["local:jsfxr"],
     "bgm":             ["local:stable-audio-open-small"],
     "model_character": ["fal:meshy-v6-image-to-3d+rigging", "tripo:direct", "local:blender-procedural-rigify"],
@@ -38,11 +38,9 @@
   },
   "degraded": false,
   "notes": [
-    "OPENAI_API_KEY が 401（無効）: 画像三次フォールバック gpt-image-1.5 ルートを除外",
-    "MESHY_API_KEY 有効（balance 3100 クレジット）: 3D Primary は Meshy 直API。plan_tier=pro+ は間接証明（balance レスポンスに tier フィールド無し）",
+    "IDEOGRAM_API_KEY / OPENAI_API_KEY 無し: image_sprite の外部 fallback はローカル縮退のみ（Primary fal は有効なので通常運転）",
     "meshy 直API の rigging/animation エンドポイントの必要プラン階層は未検証（403 時は fal 経由へ資産種別単位で切替え、未解決事項に記録 — assets-config.md 3D 節）",
-    "meshy 直API のクレジット→USD 換算は $0.02/credit の保守見積（未検証。MANIFEST に cost_estimated:true で記録）",
-    "tripo は認証OKだがプラン階層実測不能（Free 出力は商用不可）: 実使用時は Checkpoint で開示",
-    "ElevenLabs starter: 商用OK。ただし「Studio Games」条項（商用×マルチプラットフォーム出荷は Enterprise 相談）は Checkpoint で開示"
+    "tripo は認証 200 だがクレジット残量未実測（E2 では生成時 403）— fallback 使用時に再確認",
+    "E3 は非ピクセルアート 3D 案件: pixel_art ルートは使用予定なし"
   ]
 }

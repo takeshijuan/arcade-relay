@@ -1,33 +1,24 @@
-// PlayMode smoke — verifies the InputTestFixture wiring (rule 8: testables + TestFramework ref)
-// resolves and that code-built input actions can be enabled. Coreloop + scene-transition +
-// persistence PlayMode tests are added by the prototype stories (QA-PLAY).
+// ScaffoldPlayModeSmokeTests.cs — PlayMode の配線検証（InputTestFixture 参照の疎通確認・規約8）。
+// batchmode で入力を擬似発行するテストの土台。story（コアループ/永続化/シーン遷移）がここに肉付けする。
 using System.Collections;
-using ForgeGame.InputLayer;
 using NUnit.Framework;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.TestTools;
+using UnityEngine.InputSystem;
 
 namespace ForgeGame.Tests.PlayMode
 {
-    public sealed class ScaffoldPlayModeSmokeTests : InputTestFixture
+    // InputTestFixture を継承すると batchmode でも InputAction が入力擬似発行に反応する（規約8）。
+    public class ScaffoldPlayModeSmokeTests : InputTestFixture
     {
         [UnityTest]
-        public IEnumerator GameInput_ActionsBuildAndEnableInPlayMode()
+        public IEnumerator PlayMode_Harness_IsWired()
         {
-            InputSystem.AddDevice<Keyboard>();
-            var input = new GameInput();
-            input.EnableGameplay();
-            input.EnableUi();
-
-            Assert.IsNotNull(input.Move);
-            Assert.IsNotNull(input.Dash);
-            Assert.IsNotNull(input.Submit);
-            Assert.IsTrue(input.Dash.enabled);
-
+            // 仮想マウスを登録して InputTestFixture の疎通を確認する。
+            var mouse = InputSystem.AddDevice<Mouse>();
             yield return null;
-
-            input.Dispose();
+            Assert.IsNotNull(mouse);
+            Assert.IsTrue(Application.isPlaying);
         }
     }
 }

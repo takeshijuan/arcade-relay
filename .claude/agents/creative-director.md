@@ -62,7 +62,7 @@ model: opus
   CD-CHECKPOINT: APPROVE|CONCERNS|REJECT
   ```
 
-- verdict は応答を返す**前に** `state/reviews/checkpoint-a.md`（B/C はそれぞれ `checkpoint-b.md` / `checkpoint-c.md`）へ、review-loops.md の追記形式（iteration 番号・verdict・指摘要約・ISO8601 日時）で**追記**する。
+- verdict は応答を返す**前に** `state/reviews/checkpoint-a.md`（B/C はそれぞれ `checkpoint-b.md` / `checkpoint-c.md`）へ、review-loops.md の追記形式（iteration 番号・verdict・指摘要約・ISO8601 日時 — `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を貼る。推測記入禁止 — contract §7）で**追記**する。
 - 判定の意味:
   - APPROVE = このまま人間に提示してよい。
   - CONCERNS = 提示可能だが revise 対象リスト必須。Checkpoint 提示物の「既知の課題」欄への転記を確認する。

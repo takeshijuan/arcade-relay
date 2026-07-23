@@ -1,76 +1,45 @@
-// MetaSchema — migration chain + validation (tech-stack-unity セーブ/永続化). Pure C#.
-// Migration functions are append-only: v(n)→v(n+1). A save newer than the current schema is
-// treated as corruption (no implicit downgrade). Callers (Persistence) act on the result.
+// MetaSchema.cs — セーブスキーマの検証とマイグレーション（純粋 C#・追加のみ/書き換え禁止）。
+// tech-stack-unity.md「セーブ / 永続化」節: v(n)→v(n+1) を順に適用。現行より新しい版は破損相当。
 namespace ForgeGame.Systems.Meta
 {
-    public enum SaveLoadStatus
+    /// <summary>破損判定の理由（Persistence 層が [SaveCorruption] ログの reason に埋める）。</summary>
+    public enum SaveValidationResult
     {
-        Ok = 0,
-        Migrated = 1,
-        Corrupt = 2, // parse fail / missing save_version / future version / schema-invalid
+        Valid = 0,
+        ParseFailed = 1,        // JSON パース不能（Persistence 層が判定）
+        VersionMissing = 2,     // save_version が既定(0)＝欠落
+        FutureVersion = 3,      // 現行より新しい版（暗黙ダウングレード禁止）
+        SchemaInvalid = 4,      // 必須フィールドの型/値が不正
     }
 
-    public readonly struct SaveLoadOutcome
-    {
-        public readonly SaveData Data;
-        public readonly SaveLoadStatus Status;
-        public readonly string Reason;
-
-        public SaveLoadOutcome(SaveData data, SaveLoadStatus status, string reason)
-        {
-            Data = data;
-            Status = status;
-            Reason = reason;
-        }
-    }
-
+    /// <summary>スキーマ検証・マイグレーションの純粋ロジック。I/O は Persistence 層が担う。</summary>
     public static class MetaSchema
     {
         /// <summary>
-        /// Validate and migrate a just-deserialized SaveData (may be null on parse failure).
-        /// Never throws; returns a defaulted SaveData with Corrupt status when unusable so the
-        /// I/O layer can perform the .bak + [SaveCorruption] protocol.
+        /// パース済み SaveData の妥当性を検査する。パース失敗は Persistence 層で別途 ParseFailed 判定。
+        /// スキーマ検証失敗（必須フィールド欠落・型不正・値域外）も破損として扱う（contract §6）。
         /// </summary>
-        public static SaveLoadOutcome Normalize(SaveData parsed)
+        public static SaveValidationResult Validate(SaveData data)
         {
-            if (parsed == null)
-            {
-                return new SaveLoadOutcome(SaveData.CreateDefault(), SaveLoadStatus.Corrupt, "parse-null");
-            }
-
-            if (parsed.save_version <= 0)
-            {
-                return new SaveLoadOutcome(SaveData.CreateDefault(), SaveLoadStatus.Corrupt, "missing-or-invalid-save_version");
-            }
-
-            if (parsed.save_version > GameConfig.Save.CurrentSchemaVersion)
-            {
-                return new SaveLoadOutcome(SaveData.CreateDefault(), SaveLoadStatus.Corrupt, "future-version");
-            }
-
-            bool migrated = false;
-            SaveData data = parsed;
-            // Apply v(n)→v(n+1) migrations in order. (No migrations yet at schema v1.)
-            // while (data.save_version < GameConfig.Save.CurrentSchemaVersion) { ...; migrated = true; }
-
-            if (!IsSchemaValid(data))
-            {
-                return new SaveLoadOutcome(SaveData.CreateDefault(), SaveLoadStatus.Corrupt, "schema-invalid");
-            }
-
-            return new SaveLoadOutcome(
-                data, migrated ? SaveLoadStatus.Migrated : SaveLoadStatus.Ok, null);
+            if (data == null) return SaveValidationResult.ParseFailed;
+            if (data.save_version <= 0) return SaveValidationResult.VersionMissing;
+            if (data.save_version > GameConfig.Save.CurrentVersion) return SaveValidationResult.FutureVersion;
+            // 値域サニティ（負値禁止のカウンタ等）。将来フィールド追加時はここに検査を足す。
+            if (data.totalRunsPlayed < 0 || data.totalWins < 0 || data.totalKills < 0 || data.essence < 0)
+                return SaveValidationResult.SchemaInvalid;
+            if (data.upgStartingGoldLv < 0 || data.upgTowerDiscountLv < 0 || data.upgEssenceRateLv < 0)
+                return SaveValidationResult.SchemaInvalid;
+            return SaveValidationResult.Valid;
         }
 
-        /// <summary>Range/consistency checks that JsonUtility cannot enforce.</summary>
-        private static bool IsSchemaValid(SaveData d)
+        /// <summary>
+        /// 旧版データを現行版へ順次マイグレーションする。v1 が現行のため現状は恒等変換。
+        /// v(n)→v(n+1) 関数は将来「追加のみ」で連ねる（既存関数の書き換え禁止）。
+        /// </summary>
+        public static SaveData Migrate(SaveData data)
         {
-            if (d.highScore < 0 || d.crystalBalance < 0) return false;
-            if (d.totalRunsPlayed < 0 || d.totalKillCount < 0 || d.totalCrystalsEarned < 0) return false;
-            if (d.upgradeAttackLevel < 0 || d.upgradeAttackLevel > GameConfig.Upgrade.AttackLevelMax) return false;
-            if (d.upgradeMoveSpeedLevel < 0 || d.upgradeMoveSpeedLevel > GameConfig.Upgrade.MoveSpeedLevelMax) return false;
-            if (d.upgradeMaxHpLevel < 0 || d.upgradeMaxHpLevel > GameConfig.Upgrade.MaxHpLevelMax) return false;
-            return true;
+            // 例: while (data.save_version < 2) data = MigrateV1ToV2(data);
+            return data;
         }
     }
 }

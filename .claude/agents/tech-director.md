@@ -38,6 +38,7 @@ model: opus
    - `assignee` — contract.md §2 の agent 名のみ。`phase` — `prototype` | `build`。
    - `acceptance` — qa-lead が実操作で判定できる**検証可能な**文にする（「動く」は不可。「矢印キーで左右移動し画面外に出ない」は可）。
    - **Title シーンと Menu シーンのストーリーを必ず発行する**（contract §11 必須シーン集合）: いずれも `assignee: ui-engineer`・`phase: prototype`（コアループ縦串は Title→Menu→Game→Result→Menu の遷移込みで初めて「1周」）。Menu の acceptance には必須要素（プレイ開始・アウトゲーム表示・設定・終了導線）の実在検証を含める。**これらを欠く分解は不合格**（workflow の Setup が機械検証し差し戻す）。
+   - **環境の最低限ビジュアルのストーリーを必ず発行する**（`assignee: gameplay-engineer`。contract §11 prototype 縦串の必須スコープ: 地面/背景の可視化・ライト・カメラ構図の確定。engine=unity/unreal はプレースホルダ地形でも可視の地面必須。`phase: prototype`）。これを欠く分解は不合格（workflow の Setup が機械検証し差し戻す）。
    - **メタ進行のストーリーを必ず発行する**: gdd「メタ進行（アウトゲーム）」節から、最低限「ハイスコア/統計の永続化と復元」（`assignee: gameplay-engineer`。acceptance に「保存→再起動相当→復元一致」と「破損時 .bak+明示エラー」を含める）を発行する。採用した選択要素（通貨/アンロック/実績/アップグレード）も story 化する（phase は prototype/build の裁量。永続化基盤は prototype 推奨）。
 5. **実装順序と assignee 決定**
    - 依存関係順（スキャフォールド→コアループ縦串→拡張→仕上げ）に story を並べる。

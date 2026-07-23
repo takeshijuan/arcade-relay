@@ -47,7 +47,8 @@ game/
       Ui/                   # HUD・メニュー（uGUI/UI Toolkit）
       Editor/
         ForgeBuild.cs       # ビルド・検証用 static メソッド（-executeMethod の入口）
-    Generated/              # AI生成資産の取込先（raw からコピーして Unity にインポートさせる）
+    Resources/
+      Generated/            # AI生成資産の取込先（raw からコピー。Resources.Load 方式 —「資産の取り扱い」節）
     Tests/
       EditMode/             # コンパイル検証を兼ねる最小テスト（必ず1本以上置く）
       PlayMode/             # コアループ検証・永続化検証・スクリーンショット取得テスト
@@ -95,9 +96,9 @@ game/
 
 ## 資産の取り扱い
 
-- raw 生成物と MANIFEST.jsonl は `game/_generated/`（contract §6/§11）。取込は `game/Assets/Generated/` にコピーし Unity のインポートに任せる
+- raw 生成物と MANIFEST.jsonl は `game/_generated/`（contract §6/§11）。**取込先 = `Assets/Resources/Generated/{models,textures,audio}/`** にコピーし Unity のインポートに任せる。動的ロードは `Resources.Load(GameConfig.AssetKeys.*)` で行い、**AssetKeys の値は Resources 相対パス**（例 `"Generated/models/model-hero"`）。`Assets/Generated/` 直下への配置は廃止
 - リグ付きキャラ: FBX を取込後、エディタスクリプトで `ModelImporter.animationType`（Humanoid なら `Human`、クリーチャー等は `Generic`）を設定し Avatar を生成。アニメーション FBX も同一スケルトンでインポートしリターゲット。**取込（Integrate）の必須検証**: `Avatar.isValid`（Humanoid 化成功）とアニメクリップの存在をエディタスクリプトで機械確認し、失敗時は `Generic` へ縮退した上で MANIFEST に注記する
-- 静的プロップ/環境: GLB を `Assets/Generated/` に置き glTFast の ScriptedImporter に処理させる
+- 静的プロップ/環境: GLB を `Assets/Resources/Generated/models/` に置き glTFast の ScriptedImporter に処理させる
 - 音声: Unity は Ogg Vorbis / WAV をネイティブ対応。**OGG のみで良い**（Safari 用 M4A は不要 — phaser 専用要件）
 - スケール検証必須: Unity は 1 unit = 1m。取込後にバウンディングボックスを検査し、想定サイズ（ヒト型 ≈ 1.6–2.0m）から外れていたら ModelImporter の scaleFactor で補正
 
@@ -123,6 +124,16 @@ game/
 - **破損時プロトコル（黙示初期化禁止 — rules/unity-code.md が強制）**: パース失敗・`save_version` 欠落・未来版・チェックサム不一致・スキーマ検証失敗（必須フィールド欠落・型不正）のいずれも、(1) 生データを `save.json.bak.<UTC時刻>` へ退避 → (2) `Debug.LogError("[SaveCorruption] reason=... backup=...")` を1回 → (3) 既定値で再生成し `recovered: true` を UI 層（Title/Menu）に伝播（トースト等の表示は任意だが、フラグの伝播は必須）
 - **保存タイミング**: Result 到達時に `MetaProgression.ApplyRunResult` → 即 persist を1回（Result→リスタート連打で二重保存しない。メモリ上の SaveData を使い回す）
 - **テスト規約**: PlayMode テストは実ユーザーのセーブを汚さないため `Application.temporaryCachePath` 配下の一時ファイル（テストごとに一意名）を使い、`[TearDown]` で削除する。`persistentDataPath` を直接使うテスト禁止
+
+## 既知の落とし穴（世代間で再発させない）
+
+> QA fix で「環境起因の一般則（エンジン/テストランナーの落とし穴）」と判明した知見は、qa/report.md への記録に加えてこの節へ**即時追記**する（gates.md QA-PLAY。qa-lead → fix 担当 engineer の責務。run 成果物だけに埋めない）。
+
+1. **InputSystem の batchmode 境界問題（E2/E3 で再発実績）** — PlayMode テストで `[UnitySetUp]` と `[UnityTest]` の境界を跨ぐと、`InputSystem.AddDevice<Mouse>()` したデバイスの Press/Release が `InputActionMap.WasPressedThisFrame()` に反映されない。**シーンロードと入力擬似発行は同一コルーチンに収める**。実装側も同じ理由で Title/Menu/HUD のクリック判定は入力ポーリングの初期化タイミングに注意する
+2. **正当縮退の `Debug.LogWarning` と `LogAssert.NoUnexpectedReceived()` の衝突（E3 で発見）** — 規約12が正当化する「未取込/未生成資産への縮退時の1回だけの LogWarning」は、その GameObject/Component を経由する PlayMode テスト（例: Game シーンをロードする HUD/操作系テスト）を無条件に false-fail させる。資産（例: タイルテクスチャ）が実際には AR-ASSET 承認済みで `game/_generated/` に存在するのに `Assets/Resources/Generated/` への取込（Integrate）だけがまだの場合、**バッチ検証実施者は該当資産の Integrate をテスト修正より優先する**（LogAssert.Expect を各テストへ後付けする対症療法より、「取込済みなら警告自体が発生しない」という設計を活かす方が実装意図に忠実）。取込対象が本当に未生成（プレースホルダのまま出荷確定）の場合のみ `LogAssert.Expect(LogType.Warning, ...)` で許容する
+3. **PlayMode テストの AudioListener 生成は「既存が無い場合のみ追加」にする（E3 で発見）** — `SceneManager.LoadScene`（既定 Single）で実シーン遷移まで進める PlayMode テスト（例: 勝敗確定→Result 遷移まで検証するテスト）は、遷移先シーン自身の Main Camera+AudioListener をテストランナーに残す。後続テストの `[SetUp]` が無条件に新しい `AudioListener` を追加すると「There are 2 audio listeners」で false-fail する一方、残存 Listener を無条件に破棄すると、自前の Listener を持たない設計のテスト（本番シーンは常に Listener が1つ存在する前提に暗黙依存）が「There are no audio listeners」で false-fail する（使い捨て `AudioSource`（`PlayClipAtPoint` 等）の自己破棄タイマーがまだ切れていない場合に発生）。**`Object.FindAnyObjectByType<AudioListener>() == null` の場合だけ自前で追加し、TearDown では自分が追加した分だけ破棄する（所有権を bool フィールドで記録）**のが両方の警告を同時に避ける唯一の方式
+4. **-batchmode の PlayMode は vsync 無しで極めて高速に回る（E3 Polish バッチ検証で発見）** — `-batchmode -runTests -testPlatform PlayMode` の実フレームは画面描画を伴わないため、本環境の実測で平均 `Time.deltaTime ≈ 0.00013秒/フレーム`（約7500fps相当）と、60fps 前提の感覚より2桁以上速く進む。「`Time.deltaTime` 駆動の演出（リコイル・撃破スケールダウン・被弾フラッシュ等）が持続時間経過後に既定状態へ戻ることを `for (int i = 0; i < N; i++) { yield return null; ... }` の**フレーム数上限のみ**で待つテスト」は、`N=300` 程度では実時間換算 約0.04秒しか経過せず、`0.15〜0.2s` 級の演出時間に届かず false-fail する。**frame-timing に依存する「戻り待ち」ループのフレーム予算は、対象 duration に対して2桁以上のマージンを持つ値（例: 20000）にする**か、`Time.time`/`Time.realtimeSinceStartup` ベースの経過時間を主条件にしフレーム数は安全弁（無限ループ防止）としてのみ使う
+5. **ビルドスポットのクリック判定は「占有有無で走査を分けない」（E3 Polish バッチ検証で発見）** — `GameConfig.Build.SpotPositions` は同一列（同じX）に経路を挟んで2スポット（Z=+3m/-3m）を配置するが、固定俯瞰カメラ構図では同一列2スポットの画面距離が `GameConfig.Ui.BuildSpotClickPickRadiusPx`（70px）と同程度かそれ以下になりうる（実測 約53〜58px）。「空きスポットを全走査 → 見つからなければ占有スポットを全走査」のように2段階に分けてヒットテストすると、片方のスポットをクリックしたつもりが pick 半径の重なりで隣接する反対側スポットを誤検出する。**クリック地点に最も近いスポットを1つだけ（占有有無を問わず）求めてから、そのスポットの占有状態で分岐する一本化されたヒットテスト**にすること（Ui/HudPanel.FindClickedSpot 参照）
 
 ## 将来のエンジン非依存化に向けた線引き
 

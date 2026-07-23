@@ -1,6 +1,6 @@
-// ForgeBuild — batchmode build entry (tech-stack-unity 検証コマンド "build 相当").
-// Invoke fully-qualified: -executeMethod ForgeGame.EditorTools.ForgeBuild.BuildMac
-// Rule 11: batchmode failures MUST escalate to a non-zero exit code (never LogError+return).
+// ForgeBuild.cs — batchmode ビルドの入口（tech-stack-unity.md「検証コマンド」build 相当）。
+// 検証コマンド: "$UNITY" -batchmode -projectPath game -executeMethod ForgeGame.EditorTools.ForgeBuild.BuildMac -quit
+// 完全修飾名で指定すること（namespace 内のため裸名では解決されない — 規約より）。
 using System.Linq;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
@@ -10,9 +10,12 @@ namespace ForgeGame.EditorTools
 {
     public static class ForgeBuild
     {
-        private const string OutputDir = "Build";
-        private const string AppName = "ForgeGame.app";
+        private const string OutputPath = "Build/ForgeGame.app"; // game/ 相対
 
+        /// <summary>
+        /// StandaloneOSX（Apple silicon）向けにビルドする。
+        /// 失敗は必ず非0終了に昇格させる（規約11: batchmode の握り潰し禁止）。壊れた状態で保存しない。
+        /// </summary>
         public static void BuildMac()
         {
             string[] scenes = EditorBuildSettings.scenes
@@ -22,39 +25,35 @@ namespace ForgeGame.EditorTools
 
             if (scenes.Length == 0)
             {
-                Fail("No enabled scenes in EditorBuildSettings. Run ForgeScaffold.SetupScenes first.");
+                Debug.LogError("[ForgeBuild] EditorBuildSettings に有効なシーンがありません。");
+                EditorApplication.Exit(1);
                 return;
             }
+
+            EditorUserBuildSettings.selectedStandaloneTarget = BuildTarget.StandaloneOSX;
+            EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Standalone, BuildTarget.StandaloneOSX);
 
             var options = new BuildPlayerOptions
             {
                 scenes = scenes,
-                locationPathName = System.IO.Path.Combine(OutputDir, AppName),
+                locationPathName = OutputPath,
                 target = BuildTarget.StandaloneOSX,
-                targetGroup = BuildTargetGroup.Standalone,
                 options = BuildOptions.None,
             };
-
-            // Ensure the active target is StandaloneOSX (architecture defaults to the editor host,
-            // i.e. Apple silicon arm64; left at default to stay API-stable across Unity 6 minors).
-            EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Standalone, BuildTarget.StandaloneOSX);
 
             BuildReport report = BuildPipeline.BuildPlayer(options);
             BuildSummary summary = report.summary;
 
             if (summary.result == BuildResult.Succeeded)
             {
-                Debug.Log($"Build succeeded: {summary.outputPath} ({summary.totalSize} bytes)");
-                return;
+                Debug.Log($"[ForgeBuild] Build succeeded: {summary.totalSize} bytes -> {OutputPath}");
+                EditorApplication.Exit(0);
             }
-
-            Fail($"Build failed: result={summary.result} errors={summary.totalErrors}");
-        }
-
-        private static void Fail(string message)
-        {
-            Debug.LogError("[ForgeBuild] " + message);
-            EditorApplication.Exit(1);
+            else
+            {
+                Debug.LogError($"[ForgeBuild] Build failed: result={summary.result}, errors={summary.totalErrors}");
+                EditorApplication.Exit(1);
+            }
         }
     }
 }

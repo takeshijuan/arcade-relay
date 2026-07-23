@@ -1,0 +1,32 @@
+{
+  "file": "model-bastion-cannon.glb",
+  "source_file": "model-bastion-cannon.glb (regenerated 2026-07-21 AR-ASSET iteration1 revise: color+silhouette fix)",
+  "scale_factor_applied_uniform_height": 1.843226543953683,
+  "scale_factor_applied_xy_proportion_correction": 0.6568,
+  "triangle_count": 5481,
+  "poly_budget": 6000,
+  "vertex_count": 6395,
+  "material_count": 1,
+  "material_names": [
+    "Material_0"
+  ],
+  "bone_count": 0,
+  "non_manifold_verts": 74,
+  "bbox_authoring_m": [
+    1.4002,
+    1.3999,
+    3.5
+  ],
+  "bbox_min": [
+    -0.7001,
+    -0.6999,
+    0.0
+  ],
+  "bbox_max": [
+    0.7001,
+    0.6999,
+    3.5
+  ],
+  "mesh_object_count": 1,
+  "island_count": 1
+}

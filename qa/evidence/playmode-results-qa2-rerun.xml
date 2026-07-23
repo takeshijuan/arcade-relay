@@ -1,0 +1,457 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="50" result="Passed" total="50" passed="50" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-07-22 03:26:09Z" end-time="2026-07-22 03:26:16Z" duration="6.7747198">
+  <test-suite type="TestSuite" id="1071" name="game" fullname="game" runstate="Runnable" testcasecount="50" result="Passed" start-time="2026-07-22 03:26:09Z" end-time="2026-07-22 03:26:16Z" duration="6.774720" total="50" passed="50" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="PlayMode" />
+    </properties>
+    <test-suite type="Assembly" id="1060" name="ForgeGame.PlayMode.Tests.dll" fullname="<repo>/game/Library/ScriptAssemblies/ForgeGame.PlayMode.Tests.dll" runstate="Runnable" testcasecount="48" result="Passed" start-time="2026-07-22 03:26:09Z" end-time="2026-07-22 03:26:16Z" duration="6.766854" total="48" passed="48" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="24393" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="PlayMode" />
+        <property name="EditorOnly" value="False" />
+      </properties>
+      <test-suite type="TestSuite" id="1061" name="ForgeGame" fullname="ForgeGame" runstate="Runnable" testcasecount="48" result="Passed" start-time="2026-07-22 03:26:09Z" end-time="2026-07-22 03:26:16Z" duration="6.766505" total="48" passed="48" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1062" name="Tests" fullname="ForgeGame.Tests" runstate="Runnable" testcasecount="48" result="Passed" start-time="2026-07-22 03:26:09Z" end-time="2026-07-22 03:26:16Z" duration="6.766361" total="48" passed="48" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1063" name="PlayMode" fullname="ForgeGame.Tests.PlayMode" runstate="Runnable" testcasecount="48" result="Passed" start-time="2026-07-22 03:26:09Z" end-time="2026-07-22 03:26:16Z" duration="6.766169" total="48" passed="48" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestFixture" id="1001" name="CoreDefensePlayModeTests" fullname="ForgeGame.Tests.PlayMode.CoreDefensePlayModeTests" classname="ForgeGame.Tests.PlayMode.CoreDefensePlayModeTests" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-07-22 03:26:09Z" end-time="2026-07-22 03:26:09Z" duration="0.099314" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1002" name="UnopposedWaves_DepleteCoreHp_ToExactlyZero_WithNoNaNPositions_AndDefeatEventFires" fullname="ForgeGame.Tests.PlayMode.CoreDefensePlayModeTests.UnopposedWaves_DepleteCoreHp_ToExactlyZero_WithNoNaNPositions_AndDefeatEventFires" methodname="UnopposedWaves_DepleteCoreHp_ToExactlyZero_WithNoNaNPositions_AndDefeatEventFires" classname="ForgeGame.Tests.PlayMode.CoreDefensePlayModeTests" runstate="Runnable" seed="452923269" result="Passed" start-time="2026-07-22 03:26:09Z" end-time="2026-07-22 03:26:09Z" duration="0.093687" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1003" name="FileSaveStorePlayModeTests" fullname="ForgeGame.Tests.PlayMode.FileSaveStorePlayModeTests" classname="ForgeGame.Tests.PlayMode.FileSaveStorePlayModeTests" runstate="Runnable" testcasecount="7" result="Passed" start-time="2026-07-22 03:26:09Z" end-time="2026-07-22 03:26:09Z" duration="0.014103" total="7" passed="7" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1010" name="Load_AfterCorruptionRecovery_SavingDefaultThenReloading_RoundTripsCleanly" fullname="ForgeGame.Tests.PlayMode.FileSaveStorePlayModeTests.Load_AfterCorruptionRecovery_SavingDefaultThenReloading_RoundTripsCleanly" methodname="Load_AfterCorruptionRecovery_SavingDefaultThenReloading_RoundTripsCleanly" classname="ForgeGame.Tests.PlayMode.FileSaveStorePlayModeTests" runstate="Runnable" seed="1537794094" result="Passed" start-time="2026-07-22 03:26:09Z" end-time="2026-07-22 03:26:09Z" duration="0.008747" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[SaveCorruption] reason=ParseFailed backup=<tmp-path>
+]]></output>
+              </test-case>
+              <test-case id="1004" name="Load_NoFileYet_ReturnsDefault_NotRecovered" fullname="ForgeGame.Tests.PlayMode.FileSaveStorePlayModeTests.Load_NoFileYet_ReturnsDefault_NotRecovered" methodname="Load_NoFileYet_ReturnsDefault_NotRecovered" classname="ForgeGame.Tests.PlayMode.FileSaveStorePlayModeTests" runstate="Runnable" seed="1023051531" result="Passed" start-time="2026-07-22 03:26:09Z" end-time="2026-07-22 03:26:09Z" duration="0.000282" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1008" name="Load_SchemaInvalid_MissingSaveVersion_TriggersCorruptionProtocol_BackupAndDefaultAndRecovered" fullname="ForgeGame.Tests.PlayMode.FileSaveStorePlayModeTests.Load_SchemaInvalid_MissingSaveVersion_TriggersCorruptionProtocol_BackupAndDefaultAndRecovered" methodname="Load_SchemaInvalid_MissingSaveVersion_TriggersCorruptionProtocol_BackupAndDefaultAndRecovered" classname="ForgeGame.Tests.PlayMode.FileSaveStorePlayModeTests" runstate="Runnable" seed="727541064" result="Passed" start-time="2026-07-22 03:26:09Z" end-time="2026-07-22 03:26:09Z" duration="0.001112" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[SaveCorruption] reason=VersionMissing backup=<tmp-path>
+]]></output>
+              </test-case>
+              <test-case id="1009" name="Load_SchemaInvalid_NegativeField_TriggersCorruptionProtocol" fullname="ForgeGame.Tests.PlayMode.FileSaveStorePlayModeTests.Load_SchemaInvalid_NegativeField_TriggersCorruptionProtocol" methodname="Load_SchemaInvalid_NegativeField_TriggersCorruptionProtocol" classname="ForgeGame.Tests.PlayMode.FileSaveStorePlayModeTests" runstate="Runnable" seed="894174828" result="Passed" start-time="2026-07-22 03:26:09Z" end-time="2026-07-22 03:26:09Z" duration="0.000860" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[SaveCorruption] reason=SchemaInvalid backup=<tmp-path>
+]]></output>
+              </test-case>
+              <test-case id="1007" name="Load_UnparsableJson_TriggersCorruptionProtocol_BackupAndDefaultAndRecovered" fullname="ForgeGame.Tests.PlayMode.FileSaveStorePlayModeTests.Load_UnparsableJson_TriggersCorruptionProtocol_BackupAndDefaultAndRecovered" methodname="Load_UnparsableJson_TriggersCorruptionProtocol_BackupAndDefaultAndRecovered" classname="ForgeGame.Tests.PlayMode.FileSaveStorePlayModeTests" runstate="Runnable" seed="1758978047" result="Passed" start-time="2026-07-22 03:26:09Z" end-time="2026-07-22 03:26:09Z" duration="0.000938" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[SaveCorruption] reason=ParseFailed backup=<tmp-path>
+]]></output>
+              </test-case>
+              <test-case id="1005" name="Save_WritesAtomically_NoTempFileLeftBehind_AndFileExists" fullname="ForgeGame.Tests.PlayMode.FileSaveStorePlayModeTests.Save_WritesAtomically_NoTempFileLeftBehind_AndFileExists" methodname="Save_WritesAtomically_NoTempFileLeftBehind_AndFileExists" classname="ForgeGame.Tests.PlayMode.FileSaveStorePlayModeTests" runstate="Runnable" seed="1617535931" result="Passed" start-time="2026-07-22 03:26:09Z" end-time="2026-07-22 03:26:09Z" duration="0.000569" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1006" name="SaveThenLoad_WithNewStoreInstance_RestoresAllFields" fullname="ForgeGame.Tests.PlayMode.FileSaveStorePlayModeTests.SaveThenLoad_WithNewStoreInstance_RestoresAllFields" methodname="SaveThenLoad_WithNewStoreInstance_RestoresAllFields" classname="ForgeGame.Tests.PlayMode.FileSaveStorePlayModeTests" runstate="Runnable" seed="818620721" result="Passed" start-time="2026-07-22 03:26:09Z" end-time="2026-07-22 03:26:09Z" duration="0.000502" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1011" name="GameFlowPlayModeTests" fullname="ForgeGame.Tests.PlayMode.GameFlowPlayModeTests" classname="ForgeGame.Tests.PlayMode.GameFlowPlayModeTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-07-22 03:26:09Z" end-time="2026-07-22 03:26:09Z" duration="0.614815" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1012" name="Boot_LoadsSave_AndAutoTransitionsToTitle_WithNoErrors" fullname="ForgeGame.Tests.PlayMode.GameFlowPlayModeTests.Boot_LoadsSave_AndAutoTransitionsToTitle_WithNoErrors" methodname="Boot_LoadsSave_AndAutoTransitionsToTitle_WithNoErrors" classname="ForgeGame.Tests.PlayMode.GameFlowPlayModeTests" runstate="Runnable" seed="157228782" result="Passed" start-time="2026-07-22 03:26:09Z" end-time="2026-07-22 03:26:09Z" duration="0.235202" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1013" name="GameBootstrap_PropagatesRecoveredFlag_ToGameFlow_AndStillReachesTitle" fullname="ForgeGame.Tests.PlayMode.GameFlowPlayModeTests.GameBootstrap_PropagatesRecoveredFlag_ToGameFlow_AndStillReachesTitle" methodname="GameBootstrap_PropagatesRecoveredFlag_ToGameFlow_AndStillReachesTitle" classname="ForgeGame.Tests.PlayMode.GameFlowPlayModeTests" runstate="Runnable" seed="1031932901" result="Passed" start-time="2026-07-22 03:26:09Z" end-time="2026-07-22 03:26:09Z" duration="0.123916" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[Bootstrap] save recovered from corruption; defaults restored.
+]]></output>
+              </test-case>
+              <test-case id="1014" name="GameFlow_GoToResult_CarriesRunResult_AndLoadsResultScene" fullname="ForgeGame.Tests.PlayMode.GameFlowPlayModeTests.GameFlow_GoToResult_CarriesRunResult_AndLoadsResultScene" methodname="GameFlow_GoToResult_CarriesRunResult_AndLoadsResultScene" classname="ForgeGame.Tests.PlayMode.GameFlowPlayModeTests" runstate="Runnable" seed="1640059917" result="Passed" start-time="2026-07-22 03:26:09Z" end-time="2026-07-22 03:26:09Z" duration="0.254909" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[ResultScreen] carried SaveData appears stale — SetCurrentSaveData contract regression?
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1015" name="GameHudPlayModeTests" fullname="ForgeGame.Tests.PlayMode.GameHudPlayModeTests" classname="ForgeGame.Tests.PlayMode.GameHudPlayModeTests" runstate="Runnable" testcasecount="8" result="Passed" start-time="2026-07-22 03:26:09Z" end-time="2026-07-22 03:26:11Z" duration="1.063030" total="8" passed="8" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1018" name="ClickEmptyBuildSpot_OpensTowerSelectPanel" fullname="ForgeGame.Tests.PlayMode.GameHudPlayModeTests.ClickEmptyBuildSpot_OpensTowerSelectPanel" methodname="ClickEmptyBuildSpot_OpensTowerSelectPanel" classname="ForgeGame.Tests.PlayMode.GameHudPlayModeTests" runstate="Runnable" seed="1176770670" result="Passed" start-time="2026-07-22 03:26:10Z" end-time="2026-07-22 03:26:10Z" duration="0.147113" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1023" name="CoreHit_UpdatesCoreHpDisplay" fullname="ForgeGame.Tests.PlayMode.GameHudPlayModeTests.CoreHit_UpdatesCoreHpDisplay" methodname="CoreHit_UpdatesCoreHpDisplay" classname="ForgeGame.Tests.PlayMode.GameHudPlayModeTests" runstate="Runnable" seed="1739590239" result="Passed" start-time="2026-07-22 03:26:10Z" end-time="2026-07-22 03:26:10Z" duration="0.135289" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1016" name="HudCanvas_IsScreenSpaceCamera" fullname="ForgeGame.Tests.PlayMode.GameHudPlayModeTests.HudCanvas_IsScreenSpaceCamera" methodname="HudCanvas_IsScreenSpaceCamera" classname="ForgeGame.Tests.PlayMode.GameHudPlayModeTests" runstate="Runnable" seed="1629059630" result="Passed" start-time="2026-07-22 03:26:10Z" end-time="2026-07-22 03:26:10Z" duration="0.131852" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1017" name="HudTexts_ShowInitialGoldCoreHpAndWave" fullname="ForgeGame.Tests.PlayMode.GameHudPlayModeTests.HudTexts_ShowInitialGoldCoreHpAndWave" methodname="HudTexts_ShowInitialGoldCoreHpAndWave" classname="ForgeGame.Tests.PlayMode.GameHudPlayModeTests" runstate="Runnable" seed="1677283894" result="Passed" start-time="2026-07-22 03:26:10Z" end-time="2026-07-22 03:26:10Z" duration="0.128145" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1020" name="InsufficientFundsSpot_BothButtonsDisabled_ClickDoesNotPlace" fullname="ForgeGame.Tests.PlayMode.GameHudPlayModeTests.InsufficientFundsSpot_BothButtonsDisabled_ClickDoesNotPlace" methodname="InsufficientFundsSpot_BothButtonsDisabled_ClickDoesNotPlace" classname="ForgeGame.Tests.PlayMode.GameHudPlayModeTests" runstate="Runnable" seed="1446979221" result="Passed" start-time="2026-07-22 03:26:10Z" end-time="2026-07-22 03:26:10Z" duration="0.133982" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1022" name="OutsideClick_ClosesPanel" fullname="ForgeGame.Tests.PlayMode.GameHudPlayModeTests.OutsideClick_ClosesPanel" methodname="OutsideClick_ClosesPanel" classname="ForgeGame.Tests.PlayMode.GameHudPlayModeTests" runstate="Runnable" seed="1784954818" result="Passed" start-time="2026-07-22 03:26:10Z" end-time="2026-07-22 03:26:10Z" duration="0.128531" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1021" name="RightClick_ClosesPanel" fullname="ForgeGame.Tests.PlayMode.GameHudPlayModeTests.RightClick_ClosesPanel" methodname="RightClick_ClosesPanel" classname="ForgeGame.Tests.PlayMode.GameHudPlayModeTests" runstate="Runnable" seed="1262742389" result="Passed" start-time="2026-07-22 03:26:10Z" end-time="2026-07-22 03:26:10Z" duration="0.127806" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1019" name="SelectAffordableTower_PlacesTower_ClosesPanel_AndGoldDisplayDecreases" fullname="ForgeGame.Tests.PlayMode.GameHudPlayModeTests.SelectAffordableTower_PlacesTower_ClosesPanel_AndGoldDisplayDecreases" methodname="SelectAffordableTower_PlacesTower_ClosesPanel_AndGoldDisplayDecreases" classname="ForgeGame.Tests.PlayMode.GameHudPlayModeTests" runstate="Runnable" seed="1330041331" result="Passed" start-time="2026-07-22 03:26:10Z" end-time="2026-07-22 03:26:11Z" duration="0.128815" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1024" name="MenuScreenPlayModeTests" fullname="ForgeGame.Tests.PlayMode.MenuScreenPlayModeTests" classname="ForgeGame.Tests.PlayMode.MenuScreenPlayModeTests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-07-22 03:26:11Z" end-time="2026-07-22 03:26:11Z" duration="0.905113" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1029" name="ClickBackToTitleButton_TransitionsToTitle" fullname="ForgeGame.Tests.PlayMode.MenuScreenPlayModeTests.ClickBackToTitleButton_TransitionsToTitle" methodname="ClickBackToTitleButton_TransitionsToTitle" classname="ForgeGame.Tests.PlayMode.MenuScreenPlayModeTests" runstate="Runnable" seed="1821747730" result="Passed" start-time="2026-07-22 03:26:11Z" end-time="2026-07-22 03:26:11Z" duration="0.256721" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1028" name="ClickPlayButton_TransitionsToGame" fullname="ForgeGame.Tests.PlayMode.MenuScreenPlayModeTests.ClickPlayButton_TransitionsToGame" methodname="ClickPlayButton_TransitionsToGame" classname="ForgeGame.Tests.PlayMode.MenuScreenPlayModeTests" runstate="Runnable" seed="534393249" result="Passed" start-time="2026-07-22 03:26:11Z" end-time="2026-07-22 03:26:11Z" duration="0.258216" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1025" name="MenuCanvas_IsScreenSpaceCamera" fullname="ForgeGame.Tests.PlayMode.MenuScreenPlayModeTests.MenuCanvas_IsScreenSpaceCamera" methodname="MenuCanvas_IsScreenSpaceCamera" classname="ForgeGame.Tests.PlayMode.MenuScreenPlayModeTests" runstate="Runnable" seed="440474657" result="Passed" start-time="2026-07-22 03:26:11Z" end-time="2026-07-22 03:26:11Z" duration="0.130612" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1027" name="OutgameDisplay_ReflectsLoadedSaveData" fullname="ForgeGame.Tests.PlayMode.MenuScreenPlayModeTests.OutgameDisplay_ReflectsLoadedSaveData" methodname="OutgameDisplay_ReflectsLoadedSaveData" classname="ForgeGame.Tests.PlayMode.MenuScreenPlayModeTests" runstate="Runnable" seed="1887608777" result="Passed" start-time="2026-07-22 03:26:11Z" end-time="2026-07-22 03:26:11Z" duration="0.130605" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1026" name="RequiredFourElements_Exist" fullname="ForgeGame.Tests.PlayMode.MenuScreenPlayModeTests.RequiredFourElements_Exist" methodname="RequiredFourElements_Exist" classname="ForgeGame.Tests.PlayMode.MenuScreenPlayModeTests" runstate="Runnable" seed="1406468669" result="Passed" start-time="2026-07-22 03:26:11Z" end-time="2026-07-22 03:26:11Z" duration="0.127801" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1030" name="QaVisualEvidencePlayModeTests" fullname="ForgeGame.Tests.PlayMode.QaVisualEvidencePlayModeTests" classname="ForgeGame.Tests.PlayMode.QaVisualEvidencePlayModeTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-07-22 03:26:11Z" end-time="2026-07-22 03:26:12Z" duration="0.741315" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1033" name="Game_Screenshot_MaterialSanity_NaNCheck_AndCameraFacing" fullname="ForgeGame.Tests.PlayMode.QaVisualEvidencePlayModeTests.Game_Screenshot_MaterialSanity_NaNCheck_AndCameraFacing" methodname="Game_Screenshot_MaterialSanity_NaNCheck_AndCameraFacing" classname="ForgeGame.Tests.PlayMode.QaVisualEvidencePlayModeTests" runstate="Runnable" seed="1578707515" result="Passed" start-time="2026-07-22 03:26:11Z" end-time="2026-07-22 03:26:12Z" duration="0.314224" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1032" name="Menu_Screenshot_And_MaterialSanity" fullname="ForgeGame.Tests.PlayMode.QaVisualEvidencePlayModeTests.Menu_Screenshot_And_MaterialSanity" methodname="Menu_Screenshot_And_MaterialSanity" classname="ForgeGame.Tests.PlayMode.QaVisualEvidencePlayModeTests" runstate="Runnable" seed="1539909734" result="Passed" start-time="2026-07-22 03:26:12Z" end-time="2026-07-22 03:26:12Z" duration="0.145502" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1034" name="Result_Screenshot_And_MaterialSanity" fullname="ForgeGame.Tests.PlayMode.QaVisualEvidencePlayModeTests.Result_Screenshot_And_MaterialSanity" methodname="Result_Screenshot_And_MaterialSanity" classname="ForgeGame.Tests.PlayMode.QaVisualEvidencePlayModeTests" runstate="Runnable" seed="551762961" result="Passed" start-time="2026-07-22 03:26:12Z" end-time="2026-07-22 03:26:12Z" duration="0.141006" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[ResultScreen] GameFlow.CurrentSaveData is null; rendering defaults (expected only when Result is entered without going through Boot/Game, e.g. isolated PlayMode tests).
+[ResultScreen] carried SaveData appears stale — SetCurrentSaveData contract regression?
+]]></output>
+              </test-case>
+              <test-case id="1031" name="Title_Screenshot_And_MaterialSanity" fullname="ForgeGame.Tests.PlayMode.QaVisualEvidencePlayModeTests.Title_Screenshot_And_MaterialSanity" methodname="Title_Screenshot_And_MaterialSanity" classname="ForgeGame.Tests.PlayMode.QaVisualEvidencePlayModeTests" runstate="Runnable" seed="736247964" result="Passed" start-time="2026-07-22 03:26:12Z" end-time="2026-07-22 03:26:12Z" duration="0.139676" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1035" name="ResultScreenPlayModeTests" fullname="ForgeGame.Tests.PlayMode.ResultScreenPlayModeTests" classname="ForgeGame.Tests.PlayMode.ResultScreenPlayModeTests" runstate="Runnable" testcasecount="8" result="Passed" start-time="2026-07-22 03:26:12Z" end-time="2026-07-22 03:26:14Z" duration="1.794339" total="8" passed="8" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1042" name="ClickBackToMenu_TransitionsToMenu_AndClearsRunResult" fullname="ForgeGame.Tests.PlayMode.ResultScreenPlayModeTests.ClickBackToMenu_TransitionsToMenu_AndClearsRunResult" methodname="ClickBackToMenu_TransitionsToMenu_AndClearsRunResult" classname="ForgeGame.Tests.PlayMode.ResultScreenPlayModeTests" runstate="Runnable" seed="1956481039" result="Passed" start-time="2026-07-22 03:26:12Z" end-time="2026-07-22 03:26:12Z" duration="0.258016" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[ResultScreen] GameFlow.CurrentSaveData is null; rendering defaults (expected only when Result is entered without going through Boot/Game, e.g. isolated PlayMode tests).
+[ResultScreen] carried SaveData appears stale — SetCurrentSaveData contract regression?
+[MenuScreen] GameFlow.CurrentSaveData is null; rendering defaults (expected only when Menu is entered without going through Boot, e.g. isolated PlayMode tests).
+]]></output>
+              </test-case>
+              <test-case id="1041" name="ClickPlayAgain_TransitionsToGame_AndClearsRunResult" fullname="ForgeGame.Tests.PlayMode.ResultScreenPlayModeTests.ClickPlayAgain_TransitionsToGame_AndClearsRunResult" methodname="ClickPlayAgain_TransitionsToGame_AndClearsRunResult" classname="ForgeGame.Tests.PlayMode.ResultScreenPlayModeTests" runstate="Runnable" seed="2092129159" result="Passed" start-time="2026-07-22 03:26:12Z" end-time="2026-07-22 03:26:13Z" duration="0.257232" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[ResultScreen] GameFlow.CurrentSaveData is null; rendering defaults (expected only when Result is entered without going through Boot/Game, e.g. isolated PlayMode tests).
+[ResultScreen] carried SaveData appears stale — SetCurrentSaveData contract regression?
+]]></output>
+              </test-case>
+              <test-case id="1039" name="DisplaysNewlyUnlockedAchievement_FirstVictory" fullname="ForgeGame.Tests.PlayMode.ResultScreenPlayModeTests.DisplaysNewlyUnlockedAchievement_FirstVictory" methodname="DisplaysNewlyUnlockedAchievement_FirstVictory" classname="ForgeGame.Tests.PlayMode.ResultScreenPlayModeTests" runstate="Runnable" seed="872221647" result="Passed" start-time="2026-07-22 03:26:13Z" end-time="2026-07-22 03:26:13Z" duration="0.129461" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1037" name="DisplaysOutcome_Score_And_HighlightsNewHighScore" fullname="ForgeGame.Tests.PlayMode.ResultScreenPlayModeTests.DisplaysOutcome_Score_And_HighlightsNewHighScore" methodname="DisplaysOutcome_Score_And_HighlightsNewHighScore" classname="ForgeGame.Tests.PlayMode.ResultScreenPlayModeTests" runstate="Runnable" seed="236424014" result="Passed" start-time="2026-07-22 03:26:13Z" end-time="2026-07-22 03:26:13Z" duration="0.129303" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1043" name="FullLoop_TitleMenuGameResultMenu_CompletesRequiredSceneCycle" fullname="ForgeGame.Tests.PlayMode.ResultScreenPlayModeTests.FullLoop_TitleMenuGameResultMenu_CompletesRequiredSceneCycle" methodname="FullLoop_TitleMenuGameResultMenu_CompletesRequiredSceneCycle" classname="ForgeGame.Tests.PlayMode.ResultScreenPlayModeTests" runstate="Runnable" seed="800014587" result="Passed" start-time="2026-07-22 03:26:13Z" end-time="2026-07-22 03:26:14Z" duration="0.629474" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[MenuScreen] GameFlow.CurrentSaveData is null; rendering defaults (expected only when Menu is entered without going through Boot, e.g. isolated PlayMode tests).
+[ResultScreen] GameFlow.CurrentSaveData is null; rendering defaults (expected only when Result is entered without going through Boot/Game, e.g. isolated PlayMode tests).
+[ResultScreen] carried SaveData appears stale — SetCurrentSaveData contract regression?
+[MenuScreen] GameFlow.CurrentSaveData is null; rendering defaults (expected only when Menu is entered without going through Boot, e.g. isolated PlayMode tests).
+]]></output>
+              </test-case>
+              <test-case id="1038" name="LossResult_ShowsLossOutcome_NoHighlight" fullname="ForgeGame.Tests.PlayMode.ResultScreenPlayModeTests.LossResult_ShowsLossOutcome_NoHighlight" methodname="LossResult_ShowsLossOutcome_NoHighlight" classname="ForgeGame.Tests.PlayMode.ResultScreenPlayModeTests" runstate="Runnable" seed="1602361054" result="Passed" start-time="2026-07-22 03:26:14Z" end-time="2026-07-22 03:26:14Z" duration="0.129461" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1040" name="NoNewAchievements_ShowsNoneLabel" fullname="ForgeGame.Tests.PlayMode.ResultScreenPlayModeTests.NoNewAchievements_ShowsNoneLabel" methodname="NoNewAchievements_ShowsNoneLabel" classname="ForgeGame.Tests.PlayMode.ResultScreenPlayModeTests" runstate="Runnable" seed="294992571" result="Passed" start-time="2026-07-22 03:26:14Z" end-time="2026-07-22 03:26:14Z" duration="0.128776" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1036" name="ResultCanvas_IsScreenSpaceCamera" fullname="ForgeGame.Tests.PlayMode.ResultScreenPlayModeTests.ResultCanvas_IsScreenSpaceCamera" methodname="ResultCanvas_IsScreenSpaceCamera" classname="ForgeGame.Tests.PlayMode.ResultScreenPlayModeTests" runstate="Runnable" seed="1011923159" result="Passed" start-time="2026-07-22 03:26:14Z" end-time="2026-07-22 03:26:14Z" duration="0.130720" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[ResultScreen] GameFlow.CurrentSaveData is null; rendering defaults (expected only when Result is entered without going through Boot/Game, e.g. isolated PlayMode tests).
+[ResultScreen] carried SaveData appears stale — SetCurrentSaveData contract regression?
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1044" name="RunOutcomePlayModeTests" fullname="ForgeGame.Tests.PlayMode.RunOutcomePlayModeTests" classname="ForgeGame.Tests.PlayMode.RunOutcomePlayModeTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-07-22 03:26:14Z" end-time="2026-07-22 03:26:15Z" duration="0.593495" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1045" name="AllWavesCleared_WithCoreAlive_ConfirmsWin_SavesOnce_AndTransitionsToResult" fullname="ForgeGame.Tests.PlayMode.RunOutcomePlayModeTests.AllWavesCleared_WithCoreAlive_ConfirmsWin_SavesOnce_AndTransitionsToResult" methodname="AllWavesCleared_WithCoreAlive_ConfirmsWin_SavesOnce_AndTransitionsToResult" classname="ForgeGame.Tests.PlayMode.RunOutcomePlayModeTests" runstate="Runnable" seed="1938534896" result="Passed" start-time="2026-07-22 03:26:14Z" end-time="2026-07-22 03:26:14Z" duration="0.191367" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[RunOutcomeController] run finalized isWin=True finalScore=1482 killCount=101
+]]></output>
+              </test-case>
+              <test-case id="1046" name="CoreDepleted_ConfirmsLoss_SavesOnce_AndTransitionsToResult" fullname="ForgeGame.Tests.PlayMode.RunOutcomePlayModeTests.CoreDepleted_ConfirmsLoss_SavesOnce_AndTransitionsToResult" methodname="CoreDepleted_ConfirmsLoss_SavesOnce_AndTransitionsToResult" classname="ForgeGame.Tests.PlayMode.RunOutcomePlayModeTests" runstate="Runnable" seed="1589973682" result="Passed" start-time="2026-07-22 03:26:14Z" end-time="2026-07-22 03:26:14Z" duration="0.200485" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[RunOutcomeController] run finalized isWin=False finalScore=212 killCount=0
+]]></output>
+              </test-case>
+              <test-case id="1047" name="SaveThrows_LogsSaveFailureOnce_SetsGameFlowSaveFailed_ButStillTransitionsToResult" fullname="ForgeGame.Tests.PlayMode.RunOutcomePlayModeTests.SaveThrows_LogsSaveFailureOnce_SetsGameFlowSaveFailed_ButStillTransitionsToResult" methodname="SaveThrows_LogsSaveFailureOnce_SetsGameFlowSaveFailed_ButStillTransitionsToResult" classname="ForgeGame.Tests.PlayMode.RunOutcomePlayModeTests" runstate="Runnable" seed="357108603" result="Passed" start-time="2026-07-22 03:26:14Z" end-time="2026-07-22 03:26:15Z" duration="0.200862" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[SaveFailure] RunOutcomeController failed to persist SaveData after run finalize (isWin=False): System.IO.IOException: simulated persistence failure
+  at ForgeGame.Tests.PlayMode.RunOutcomePlayModeTests+ThrowingSaveStore.Save (ForgeGame.Systems.Meta.SaveData data) [0x00000] in <repo>/game/Assets/Tests/PlayMode/RunOutcomePlayModeTests.cs:46 
+  at ForgeGame.Components.RunOutcomeController.FinalizeRun (System.Boolean isWin) [0x00122] in <repo>/game/Assets/Scripts/Components/RunOutcomeController.cs:187 
+[RunOutcomeController] run finalized isWin=False finalScore=212 killCount=0
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1048" name="ScaffoldPlayModeSmokeTests" fullname="ForgeGame.Tests.PlayMode.ScaffoldPlayModeSmokeTests" classname="ForgeGame.Tests.PlayMode.ScaffoldPlayModeSmokeTests" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-07-22 03:26:15Z" end-time="2026-07-22 03:26:15Z" duration="0.003259" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1049" name="PlayMode_Harness_IsWired" fullname="ForgeGame.Tests.PlayMode.ScaffoldPlayModeSmokeTests.PlayMode_Harness_IsWired" methodname="PlayMode_Harness_IsWired" classname="ForgeGame.Tests.PlayMode.ScaffoldPlayModeSmokeTests" runstate="Runnable" seed="2120404244" result="Passed" start-time="2026-07-22 03:26:15Z" end-time="2026-07-22 03:26:15Z" duration="0.002711" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1050" name="TitleScreenPlayModeTests" fullname="ForgeGame.Tests.PlayMode.TitleScreenPlayModeTests" classname="ForgeGame.Tests.PlayMode.TitleScreenPlayModeTests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-07-22 03:26:15Z" end-time="2026-07-22 03:26:15Z" duration="0.894831" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1053" name="AnyKey_TransitionsToMenu" fullname="ForgeGame.Tests.PlayMode.TitleScreenPlayModeTests.AnyKey_TransitionsToMenu" methodname="AnyKey_TransitionsToMenu" classname="ForgeGame.Tests.PlayMode.TitleScreenPlayModeTests" runstate="Runnable" seed="81963581" result="Passed" start-time="2026-07-22 03:26:15Z" end-time="2026-07-22 03:26:15Z" duration="0.253025" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[MenuScreen] GameFlow.CurrentSaveData is null; rendering defaults (expected only when Menu is entered without going through Boot, e.g. isolated PlayMode tests).
+]]></output>
+              </test-case>
+              <test-case id="1052" name="LeftClick_TransitionsToMenu" fullname="ForgeGame.Tests.PlayMode.TitleScreenPlayModeTests.LeftClick_TransitionsToMenu" methodname="LeftClick_TransitionsToMenu" classname="ForgeGame.Tests.PlayMode.TitleScreenPlayModeTests" runstate="Runnable" seed="37929009" result="Passed" start-time="2026-07-22 03:26:15Z" end-time="2026-07-22 03:26:15Z" duration="0.253838" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[MenuScreen] GameFlow.CurrentSaveData is null; rendering defaults (expected only when Menu is entered without going through Boot, e.g. isolated PlayMode tests).
+]]></output>
+              </test-case>
+              <test-case id="1055" name="NotRecovered_HidesRecoveryNotice" fullname="ForgeGame.Tests.PlayMode.TitleScreenPlayModeTests.NotRecovered_HidesRecoveryNotice" methodname="NotRecovered_HidesRecoveryNotice" classname="ForgeGame.Tests.PlayMode.TitleScreenPlayModeTests" runstate="Runnable" seed="1494625380" result="Passed" start-time="2026-07-22 03:26:15Z" end-time="2026-07-22 03:26:15Z" duration="0.131656" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1054" name="RecoveredFlag_ShowsRecoveryNotice" fullname="ForgeGame.Tests.PlayMode.TitleScreenPlayModeTests.RecoveredFlag_ShowsRecoveryNotice" methodname="RecoveredFlag_ShowsRecoveryNotice" classname="ForgeGame.Tests.PlayMode.TitleScreenPlayModeTests" runstate="Runnable" seed="294924161" result="Passed" start-time="2026-07-22 03:26:15Z" end-time="2026-07-22 03:26:15Z" duration="0.128814" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1051" name="TitleCanvas_IsScreenSpaceCamera" fullname="ForgeGame.Tests.PlayMode.TitleScreenPlayModeTests.TitleCanvas_IsScreenSpaceCamera" methodname="TitleCanvas_IsScreenSpaceCamera" classname="ForgeGame.Tests.PlayMode.TitleScreenPlayModeTests" runstate="Runnable" seed="1183128943" result="Passed" start-time="2026-07-22 03:26:15Z" end-time="2026-07-22 03:26:15Z" duration="0.126473" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1056" name="TowerCombatPlayModeTests" fullname="ForgeGame.Tests.PlayMode.TowerCombatPlayModeTests" classname="ForgeGame.Tests.PlayMode.TowerCombatPlayModeTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-07-22 03:26:15Z" end-time="2026-07-22 03:26:16Z" duration="0.041252" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1057" name="PlacingBastionCannon_KillsMarauderInRange_AndGrantsGoldReward" fullname="ForgeGame.Tests.PlayMode.TowerCombatPlayModeTests.PlacingBastionCannon_KillsMarauderInRange_AndGrantsGoldReward" methodname="PlacingBastionCannon_KillsMarauderInRange_AndGrantsGoldReward" classname="ForgeGame.Tests.PlayMode.TowerCombatPlayModeTests" runstate="Runnable" seed="1438149017" result="Passed" start-time="2026-07-22 03:26:15Z" end-time="2026-07-22 03:26:16Z" duration="0.038712" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1058" name="TryPlaceTower_InsufficientGold_DoesNotPlaceOrDeductGold" fullname="ForgeGame.Tests.PlayMode.TowerCombatPlayModeTests.TryPlaceTower_InsufficientGold_DoesNotPlaceOrDeductGold" methodname="TryPlaceTower_InsufficientGold_DoesNotPlaceOrDeductGold" classname="ForgeGame.Tests.PlayMode.TowerCombatPlayModeTests" runstate="Runnable" seed="1010313842" result="Passed" start-time="2026-07-22 03:26:16Z" end-time="2026-07-22 03:26:16Z" duration="0.000888" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1059" name="TryPlaceTower_OccupiedSpot_Fails_AndDoesNotDeductGoldAgain" fullname="ForgeGame.Tests.PlayMode.TowerCombatPlayModeTests.TryPlaceTower_OccupiedSpot_Fails_AndDoesNotDeductGoldAgain" methodname="TryPlaceTower_OccupiedSpot_Fails_AndDoesNotDeductGoldAgain" classname="ForgeGame.Tests.PlayMode.TowerCombatPlayModeTests" runstate="Runnable" seed="2111415956" result="Passed" start-time="2026-07-22 03:26:16Z" end-time="2026-07-22 03:26:16Z" duration="0.000958" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+    <test-suite type="Assembly" id="1067" name="Unity.InputSystem.IntegrationTests.dll" fullname="<repo>/game/Library/ScriptAssemblies/Unity.InputSystem.IntegrationTests.dll" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-07-22 03:26:16Z" end-time="2026-07-22 03:26:16Z" duration="0.004262" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="24393" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="PlayMode" />
+        <property name="EditorOnly" value="False" />
+      </properties>
+      <test-suite type="TestFixture" id="1064" name="IntegrationTests" fullname="IntegrationTests" classname="IntegrationTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-07-22 03:26:16Z" end-time="2026-07-22 03:26:16Z" duration="0.004075" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-case id="1066" name="Integration_CanChangeInputBackendPlayerSettingInEditor" fullname="IntegrationTests.Integration_CanChangeInputBackendPlayerSettingInEditor" methodname="Integration_CanChangeInputBackendPlayerSettingInEditor" classname="IntegrationTests" runstate="Runnable" seed="1974723498" result="Passed" start-time="2026-07-22 03:26:16Z" end-time="2026-07-22 03:26:16Z" duration="0.001560" asserts="0">
+          <properties>
+            <property name="Category" value="Integration" />
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+        </test-case>
+        <test-case id="1065" name="Integration_CanSendAndReceiveEvents" fullname="IntegrationTests.Integration_CanSendAndReceiveEvents" methodname="Integration_CanSendAndReceiveEvents" classname="IntegrationTests" runstate="Runnable" seed="1400023697" result="Passed" start-time="2026-07-22 03:26:16Z" end-time="2026-07-22 03:26:16Z" duration="0.002085" asserts="0">
+          <properties>
+            <property name="Category" value="Integration" />
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+          <output><![CDATA[Saving results to: <path-redacted> Support/DefaultCompany/game/TestResults.xml
+]]></output>
+        </test-case>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

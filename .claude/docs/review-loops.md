@@ -35,7 +35,7 @@ if MAX_ITER到達かつ非APPROVE:
 
 ```markdown
 ## <GATE-ID> iteration <n> — <verdict>
-- 日時: <ISO8601>
+- 日時: <ISO8601 — contract §7 の時刻記入規約（`date -u` 実測）に従う>
 - 指摘要約: （CONCERNSの場合、優先度順）
 - 対応: （reviseした側が記入。対応済み/見送り＋理由）
 ```

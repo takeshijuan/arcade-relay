@@ -3,7 +3,6 @@
     "rootNamespace": "ForgeGame.Tests.EditMode",
     "references": [
         "ForgeGame",
-        "ForgeGame.Editor",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

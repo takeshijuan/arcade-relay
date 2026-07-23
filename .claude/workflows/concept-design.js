@@ -92,6 +92,20 @@ const CD_SCHEMA = {
 };
 
 // ---------------------------------------------------------------------------
+// transient エラー（safety classifier 一時失敗等）への1回だけの自動リトライ（retro-e3 指摘5）。
+// label に -retry を付けて opts を変える = キャッシュキーが変わり、失敗結果の replay を避ける。
+// リトライ後も null なら従来どおり呼び出し側がエスカレーションする
+// ---------------------------------------------------------------------------
+async function agentR(prompt, opts) {
+  let r = await agent(prompt, opts);
+  if (r === null) {
+    log('agent null（transient の可能性）→ 1回リトライ: ' + ((opts && opts.label) || ''));
+    r = await agent(prompt, Object.assign({}, opts, { label: (((opts && opts.label) || 'agent') + '-retry') }));
+  }
+  return r;
+}
+
+// ---------------------------------------------------------------------------
 // reviewLoop ヘルパー（review-loops.md の共通形を実装）
 // producer作業 → reviewer判定（state/reviews/<artifact>.md への追記は reviewer agent の責務）→
 // 非APPROVE なら producer に revise 指示（最終 iteration でも revise してからエスカレーション）→
@@ -117,12 +131,12 @@ async function reviewLoop(opts) {
   let finalVerdict = 'REJECT';
 
   for (let i = 1; i <= maxIter; i++) {
-    const review = await agent(
+    const review = await agentR(
       [
         'あなたは Gate ' + gateId + ' の判定者である。',
         '1. .claude/docs/gates.md の「' + gateId + '」セクションを読み、その観点で対象を批評せよ。',
         '2. 対象成果物: ' + artifactPaths.join(' / ') + '（各ファイルを自分で読むこと。関連コンテキスト: ' + producerContextPaths.join(' / ') + '）。',
-        '3. 判定を ' + reviewFile + ' に .claude/docs/review-loops.md の追記形式で必ず追記せよ（## ' + gateId + ' iteration ' + i + ' — <verdict>、日時ISO8601、指摘要約。「対応:」欄は空で残す）。',
+        '3. 判定を ' + reviewFile + ' に .claude/docs/review-loops.md の追記形式で必ず追記せよ（## ' + gateId + ' iteration ' + i + ' — <verdict>、日時ISO8601、指摘要約。「対応:」欄は空で残す。日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う — 推測記入禁止）。',
         '4. 応答の1行目は「' + gateId + ': APPROVE|CONCERNS|REJECT」とし、構造化返却の verdict / findings にも同じ判定と指摘を入れよ。',
         'findings は優先度順・修正可能な具体指摘のみ。APPROVE なら空配列。'
       ].join('\n'),
@@ -151,7 +165,7 @@ async function reviewLoop(opts) {
     }
 
     // 非APPROVE は最終 iteration でも revise を1回実行してからエスカレーション（review-loops.md の共通形）
-    const revised = await agent(
+    const revised = await agentR(
       [
         'Gate ' + gateId + ' の判定が ' + review.verdict + ' だった。成果物を revise せよ。',
         '1. ' + reviewFile + ' を読み、最新の「## ' + gateId + ' iteration ' + i + '」の指摘を確認せよ。',
@@ -221,7 +235,7 @@ const verdictHistory = [];
 // ---- Phase 1: Concept -------------------------------------------------
 phase('Concept');
 
-const conceptDraft = await agent(
+const conceptDraft = await agentR(
   [
     'design/concept.md を起草せよ。',
     '1. brief: ' + briefPath + ' を読む。',
@@ -250,7 +264,7 @@ await reviewLoop({
 // ---- Phase 2: GDD ------------------------------------------------------
 phase('GDD');
 
-const gddDraft = await agent(
+const gddDraft = await agentR(
   [
     'design/gdd.md を起草せよ。',
     '1. ' + briefPath + ' と design/concept.md を読む。',
@@ -280,7 +294,7 @@ await reviewLoop({
 // ---- Phase 3: ArtBible -------------------------------------------------
 phase('ArtBible');
 
-const keyGen = await agent(
+const keyGen = await agentR(
   [
     'key image 候補を4枚生成せよ。',
     '1. ' + briefPath + ' / design/concept.md / design/gdd.md を読み、ゲームのトーンとピラー P-xx を掴む。',
@@ -305,12 +319,12 @@ const candidatePaths = keyImageCandidates.map(function (c) { return c.path; });
 
 let topCandidate = null;
 if (candidatePaths.length > 0) {
-  const rank = await agent(
+  const rank = await agentR(
     [
       'key image 候補をランク付けせよ。',
       '候補: ' + candidatePaths.join(' / ') + '（各ファイルを自分で読む/見ること）。',
       '観点: .claude/docs/gates.md の AR-BIBLE の 2（ゲーム内可読性）と 3（生成再現性）を流用し、design/concept.md のピラー P-xx との整合も見る。',
-      '結果を state/reviews/art-bible.md に「key image ランク付け」の見出しで追記し（順位・根拠・日時ISO8601）、構造化返却の ranking に良い順で path を入れよ。'
+      '結果を state/reviews/art-bible.md に「key image ランク付け」の見出しで追記し（順位・根拠・日時ISO8601。日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う — 推測記入禁止）、構造化返却の ranking に良い順で path を入れよ。'
     ].join('\n'),
     { agentType: 'art-reviewer', label: 'key image ランク付け', phase: 'ArtBible', schema: RANK_SCHEMA }
   );
@@ -324,7 +338,7 @@ if (candidatePaths.length > 0) {
   }
 }
 
-const bibleDraft = await agent(
+const bibleDraft = await agentR(
   [
     'design/art-bible.md と design/art-bible.json を書け。',
     (topCandidate
@@ -364,7 +378,7 @@ const assetFieldRules = [
 ];
 
 // 段1: art-director が骨格（ヘッダ + 見出し）を単独で作成し、画像（+3Dモデル）セクションを起草
-const imageSection = await agent(
+const imageSection = await agentR(
   [
     (EP.assets3d
       ? 'design/assets.md を作成せよ。まず文書ヘッダと「## 画像」「## 音声」「## 3Dモデル」「## スケルタルアニメーション」の見出し骨格を作り、その上で「## 画像」「## 3Dモデル」「## スケルタルアニメーション」セクションを起草する。'
@@ -381,7 +395,7 @@ const imageSection = await agent(
 if (!imageSection) unresolved.push('assets.md: 骨格＋画像セクションの起草が実行されず（art-director skip/error）');
 
 // 段2: audio-designer が音声セクションを追記（画像セクションには触れない）
-const audioSection = await agent(
+const audioSection = await agentR(
   [
     'design/assets.md の「## 音声」セクションを起草せよ。',
     '1. design/gdd.md と design/concept.md を読み、必要な全音声資産（SFX/BGM）を洗い出す。',
@@ -392,7 +406,7 @@ const audioSection = await agent(
 );
 if (!audioSection) unresolved.push('assets.md: 音声セクションの起草が実行されず（audio-designer skip/error）');
 
-const assetsMerge = await agent(
+const assetsMerge = await agentR(
   [
     'design/assets.md の整合パスを行え（内容の書き換えは最小限）。',
     '1. 重複見出し・骨格の乱れがあれば構造のみ修復する。音声セクションのエントリ内容には手を入れない。',
@@ -412,13 +426,13 @@ const cdPromptLines = [
   'あなたは Gate CD-CHECKPOINT の判定者である。Checkpoint A の提示前最終判定を行え。',
   '1. .claude/docs/gates.md の「CD-CHECKPOINT」セクションを読み、その観点で判定する。',
   '2. 対象: ' + briefPath + ' / design/concept.md / design/gdd.md / design/art-bible.md / design/art-bible.json / design/assets.md。レビュー履歴 state/reviews/ 配下も確認する。',
-  '3. 判定を state/reviews/checkpoint-a.md に .claude/docs/review-loops.md の追記形式で追記せよ。',
+  '3. 判定を state/reviews/checkpoint-a.md に .claude/docs/review-loops.md の追記形式で追記せよ。日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う（推測記入禁止）。',
   '4. 応答の1行目は「CD-CHECKPOINT: APPROVE|CONCERNS|REJECT」。構造化返却の verdict / findings / fixes にも同じ内容を入れよ。',
   '5. REJECT の場合、fixes に修正指示（assignee は game-designer / art-director / audio-designer のいずれか、artifact は contract.md §6 のパス）を入れよ。APPROVE/CONCERNS では fixes は空配列。',
-  '6. 最後に state/active.md を更新せよ（現在地: Phase1 完了・Checkpoint A 待ち / 次アクション: 人間による key image と企画設計一式の承認 / 未解決事項: レビューで残った指摘）。'
+  '6. 最後に state/active.md を更新せよ（現在地: Phase1 完了・Checkpoint A 待ち / 次アクション: 人間による key image と企画設計一式の承認 / 未解決事項: レビューで残った指摘。日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う — 推測記入禁止）。'
 ];
 
-let cd = await agent(cdPromptLines.join('\n'), {
+let cd = await agentR(cdPromptLines.join('\n'), {
   agentType: 'creative-director',
   label: 'CD-CHECKPOINT 判定',
   phase: 'Final',
@@ -449,7 +463,7 @@ if (!cd) {
       // 競合防止のため fix 完了後に game-designer が1回でまとめて行う（ここでは追記しない）
       const fixResults = await parallel(fixes.map(function (f) {
         return function () {
-          return agent(
+          return agentR(
             [
               'CD-CHECKPOINT で REJECT された。以下の指示に従い ' + f.artifact + ' を修正せよ。',
               '指示: ' + f.instruction,
@@ -463,7 +477,7 @@ if (!cd) {
       const doneCount = fixResults.filter(Boolean).length;
       log('CD-CHECKPOINT 修正: ' + doneCount + '/' + fixes.length + ' 件完了');
 
-      const fixRecord = await agent(
+      const fixRecord = await agentR(
         [
           'CD-CHECKPOINT REJECT 後の修正が完了した。state/reviews/checkpoint-a.md の該当 iteration の「対応:」欄に、以下の各修正指示への対応内容をまとめて1回の追記で記録せよ（黙殺禁止。未実施・未達の指示は「未対応」と理由を明記）。'
         ].concat(fixes.map(function (f, idx) {
@@ -480,7 +494,7 @@ if (!cd) {
       log('CD-CHECKPOINT: REJECT だが fixes が空。修正なしで再判定へ');
     }
 
-    const cd2 = await agent(cdPromptLines.join('\n').replace('追記形式で追記せよ。', '追記形式で追記せよ（iteration 2 として）。'), {
+    const cd2 = await agentR(cdPromptLines.join('\n').replace('追記形式で追記せよ。', '追記形式で追記せよ（iteration 2 として）。'), {
       agentType: 'creative-director',
       label: 'CD-CHECKPOINT 再判定',
       phase: 'Final',

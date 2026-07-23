@@ -1,72 +1,27 @@
-# レビュー履歴 — assets-audio（SFX-05/06, BGM-01, engine=unity）
+# レビュー履歴: 音声資産バッチ（Phase 3 build生成分 — BGM-01）
+
+対象: `game/_generated/audio/bgm-main-theme.ogg`（BGM-01）
+照合元: `design/assets.md`（## BGM 節・BGM-01行 + 補足 + 「生成時の実施メモ（BGM-01）」節）、`game/_generated/MANIFEST.jsonl`（26行目・BGM-01追記分。総行数は本レビュー時点で並走中の IMG-01/02/05/06/07 生成により31行まで増加中だが、対象はBGM-01の1行のみ）、`state/asset-routing.json`（`checks.elevenlabs`・`shippable.bgm`）、`.claude/docs/tech-stack-unity.md`「資産の取り扱い」（engine=unity: OGGのみ）。
+※ SFX-01〜06は前バッチ（`state/reviews/assets-audio-prototype.md` iteration1/2 APPROVE済み）で判定済みのため本バッチの対象外。IMG系は別バッチ・別レビューで判定する（本レビュー実行中に並走生成が進んでいるのを確認したが対象外として除外）。
 
 ## AR-ASSET iteration 1 — APPROVE
-- 日時: 2026-07-13T10:20:00Z
-- 対象: `game/_generated/MANIFEST.jsonl` 追記分 `BGM-01`（`bgm-01-main-loop.ogg`）/ `SFX-05`（`sfx-05-wave-start.ogg`）/ `SFX-06`（`sfx-06-upgrade-purchase.ogg`）。SFX-01〜04 は `state/reviews/assets-audio-prototype.md` iteration 3/4 で既に APPROVE 確定済みのため本バッチ対象外。
-- 照合元: `design/assets.md`（SFX/BGM節・サイズ列・BPM/キー・ループ要件）、`design/art-bible.json`（本バッチは音声のため palette/style_block 非該当。scale/resolution も非該当）、`.claude/docs/tech-stack-unity.md`「資産の取り扱い」（音声=OGGのみ）、`state/asset-routing.json`（routes.sfx/routes.bgm/shippable）、`state/engine.txt`=`unity`。
-- 検査方法（全て実ファイルへ直接実行。MANIFEST自己申告値の転記は行わず独立再測定）:
-  - `shasum -a 256`（実ファイル vs MANIFEST `sha256` 突合）
-  - `ffprobe -show_entries format=duration,format_name -show_entries stream=codec_name,sample_rate,channels`
-  - `ffmpeg -af loudnorm=I=-16:TP=-1.0:LRA=11:print_format=json -f null -`（Integrated Loudness / True Peak実測）
-  - `ffmpeg -af astats`（Peak/RMS level, Number of NaNs/Infs/denormals, Max/Min level でクリッピング検査）
-  - BGM-01のみ: 実ファイルを2連結（`concat` filter）した120秒素材を作り、継ぎ目（t=60.0s）前後500msのRMS段差、継ぎ目前後40ms窓の最大サンプル差分を、曲中の他の高エネルギー区間（t=30.0s）・静音寄り区間（t=10.0s）と比較してクリック検出
 
-### 検査結果
+- 日時: 2026-07-22T07:25:11Z
+- 機械検査（ffmpeg/ffprobe実測。MANIFEST自己申告値を鵜呑みにせず全項目を独立再計測。一時出力は `/tmp/ar-audio-review/` に生成し対象ファイルは非破壊）:
+  - **sha256突合**: `shasum -a 256 game/_generated/audio/bgm-main-theme.ogg` 実測値 `665605e64d78910759f6f6a55ad5637063974c8028c7d3a0b667a8f1574766fd`（64文字）が MANIFEST 記載値と完全一致。改ざん・取り違え無し。
+  - **ffprobe（フォーマット/長さ）**: `codec_name=vorbis`, `sample_rate=44100`, `channels=2`, `format=ogg`, `bit_rate=145121`, `duration=38.400000`。design/assets.md 記載の「38.4秒（1ループ）」と完全一致（差分0ms）。engine=unity の既定形式「OGGのみ」（tech-stack-unity.md）に適合、WAV/M4A不要。
+  - **ラウドネス実測**（`ffmpeg -af loudnorm=print_format=json -f null -`）: `input_i=-15.98 LUFS` / `input_tp=-2.82 dBTP` / `input_lra=5.70`。**-16 LUFS ±1（許容域-15〜-17）に収まる**。MANIFEST自己申告値（`measured_I_LUFS:-15.98`, `measured_TP_dBTP:-2.82`）と完全一致。クリッピング無し（TP<0dBTP）。
+  - **無音検査**（`ffmpeg -af silencedetect=noise=-45dB:d=0.1 -f null -`）: 全38.4秒でヒット0件。MANIFESTの`silencedetect_full_track_neg45dB: zero hits`主張と一致（フェードアウト/無音跳躍が無いことを独立確認）。
+  - **ループシーム検査（独立再現・2手法で実施）**:
+    1. まず `ffmpeg -f concat -safe 0 -c copy` によるコンテナレベル自己2連結（`/tmp/ar-audio-review/doubled.ogg`）でPCMデコード後の継ぎ目を検査したところRMS段差20.21dB相当の見かけ上の異常が出たが、これはOgg Vorbisのストリームをコンテナレベルでstream copy連結する手法自体がデコーダのオーバーラップ処理をリセットして生じる**測定手法側のアーティファクト**と判断（デコード連続性が保証されない既知の問題）。判定には採用しない。
+    2. 代わりに本番の再生方式に忠実な検査（単一ファイルを直接PCMへデコードし、末尾フレーム→先頭フレームの実際のラップアラウンド点を直接解析）を実施: ラップ点でのサンプル差分260（トラック全体のサンプル差分: 平均519.8・中央値370.0・99パーセンタイル2392・最大9551 — ラップ点の差分はこれらより明確に小さくクリック無し）。ラップ点前後50msウィンドウのRMS段差3.84dB（トラック全体の隣接50msウィンドウRMS段差: 平均4.00・中央値3.25・90パーセンタイル7.62 — ラップ点の段差はp90以下で異常な段差ではない）。この独立測定はMANIFESTの自己申告値（`seam_max_sample_delta:260`, `rms_step_scan_post_encode.seam_step_db:3.24`）と近接し、ループ検証合格を裏付ける。
+  - **仕様一致（design/assets.md突合）**: ファイル名・P-xx(P-03)参照・尺(38.4秒)・ループ要件(seamless)・BPM(100)/キー(D major)が全て一致。
+  - **音要件突合**: ジャンル（light fantasy orchestral、pizzicato strings + woodwind lead + light brass + glockenspiel/triangle）・BPM100・D majorはdesign/assets.mdプロンプト草案と一致。`force_instrumental`は当初仕様の`force_instrumental:true`パラメータではなく、composition_plan使用時のAPI制約（422 "force_instrumental can only be used with prompt"）により空lyric lines(`lines:[]`)で代替実装——この技術的回避はdesign/assets.md「生成時の実施メモ（BGM-01）」本文とMANIFEST両方に整合して開示済みであり齟齬ではない。歌声の有無を機械的に検出するツールは本環境に無いため聴感確認はMANIFEST自己申告（no vocals present）に依拠する旨を記録する（ブロッカーとはしない — 技術的回避の記録と自己申告の整合性は確認済み）。
+  - **provenance必須フィールド**（assets-config.md Provenance節）: file/asset_id/kind/provider/model/prompt/seed_note/generation_attempts/cost_usd/cost_estimated/cost_usd_all_attempts/plan_tier/shippable_route/duration_spec_s/duration_actual_s/loop/loop_type/loop_edit_method/loop_validation/loudness_method/measured_I_LUFS/measured_TP_dBTP/format/sample_rate/channels/bpm/key/sections/force_instrumental/license/license_note/sha256/generated_at を記録済み（音声資産として要求水準を上回る記録密度）。
+  - **プロバイダ/ライセンス検査**: `provider:"elevenlabs:music-v2"`、`model:"music_v2"`（`POST /v1/music` REST直、禁止されている公式MCP経由ではない — assets-config.md Primary経路と一致）。`plan_tier:"starter"`は`state/asset-routing.json` `checks.elevenlabs.plan_tier=starter, commercial_ok=true`のpreflight実測と一致（Freeプラン出荷禁止のハード制約はクリア）。`license:"commercial-ok"`。`must_replace`/`placeholder-nc`該当なし。ルート`bgm`は`state/asset-routing.json` `shippable.bgm:true`（degradedルート/フォールバック未使用）。
+  - **予算**: BGM-01単体`cost_usd=0.096`（採用分のみ）。`state/budget.txt`（$20上限）に対し無視できる範囲。なお design/assets.md「集計と予算」節が示す全資産cost_usd合算値（$5.5979）を`game/_generated/MANIFEST.jsonl`から独立再計算したところ**$5.9779**（差分約$0.38）となり、design/assets.md本文が自認する「前回集計時の記録誤差の可能性」を裏付けた。ただし$20上限に対しどちらの値でも大幅に残枠があり予算超過は無い。BGM-01固有の欠陥ではないため再生成対象にはしないが、art-directorは次回assets.md更新時にMANIFEST直接合算値へ訂正することを推奨する。
+- 指摘要約: BGM-01は品質観点（ラウドネス/ループ/フォーマット/仕様一致/音要件突合/provenance/ライセンス）の全項目で合格。再生成対象なし。
+- 開示事項（再生成では直らない・disclosures）: (1) `cost_usd`は`cost_estimated:true`（ElevenLabs `/v1/music`レスポンスにcredit/costヘッダが無いため$0.15/分のレート換算による保守見積）。(2) ElevenLabs「Studio Games」条項（商用×マルチプラットフォーム出荷はEnterprise相談要）がMANIFEST `license_note`に開示済み — Checkpointでの人間提示が必要（assets-config.md Checkpointライセンスフラグ節）。
+- 対応: （該当なし — BGM-01はAPPROVE。開示事項はCheckpointで人間へ提示）
 
-**provenance/sha256整合 — PASS**
-3件全て実ファイルのsha256がMANIFEST記載値と完全一致（改ざん・取り違えなし）:
-`BGM-01`=`57635389...` / `SFX-05`=`1802dea8...` / `SFX-06`=`b9643092...`。
-
-**仕様一致（フォーマット・観点3）— PASS**
-3件とも `ogg`（vorbis, 44.1kHz, stereo）。`tech-stack-unity.md`「音声: Unity は Ogg Vorbis / WAV をネイティブ対応。OGGのみで良い」に一致（M4A非同梱も正しい＝phaser専用要件を混入させていない）。`state/asset-routing.json` の `routes.sfx=elevenlabs:sfx-v2` / `routes.bgm=elevenlabs:music-v2` / `shippable.sfx:true` / `shippable.bgm:true` と一致し、`shippable:false` ルート由来の資産なし。
-
-**duration実測（観点3）**
-
-| id | design/assets.md 指定 | duration_requested_s (MANIFEST) | 独立再測定 duration | 判定 |
-|---|---|---|---|---|
-| BGM-01 | 60s（ループ、brief許容60〜90s） | 60 | **60.000000s** | 完全一致・PASS |
-| SFX-05 | 1.2s | 1.2 | **1.200045s** | 実質完全一致・PASS |
-| SFX-06 | 0.5s | 0.5 | **0.241497s** | **-51.7%短縮。指定値と不一致** |
-
-SFX-06 は無音トリム後の最終尺が指定の半分以下（0.241497s / 0.5s）。ただし `design/assets.md` の SFX-06 説明には SFX-01（`AUTO_ATTACK_INTERVAL`）・SFX-02（`DASH_DURATION`）のような上限を規定するゲーム側同期定数の明記がなく、単発のMenu購入確定音として機能面の破綻はない。かつこの逸脱幅（-51.7%）は同一バッチ手法（ElevenLabs SFX v2 + 無音トリム）で既に `state/reviews/assets-audio-prototype.md` iteration 1〜4 が非ブロッキングと判定した `SFX-02`（0.6s→0.292s、-51.3%）と同水準であり、新規のリスクパターンではない。**REJECT/再生成対象とはしないが、`design/assets.md` にはこの逸脱が明文化されていない**（BGM-01の`loop_edit_method`/`force_instrumental_deviation`は同ファイルに開示済みだがSFX-06のduration逸脱は未記載）ため disclosures に記録する。
-
-**ラウドネス実測（観点1）**
-
-| id | 独立再測定 input_i / input_tp | MANIFEST申告 | 再現性 | -16±1(-17〜-15)判定 |
-|---|---|---|---|---|
-| BGM-01 | -16.03 LUFS / -4.51 dBTP | -16.03 / -4.51 | 完全一致 | 適合 |
-| SFX-05 | -16.13 LUFS / -0.80 dBTP | -16.13 / -0.80 | 完全一致 | 適合 |
-| SFX-06 | `-inf`（測定不能）/ -1.18 dBTP | null（測定不能と申告） / -1.18 | 完全一致（測定不能の再現含む） | 測定不能＝duration 0.241497s が EBU BS.1770 最小ゲーティングブロック400ms未満のため物理的に不能。`assets-audio-prototype.md`（SFX-02/04）で既に確立した非ブロッキング事項と同一パターン。代替指標のRMS実測 -17.01dB（astats独立測定）はMANIFEST申告のRMS-17.00dBと一致し、SFX-02(-17.26dB)/SFX-04(-16.72dB)とバッチ内一貫した水準 |
-
-クリッピング: 3件とも `astats` Overall の Max level < 1.0（BGM: 0.550 / SFX-05: 0.911 / SFX-06: 0.832）、Number of NaNs/Infs/denormals は全件0。
-
-**ループ品質（観点2・BGM-01のみ）— PASS（独立再現）**
-自己2連結した120秒素材の継ぎ目（t=60.0s）を独立検査:
-- 継ぎ目前500ms窓RMS -19.23dB、継ぎ目後500ms窓RMS -20.24dB（差分約1.01dB。MANIFEST申告の`seam_rms_delta_db: 1.12`と近似・独立再現）
-- 継ぎ目±40ms窓の最大サンプル差分 6250〜7029 → 曲中の高エネルギー区間（t=30.0s、同40ms窓）の最大差分6803〜7479と同水準（継ぎ目が突出していない）。静音寄り区間（t=10.0s）の最大差分381〜392と比べ明らかに"通常の楽曲内変動"レンジに収まり、異常なクリックは検出せず
-- ピークレベルも継ぎ目付近-8.7〜-8.9dBFSでクリッピング兆候なし
-
-MANIFESTの`loop_verification`（`click_detected:false`、`verdict:PASS`）を独立手法で追試し、同じ結論（クリック/RMS段差異常なし）を確認した。
-
-**音要件突合（観点4）**
-- BGM-01: `bpm:128`・`key:"A minor"` は design/assets.md「BPM/キー」列と一致。ジャンル記述（driving electro, four-on-the-floor, synth bass, arpeggiated lead, instrumental）もbrief.md「音の方向」と一致。ただし BPM/キー/ボーカル有無の**聴感上の一致確認は本レビューのツール群（ffmpeg/ffprobe）では検証不能**（tempo/key検出は範囲外）。composition_planのnegative_global_styles（vocals除外）とMANIFESTの開示記録に基づく判断であり、独立した音響解析による裏付けではない点を明記する。
-- SFX-05（ウェーブ開始）: プロンプト内容「低域パルス+短いライザー」が design/assets.md のトリガー説明と1対1で一致。P-03参照も一致。
-- SFX-06（購入確定）: プロンプト内容「短い2音の上昇コンボ」が design/assets.md のトリガー説明と1対1で一致。P-04参照も一致。
-
-**license/provenance — PASS**
-3件とも `license:"commercial-ok"` / `plan_tier:"starter"`。`state/asset-routing.json` の `checks.elevenlabs`（`tier:"starter"`, `commercial_ok:true`）と整合し、ElevenLabs Freeプランでの出荷（ハード禁止事項）に該当しない。`must_replace` 該当なし。MANIFEST必須フィールド（file/provider/model/prompt/seed or seed_note/cost_usd/sha256/license/generated_at）は3件とも充足。
-
-### 総合判定: APPROVE
-理由: sha256整合・フォーマット（unity既定=OGGのみ）・ラウドネス（-16±1 LUFS、測定不能ケースは既知の物理的制約として非ブロッキング）・BGM-01ループ品質（独立2連結テストでクリック/RMS段差なしを再現確認）・license/provenanceの全観点で3資産とも問題を検出しなかった。SFX-06のduration逸脱（-51.7%）は同一バッチ手法で既に非ブロッキング判定済みのSFX-02（-51.3%）と同水準かつ機能上の同期制約を持たないため再生成は不要と判断したが、`design/assets.md`に未記載であるため disclosures に記録する。
-
-### failedAssets
-なし（3資産とも再生成指示を要する不合格なし）。
-
-### disclosures（再生成不要・人間開示のみ）
-1. **SFX-06 duration逸脱の文書化漏れ**: `design/assets.md`指定0.5sに対し実測0.241497s（-51.7%）。音源自体は無音トリム後の正当な仕上がりで機能破綻なし（同期対象となるゲーム側定数の指定なし）だが、`design/assets.md`にはBGM-01の`loop_edit_method`/`force_instrumental_deviation`と異なりこの逸脱が明記されていない。再生成では解決しない文書ギャップのため disclosures とする。
-2. **cost_estimated:true**（BGM-01/SFX-05/SFX-06 全3件）: `cost_usd`はElevenLabs character_count実測差分をStarterプランレート按分・Eleven Music固定レートで按分した見積もりであり、プロバイダ請求の実測確定値ではない。
-3. **license_note（ElevenLabs Starter「Studio Games」条項）**: 商用利用は可だが、商用×マルチプラットフォーム出荷は Enterprise 相談が必要な条項が付帯（`.claude/docs/assets-config.md`「Checkpointで人間に提示するライセンスフラグ」節）。3件とも該当し、Checkpointでの開示継続が必要。
-4. **BGM-01ループはffmpeg編集による人工生成**: composition_plan任せの自然なシームレスループでは再現されず、末尾150ms×冒頭150msの三角窓クロスフェード編集でループ点を作成した（`MANIFEST.jsonl` `loop_edit_method`）。本レビューが独立再現検証しPASSしているため品質上の問題はないが、「AI生成モデルが自然に作ったループ」ではなく「編集で保証したループ」である事実は開示に値する。
-5. **force_instrumental_deviation**: `force_instrumental:true`は`composition_plan`併用時にAPI仕様上使用不可（422）のため、`positive_global_styles`/`negative_global_styles`でのinstrumental強制・vocals除外に代替した（`MANIFEST.jsonl`開示済み）。機能的検証はテキストプロンプト設計に基づくものであり、本レビューのツール群では聴感上のボーカル混入有無を音響的に確認できていない。
-
-- 対応: 該当なし（本iterationはfailedAssets 0件・APPROVEのためreviser対応不要。disclosuresはCheckpoint提示時の人間開示事項として引き継ぐ）。
+---

@@ -95,7 +95,7 @@ const ENGINE_PROFILES = {
     verifyCmd: 'tech-stack-unity.md「検証コマンド」の typecheck 相当（EditMode テスト。合格 = exit 0 かつ結果 XML で failed 0 — exit code 単独判定禁止）と build 相当（ForgeBuild.BuildMac）',
     scaffoldTask:
       '1. game/ を tech-stack-unity.md 厳守でスキャフォールドする（「プロジェクト生成（scaffold）」節のコマンドを使用。エディタは state/engine-info.json の binary）。\n' +
-      '   必須パッケージ（URP / Input System / glTFast / Test Framework）を Packages/manifest.json に明記し、規定ディレクトリ構造（Assets/Scenes/{Boot,Title,Menu,Game,Result}（contract §11 必須シーン集合・EditorBuildSettings も5シーン）, Assets/Scripts/{GameConfig.cs,Types.cs,Systems/,Systems/Meta/,Persistence/,Components/,Input/,Ui/,Editor/ForgeBuild.cs}, Assets/Tests/{EditMode,PlayMode}, Assets/Generated/, _generated/）を作る。\n' +
+      '   必須パッケージ（URP / Input System / glTFast / Test Framework）を Packages/manifest.json に明記し、規定ディレクトリ構造（Assets/Scenes/{Boot,Title,Menu,Game,Result}（contract §11 必須シーン集合・EditorBuildSettings も5シーン）, Assets/Scripts/{GameConfig.cs,Types.cs,Systems/,Systems/Meta/,Persistence/,Components/,Input/,Ui/,Editor/ForgeBuild.cs}, Assets/Tests/{EditMode,PlayMode}, Assets/Resources/Generated/, _generated/）を作る。\n' +
       '   GameConfig.cs に定数と AssetKeys の器、Editor/ForgeBuild.cs に BuildMac メソッド、EditMode に最小テスト1本を用意。game/_generated/MANIFEST.jsonl を空ファイルで作成。\n' +
       '   tech-stack-unity.md「検証コマンド」の typecheck 相当（EditMode テスト）と build 相当（ForgeBuild.BuildMac）が exit 0 になるまで自己修正せよ。',
     codeRulesLine: '規約厳守: マジックナンバーは Assets/Scripts/GameConfig.cs へ / Time.deltaTime 必須 / Components は薄く Systems/（pure C#・MonoBehaviour禁止）にロジック / Input System 集約（コード生成方式）/ 資産参照は GameConfig.cs の AssetKeys 経由 / 永続化 I/O は Persistence/ のみ・メタ進行は Systems/Meta/（セーブ破損の黙示初期化禁止 — rules/unity-code.md）/ UI Canvas は RenderMode.ScreenSpaceCamera 固定（tech-stack-unity.md 規約14）。',
@@ -108,7 +108,7 @@ const ENGINE_PROFILES = {
     qaBuildLine: 'tech-stack-unity.md の build 相当（ForgeBuild.BuildMac batchmode）が exit 0、PlayMode テストで LogAssert.NoUnexpectedReceived() 通過（エラー0）。',
     playInstructions: 'open game/Build/ForgeGame.app で起動（または Unity エディタで game/ を開いて Play。操作方法は design/gdd.md を参照）',
     integrateSteps:
-      '1. game/_generated/ の合格資産（MDL/ANM/画像/音声）を game/Assets/Generated/ にコピーして Unity にインポートさせ、GameConfig.cs の AssetKeys に登録（パスのハードコード禁止）。\n' +
+      '1. game/_generated/ の合格資産（MDL/ANM/画像/音声）を game/Assets/Resources/Generated/{models,textures,audio}/ にコピーして Unity にインポートさせ（Resources.Load 方式 — contract §11。AssetKeys の値は Resources 相対パス）、GameConfig.cs の AssetKeys に登録（パスのハードコード禁止）。\n' +
       '2. リグ付き FBX は ModelImporter の animationType（Humanoid なら Human）をエディタスクリプトで設定し Avatar 生成を確認。プレースホルダ（プリミティブ）を実資産に差し替える。\n' +
       '3. 取込後にバウンディングボックスでスケール検証（tech-stack-unity.md「資産の取り扱い」）。\n' +
       '4. 音声は AudioSource で配線（OGG）。\n' +
@@ -182,6 +182,20 @@ function reviewModeNote(mode) {
 function worseVerdict(a, b) {
   const rank = { APPROVE: 0, CONCERNS: 1, REJECT: 2 };
   return (rank[b] || 0) > (rank[a] || 0) ? b : a;
+}
+
+// ---------------------------------------------------------------------------
+// transient エラー（safety classifier 一時失敗等）への1回だけの自動リトライ（retro-e3 指摘5）。
+// label に -retry を付けて opts を変える = キャッシュキーが変わり、失敗結果の replay を避ける。
+// リトライ後も null なら従来どおり呼び出し側がエスカレーションする
+// ---------------------------------------------------------------------------
+async function agentR(prompt, opts) {
+  let r = await agent(prompt, opts);
+  if (r === null) {
+    log('agent null（transient の可能性）→ 1回リトライ: ' + ((opts && opts.label) || ''));
+    r = await agent(prompt, Object.assign({}, opts, { label: (((opts && opts.label) || 'agent') + '-retry') }));
+  }
+  return r;
 }
 
 // ---------------------------------------------------------------------------
@@ -278,15 +292,15 @@ const setupPrompt = [
   '   - phase: prototype = コアループが1周する縦串（開始→挑戦→報酬→再挑戦）+ 必須シーン遷移（Title→Menu→Game→Result→Menu — contract §11）に必要な最小ストーリー群。実装順に並べる。',
   '   - phase: build = 残り全部。',
   '   - 各 story: 安定ID S-01〜 / pillar は concept.md の P-xx を必ず参照 / assignee は gameplay-engineer か ui-engineer / status: todo / acceptance は実操作で検証可能な文。',
-  '   - **必須（欠けたら分解不合格 — contract §11）**: (a) Title シーンの story（assignee: ui-engineer / phase: prototype）、(b) Menu シーンの story（assignee: ui-engineer / phase: prototype。acceptance に必須要素 = プレイ開始・アウトゲーム表示・設定・終了導線 の実在検証を含める）、(c) メタ進行の永続化 story（assignee: gameplay-engineer。acceptance に「保存→再起動相当→復元一致」と「破損時 .bak+[SaveCorruption] 明示エラー」を含める）。',
-  '5. ' + STATE.active + ' を更新し、パス限定で add してコミットする: `git add game docs state design && git commit -m "phase2: scaffold + stories"`（`git add -A` 禁止 — .claude/ 等の作業対象外の変更を巻き込まない）。',
+  '   - **必須（欠けたら分解不合格 — contract §11）**: (a) Title シーンの story（assignee: ui-engineer / phase: prototype）、(b) Menu シーンの story（assignee: ui-engineer / phase: prototype。acceptance に必須要素 = プレイ開始・アウトゲーム表示・設定・終了導線 の実在検証を含める）、(c) メタ進行の永続化 story（assignee: gameplay-engineer。acceptance に「保存→再起動相当→復元一致」と「破損時 .bak+[SaveCorruption] 明示エラー」を含める）、(d) 環境の最低限ビジュアル story（assignee: gameplay-engineer / phase: prototype。acceptance に unity/unreal は「可視の地面/背景・ライト・カメラ構図の確定」、phaser は「背景の可視化・画面レイアウトの確定」を含める — contract §11）。',
+  '5. ' + STATE.active + ' を更新し（日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う — 推測記入禁止）、パス限定で add してコミットする: `git add game docs state design && git commit -m "phase2: scaffold + stories"`（`git add -A` 禁止 — .claude/ 等の作業対象外の変更を巻き込まない）。',
   '',
-  '最後に phase:prototype のストーリー一覧を stories.yaml の記載順で構造化して返せ（titleStoryId / menuStoryId / metaPersistenceStoryId に該当 story の ID を明示すること）。',
+  '最後に phase:prototype のストーリー一覧を stories.yaml の記載順で構造化して返せ（titleStoryId / menuStoryId / metaPersistenceStoryId / environmentStoryId に該当 story の ID を明示すること）。',
 ].filter(Boolean).join('\n');
 
 const SETUP_SCHEMA = {
   type: 'object',
-  required: ['prototypeStories', 'titleStoryId', 'menuStoryId', 'metaPersistenceStoryId'],
+  required: ['prototypeStories', 'titleStoryId', 'menuStoryId', 'metaPersistenceStoryId', 'environmentStoryId'],
   properties: {
     prototypeStories: {
       type: 'array',
@@ -306,6 +320,7 @@ const SETUP_SCHEMA = {
     titleStoryId: { type: 'string', description: 'Title シーン story の S-xx（contract §11 必須）' },
     menuStoryId: { type: 'string', description: 'Menu シーン story の S-xx（contract §11 必須）' },
     metaPersistenceStoryId: { type: 'string', description: 'メタ進行永続化 story の S-xx（contract §11 必須）' },
+    environmentStoryId: { type: 'string', description: '環境の最低限ビジュアル（unity/unreal: 可視の地面/背景+ライト+カメラ構図確定）story の S-xx（contract §11 必須）' },
     notes: { type: 'string' },
   },
 };
@@ -320,16 +335,19 @@ function validateSetup(s) {
   const title = byId[s.titleStoryId];
   const menu = byId[s.menuStoryId];
   const meta = byId[s.metaPersistenceStoryId];
+  const env = byId[s.environmentStoryId];
   if (!title) problems.push('titleStoryId=' + s.titleStoryId + ' が prototypeStories に実在しない');
   else if (title.assignee !== 'ui-engineer') problems.push('Title story ' + title.id + ' の assignee が ui-engineer でない');
   if (!menu) problems.push('menuStoryId=' + s.menuStoryId + ' が prototypeStories に実在しない');
   else if (menu.assignee !== 'ui-engineer') problems.push('Menu story ' + menu.id + ' の assignee が ui-engineer でない');
   if (!meta) problems.push('metaPersistenceStoryId=' + s.metaPersistenceStoryId + ' が prototypeStories に実在しない');
   else if (meta.assignee !== 'gameplay-engineer') problems.push('メタ進行永続化 story ' + meta.id + ' の assignee が gameplay-engineer でない（Systems/Meta + Persistence 層の実装 — tech-director.md）');
+  if (!env) problems.push('environmentStoryId=' + s.environmentStoryId + ' が prototypeStories に実在しない');
+  else if (env.assignee !== 'gameplay-engineer') problems.push('環境ビジュアル story ' + env.id + ' の assignee が gameplay-engineer でない（可視の地面/背景・ライト・カメラ構図の実装 — contract §11）');
   return problems;
 }
 
-let setup = await agent(setupPrompt, {
+let setup = await agentR(setupPrompt, {
   label: 'setup-scaffold-stories',
   phase: 'Setup',
   agentType: 'tech-director',
@@ -341,11 +359,11 @@ let setup = await agent(setupPrompt, {
   const problems = setup ? validateSetup(setup) : ['Setup agent が結果を返さなかった'];
   if (problems.length > 0 && setup) {
     log('Setup 差し戻し（contract §11 必須ストーリー欠落）: ' + problems.join(' / '));
-    setup = await agent(
+    setup = await agentR(
       [
         'ストーリー分解が contract §11 の必須要件を満たしていない。以下を修正して ' + STATE.stories + ' を更新し、修正後の phase:prototype ストーリー一覧を再返却せよ:',
         problems.map(function (p, i) { return (i + 1) + '. ' + p; }).join('\n'),
-        '必須: Title story と Menu story（いずれも assignee: ui-engineer / phase: prototype）と メタ進行永続化 story。既存 S-xx の振り直しは禁止（続番で追加）。',
+        '必須: Title story と Menu story（いずれも assignee: ui-engineer / phase: prototype）と メタ進行永続化 story と 環境の最低限ビジュアル story（assignee: gameplay-engineer / phase: prototype。acceptance に「可視の地面/背景・ライト・カメラ構図の確定」を含める）。既存 S-xx の振り直しは禁止（続番で追加）。',
         '修正後 git add ' + STATE.stories + ' && git commit（メッセージ: "phase2: fix required stories"）。',
       ].join('\n'),
       { label: 'setup-fix-required-stories', phase: 'Setup', agentType: 'tech-director', effort: 'high', schema: SETUP_SCHEMA }
@@ -361,10 +379,10 @@ let setup = await agent(setupPrompt, {
 // 独立突合: tech-director の自己申告（構造化返却）ではなく state/stories.yaml の実体を
 // 読み取り専用 agent で確認する（QA 証跡の独立検証と同じ規律 — 自己申告を唯一の関門にしない）
 if (setup) {
-  const crosscheck = await agent(
+  const crosscheck = await agentR(
     [
       '読み取り専用の検証タスク。' + STATE.stories + ' を読み、以下の story ID それぞれについて実在・assignee・phase を返せ。ファイルの変更は禁止。',
-      '対象 ID(JSON): ' + JSON.stringify([setup.titleStoryId, setup.menuStoryId, setup.metaPersistenceStoryId]),
+      '対象 ID(JSON): ' + JSON.stringify([setup.titleStoryId, setup.menuStoryId, setup.metaPersistenceStoryId, setup.environmentStoryId]),
     ].join('\n'),
     {
       label: 'setup-crosscheck-stories', phase: 'Setup', effort: 'low',
@@ -392,6 +410,7 @@ if (setup) {
       { id: setup.titleStoryId, assignee: 'ui-engineer', name: 'Title' },
       { id: setup.menuStoryId, assignee: 'ui-engineer', name: 'Menu' },
       { id: setup.metaPersistenceStoryId, assignee: 'gameplay-engineer', name: 'メタ進行永続化' },
+      { id: setup.environmentStoryId, assignee: 'gameplay-engineer', name: '環境ビジュアル' },
     ];
     for (const e of expect) {
       const f = ccById[e.id];
@@ -458,14 +477,14 @@ const BATCH_VERIFY_SCHEMA = {
 };
 
 async function batchVerify(phaseName, contextNote) {
-  const bv = await agent(
+  const bv = await agentR(
     'バッチ検証（直列区間 — 並走レーンは合流済み。エンジン検証をここで一括実行する。engine=' + engine + '）。\n' +
     contextNote + '\n' +
     '手順:\n' +
     '1) ' + EP.verifyCmd + ' を実行\n' +
     '2) 失敗があれば、エラーのファイルパスと `git log --oneline -- <該当パス>` で原因 story を特定する（切り分け困難ならレーン中の story コミット単位で二分探索）\n' +
-    '3) 最小修正で合格に到達させる（他 story の設計を作り替えない。チューニング値の変更は ' + EP.configPath + ' のみ。**直列区間の例外として、バッチ検証の最小修正に限り担当領域外のファイル — ui 層含む — も編集してよい**。**機能の削除・呼び出しの除去・無効化による回避は最小修正ではない** — コンパイル整合を保ったまま意図を維持し、やむを得ず挙動を変えた場合は fixedNotes に明記せよ）\n' +
-    '4) 修正した場合は ' + STATE.reviewsDir + '/batch-verify.md に「phase / 原因 story / 修正内容 / ISO8601 日時」を追記し、コミット規律のパス指定形で git commit（メッセージ: "batch-verify fix (' + phaseName + ')"）。' + GIT_ADD_RULE + '\n' +
+    '3) 最小修正で合格に到達させる（他 story の設計を作り替えない。チューニング値の変更は ' + EP.configPath + ' のみ。**直列区間の例外として、バッチ検証の最小修正に限り担当領域外のファイル — ui 層含む — も編集してよい**。**機能の削除・呼び出しの除去・無効化による回避は最小修正ではない** — コンパイル整合を保ったまま意図を維持し、やむを得ず挙動を変えた場合は fixedNotes に明記せよ。修正原因がエンジン/テストランナー起因の一般則（環境の落とし穴）だった場合は、tech-stack 文書の「既知の落とし穴」節へ即時追記せよ（無ければ新設 — gates.md QA-PLAY）。）\n' +
+    '4) 修正した場合は ' + STATE.reviewsDir + '/batch-verify.md に「phase / 原因 story / 修正内容 / ISO8601 日時」を追記し（日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う — 推測記入禁止）、コミット規律のパス指定形で git commit（メッセージ: "batch-verify fix (' + phaseName + ')"）。' + GIT_ADD_RULE + '\n' +
     '構造化返却: ok（最終合格で true。到達できなければ false を正直に）/ fixedNotes / unresolved。',
     { label: 'batch-verify-' + phaseName.toLowerCase(), phase: phaseName, agentType: 'gameplay-engineer', schema: BATCH_VERIFY_SCHEMA, effort: 'high' }
   );
@@ -506,7 +525,7 @@ async function buildStoryLane(laneStories) {
       reviewMode: reviewMode,
 
       produce: async function () {
-        const r = await agent(
+        const r = await agentR(
           [
             'あなたは ArcadeRelay の実装 engineer。次のストーリーを実装せよ。',
             storyHeader,
@@ -548,12 +567,12 @@ async function buildStoryLane(laneStories) {
         ];
         const pair = await parallel([
           function () {
-            return agent(
+            return agentR(
               reviewCommon.concat([
                 '',
                 '観点: 通常のコードレビューに加え、' + EP.codeRulesFile + '（存在しない場合は ' + DOCS.techStack + ' のコード規約）への違反 — 特にマジックナンバー混入と delta-time 非依存実装 — を確認せよ。',
                 'acceptance がこの diff で満たせる実装になっているかも確認せよ。',
-                'レビュー結果を ' + reviewLogPath + ' に追記せよ（review-loops.md の追記形式: iteration ' + iteration + '・verdict・指摘要約・日時）。',
+                'レビュー結果を ' + reviewLogPath + ' に追記せよ（review-loops.md の追記形式: iteration ' + iteration + '・verdict・指摘要約・日時。日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う — 推測記入禁止）。',
               ]).join('\n'),
               {
                 label: 'cr-code-' + story.id + '-iter' + iteration,
@@ -564,7 +583,7 @@ async function buildStoryLane(laneStories) {
             );
           },
           function () {
-            return agent(
+            return agentR(
               reviewCommon.concat([
                 '',
                 '観点: silent failure に絞って検査せよ（握りつぶされた例外・空 catch・失敗を隠すフォールバック・エラーの黙殺・失敗時に成功を装う戻り値）。',
@@ -596,7 +615,7 @@ async function buildStoryLane(laneStories) {
       },
 
       revise: async function (findings, iteration) {
-        const r = await agent(
+        const r = await agentR(
           [
             'あなたは ArcadeRelay の実装 engineer。CR-CODE レビュー指摘（code-reviewer + silent-failure-hunter の合算）を修正せよ。',
             storyHeader,
@@ -628,7 +647,7 @@ async function buildStoryLane(laneStories) {
     }
 
     // ステータス確定（done。未解決指摘があれば注記）— state はファイルが真実
-    const bookkeep = await agent(
+    const bookkeep = await agentR(
       [
         STATE.stories + ' で ' + story.id + ' の status を done に更新せよ。',
         loopResult.ok
@@ -670,7 +689,7 @@ const GEN_SCHEMA = {
     budgetExceeded: { type: 'boolean', description: '予算超過見込みで生成を停止した場合 true' },
     remainingPlanned: { type: 'number', description: '対象範囲のうちまだ生成できていない資産の件数（0 = 対象を全て生成済み）' },
     notes: { type: 'string', description: '開示事項（shippable:false ルート使用・Meshy 403→fal 切替・quota 制約等）。無ければ空文字' },
-    degradedRoutes: { type: 'array', items: { type: 'string' }, description: 'Primary から縮退したルートの一覧（例: "model_character: meshy:direct→fal（403）"）。無ければ空配列' },
+    degradedRoutes: { type: 'array', items: { type: 'string' }, description: '縮退・fallback 試行の全記録（ルート名+HTTPコード必須。例: "model_character: meshy:direct→422 / fal:meshy-v6→429 / tripo:direct→403 → local縮退"）。無ければ空配列' },
   },
 };
 
@@ -714,7 +733,7 @@ async function assetBatchLoop(cfg) {
   };
 
   async function reviewBatch(iteration, extraNote) {
-    const review = await agent(
+    const review = await agentR(
       [
         reviewModeNote(reviewMode),
         'GATE: AR-ASSET（' + DOCS.gates + ' の AR-ASSET 節に従う）。対象: ' + cfg.reviewSubject,
@@ -722,7 +741,7 @@ async function assetBatchLoop(cfg) {
         extraNote || '',
         '不合格資産には理由と再生成指示（プロンプト修正案）を必ず付けよ。',
         '**再生成では直らない開示事項**（gates.md AR-ASSET 観点6: shippable:false ルート由来 / fal 経由 Meshy のライセンス継承未検証 / cost_estimated:true / provenance 記録漏れ以外の注記）は failedAssets ではなく disclosures に入れよ（failedAssets に入れると無意味な再生成ループが走る）。',
-        'レビュー結果を ' + reviewLogPath + ' に追記（review-loops.md の追記形式・iteration ' + iteration + '）。',
+        'レビュー結果を ' + reviewLogPath + ' に追記（review-loops.md の追記形式・iteration ' + iteration + '。日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う — 推測記入禁止）。',
         '応答の1行目は「AR-ASSET: APPROVE|CONCERNS|REJECT」（contract.md §5）とし、構造化返却にも同じ判定を入れよ。',
         '構造化返却: verdict（品質は全資産合格なら APPROVE — 開示事項があっても再生成不要なら APPROVE + disclosures）/ failedAssets（file / reason / retryInstruction）/ disclosures。',
       ].filter(Boolean).join('\n'),
@@ -739,7 +758,7 @@ async function assetBatchLoop(cfg) {
     return review;
   }
 
-  const generated = await agent(cfg.generatePrompt + '\n構造化返却: generated（MANIFEST 追記済みパス一覧）/ budgetExceeded / remainingPlanned（対象範囲の未生成残数）/ notes（開示事項）/ degradedRoutes（Primary からの縮退一覧）。', {
+  const generated = await agentR(cfg.generatePrompt + '\n構造化返却: generated（MANIFEST 追記済みパス一覧）/ budgetExceeded / remainingPlanned（対象範囲の未生成残数）/ notes（開示事項）/ degradedRoutes（Primary からの縮退一覧）。', {
     label: 'generate-' + cfg.batchName,
     phase: 'AssetGen',
     agentType: cfg.producerType,
@@ -779,7 +798,7 @@ async function assetBatchLoop(cfg) {
     }
     failed = review.failedAssets;
     if (i < 3) {
-      const regen = await agent(cfg.regeneratePrompt(failed) + '\n構造化返却: generated / budgetExceeded / remainingPlanned / notes / degradedRoutes。', {
+      const regen = await agentR(cfg.regeneratePrompt(failed) + '\n構造化返却: generated / budgetExceeded / remainingPlanned / notes / degradedRoutes。', {
         label: 'regen-' + cfg.batchName + '-iter' + i,
         phase: 'AssetGen',
         agentType: cfg.producerType,
@@ -801,7 +820,7 @@ async function assetBatchLoop(cfg) {
   // 3回不合格 → fallback プロバイダへ切替後さらに1回（review-loops.md）
   if (failed && failed.length > 0) {
     log('[AR-ASSET] ' + cfg.batchName + ': 3回不合格 → fallback プロバイダ切替（' + failed.length + ' 件）');
-    const fb = await agent(cfg.fallbackPrompt(failed) + '\n構造化返却: generated / budgetExceeded / remainingPlanned / notes / degradedRoutes。', {
+    const fb = await agentR(cfg.fallbackPrompt(failed) + '\n構造化返却: generated / budgetExceeded / remainingPlanned / notes / degradedRoutes。', {
       label: 'fallback-' + cfg.batchName,
       phase: 'AssetGen',
       agentType: cfg.producerType,
@@ -838,6 +857,7 @@ async function assetBatchLoop(cfg) {
 
 const assetCommonRules = [
   '必読: ' + ART.assetsManifest + ' / ' + ART.artBibleJson + ' / ' + DOCS.assetsConfig + ' / ' + STATE.assetRouting + '（ルーティング表が真実。生成中の再判定禁止。shippable:false ルートで生成した資産は必ず未解決事項として報告）。',
+  '**Primary が API 失敗（4xx/5xx/timeout）の場合、fallback を 1 段も試さずにローカル縮退/プレースホルダ/must-replace 化することを禁止**（品質不合格による再生成は従来どおり Primary 固定 — この規則は API 失敗時のルート切替の話）。' + STATE.assetRouting + ' の fallbacks を上から順に全段試行し、各試行の『ルート名 + HTTP ステータス（または失敗理由）』を degradedRoutes に必ず列挙する（例: "model_character: meshy:direct→422 / fal:meshy-v6→429 / tripo:direct→403 → local縮退"）。全段失敗の場合のみローカル縮退可（retro-e3 指摘7）。',
   'API キー: **API を呼ぶ Bash に限り**冒頭で `set -a; source .env 2>/dev/null; set +a` を実行してから curl する（検証・後処理 — ffmpeg/npx 等 — の Bash では source しない: サードパーティ子プロセスへのキー継承を避ける。キー値の echo・ログ出力禁止 — contract §10）。API エラー（401/403/429/5xx）は握り潰さず HTTP ステータスと共に報告。',
   '対象はコアループ縦串に必須の資産のみ（' + STATE.stories + ' の phase:prototype の acceptance と ' + ART.assetsManifest + ' から特定）。残りは Phase 3 に回す。',
   '予算: 生成のたびに ' + STATE.budget + '（既定 $20）と ' + ART.manifest + ' の cost_usd 合算を照合し、超過見込みなら生成を停止して残件を報告せよ。',
@@ -990,7 +1010,7 @@ const INTEGRATE_SCHEMA = {
   },
 };
 
-const integrate = await agent(
+const integrate = await agentR(
   [
     BUILD_VERIFY_WARN +
     'あなたは ArcadeRelay の gameplay-engineer。生成済み資産を game/ に組み込め（engine: ' + engine + '。直列区間 — エンジン起動はこの工程が専有）。',
@@ -1000,7 +1020,7 @@ const integrate = await agent(
     EP.integrateSteps,
     '6. **エンジン取込後検証**（gates.md AR-ASSET の※節）: FBX 取込成功・取込後バウンディングボックス・リグ資産のアニメ再生可否（unity: Avatar.isValid / unreal: リターゲット成功）を機械検証し、結果を ' + ART.manifest + ' の validator に記録。失敗・縮退は degradations として返す（MANIFEST 注記だけで済ませない）。',
     '7. 未生成・不合格で欠けている資産はプレースホルダのまま残し、欠落一覧を degradations に含める。',
-    '8. ' + STATE.active + ' を更新し、パス限定で add してコミットする: `git add game docs state design && git commit -m "phase2: integrate assets"`（`git add -A` 禁止 — .claude/ 等の作業対象外の変更を巻き込まない）。',
+    '8. ' + STATE.active + ' を更新し（日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う — 推測記入禁止）、パス限定で add してコミットする: `git add game docs state design && git commit -m "phase2: integrate assets"`（`git add -A` 禁止 — .claude/ 等の作業対象外の変更を巻き込まない）。',
     '構造化返却: ok / degradations / summary（組み込んだ資産キー一覧と欠落一覧を含む）。',
   ].join('\n'),
   { label: 'integrate-assets', phase: 'Integrate', agentType: 'gameplay-engineer', effort: 'high', schema: INTEGRATE_SCHEMA }
@@ -1075,7 +1095,7 @@ const EVIDENCE_CHECK_SCHEMA = {
 let qaResult = null;
 const QA_MAX = 2; // review-loops.md: QA-PLAY MAX_ITER 2
 for (let round = 1; round <= QA_MAX; round++) {
-  qaResult = await agent(
+  qaResult = await agentR(
     [
       BUILD_VERIFY_WARN + reviewModeNote(reviewMode),
       'GATE: QA-PLAY（' + DOCS.gates + ' の QA-PLAY 節の engine=' + engine + ' の実行手段に従う）。iteration ' + round + '/' + QA_MAX + '。',
@@ -1086,14 +1106,14 @@ for (let round = 1; round <= QA_MAX; round++) {
       '',
       '検証項目:',
       '1. ' + EP.qaBuildLine,
-      '2. ' + ART.gdd + ' 記載の操作でコアループが1周できる（開始→挑戦→結果→リスタート）。加えて必須シーン遷移 Title→Menu→Game→Result→Menu の1周（contract §11。Menu の必須要素 = プレイ開始・アウトゲーム表示・設定・終了導線 の実在込み — gates.md QA-PLAY 観点2）。Title/Menu/Game/Result 各画面のスクリーンショットを撮る。',
+      '2. ' + ART.gdd + ' 記載の操作でコアループが1周できる（開始→挑戦→結果→リスタート）。加えて必須シーン遷移 Title→Menu→Game→Result→Menu の1周（contract §11。Menu の必須要素 = プレイ開始・アウトゲーム表示・設定・終了導線 の実在込み — gates.md QA-PLAY 観点2）。Title/Menu/Game/Result 各画面のスクリーンショットを撮る（Game は開始直後の空盤面不可 — コアループの主要オブジェクトが写るフレームで撮る。gates.md 視覚証跡）。',
       '3. ' + STATE.stories + ' の phase:prototype 全ストーリーの acceptance を1つずつ実操作で検証。',
       '4. 実プレイ感が ' + ART.concept + ' のピラー P-xx を裏切っていないか。',
       '5. メタ進行の永続化（gates.md QA-PLAY 観点5）: 保存→再起動相当→復元一致、破損セーブ→.bak 退避＋[SaveCorruption] 明示エラー1回＋既定値復旧、を自動テストで検証。',
       '6. 視覚証跡の機械検知＋目視（gates.md QA-PLAY 視覚証跡の目視義務）: 全スクリーンショットに magick の mean 検査（<0.02 / >0.98 = SUSPECT_BLANK → 撮影方式を切替えて再撮影）を行い、必ず Read で目視して「何が写っているか」を ' + ART.qaReport + ' の目視所見表に記録。',
       '',
       '証跡（スクリーンショット/録画）を ' + ART.qaEvidence + ' に保存し、結果を ' + ART.qaReport + ' に書け。',
-      'レビュー履歴を ' + STATE.reviewsDir + '/qa.md に追記（review-loops.md の追記形式・iteration ' + round + '）。',
+      'レビュー履歴を ' + STATE.reviewsDir + '/qa.md に追記（review-loops.md の追記形式・iteration ' + round + '。日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う — 推測記入禁止）。',
       '判定: 重大バグ 0 かつ acceptance 全通過 = APPROVE。',
       '応答の1行目は「QA-PLAY: APPROVE|CONCERNS|REJECT」（contract.md §5）とし、構造化返却にも同じ判定を入れよ。',
       '構造化返却: verdict / summary / criticalBugs（title・detail・storyId・修正担当 assignee。重大バグのみ。軽微な指摘は qa/report.md に記載）/ failedAcceptance（未通過の acceptance 一覧。story ID と何が満たせなかったかを1行ずつ。全通過なら空配列）/ evidencePaths（保存した証跡の相対パス）/ screenshotsVisuallyConfirmed（全スクリーンショットを Read で目視済みか。未実施なら false を正直に返す）。',
@@ -1108,7 +1128,7 @@ for (let round = 1; round <= QA_MAX; round++) {
 
   // 証跡実在＋目視宣言の独立機械検証（qa-lead の自己申告を workflow が別 agent で確認 — E1 教訓: 自己申告が唯一の関門にならないこと）
   {
-    const evCheck = await agent(
+    const evCheck = await agentR(
       [
         '読み取り専用の検証タスク。以下の証跡パス一覧について、各ファイルの実在と非0サイズを Bash（`test -s`・`stat`）で機械検証せよ。ファイルの作成・変更・削除は禁止。',
         '証跡パス(JSON): ' + JSON.stringify(qaResult.evidencePaths || []),
@@ -1151,7 +1171,7 @@ for (let round = 1; round <= QA_MAX; round++) {
   if (round < QA_MAX) {
     // 重大バグをassigneeが修正（同一コードベースのため順次。コンフリクト回避）
     for (const bug of qaResult.criticalBugs) {
-      const fixed = await agent(
+      const fixed = await agentR(
         [
           'あなたは ArcadeRelay の実装 engineer。QA-PLAY で検出された重大バグを修正せよ。',
           'バグ: ' + bug.title,
@@ -1159,6 +1179,7 @@ for (let round = 1; round <= QA_MAX; round++) {
           bug.storyId ? '関連 story: ' + bug.storyId : '',
           '参照: ' + ART.qaReport + '（QA 所見全文）/ ' + ART.conventions + ' / ' + DOCS.techStack + '。',
           '修正後 ' + EP.verifyCmd + ' が exit 0 を確認し、パス限定で add してコミット: `git add game state && git commit -m "phase2: fix QA — ' + bug.title + '"`（`git add -A` 禁止）。',
+          '修正原因がエンジン/テストランナー起因の一般則（環境の落とし穴）だった場合は、tech-stack 文書の「既知の落とし穴」節へ即時追記せよ（無ければ新設 — gates.md QA-PLAY）。',
           '修正内容を簡潔に返せ。',
         ].filter(Boolean).join('\n'),
         // round を label に含める: 同一バグが round を跨いで残存した場合に (prompt, opts) キャッシュが
@@ -1171,13 +1192,14 @@ for (let round = 1; round <= QA_MAX; round++) {
     }
     // acceptance 未通過も修正対象（非APPROVEの原因を残したまま再QAしない）
     if ((qaResult.failedAcceptance || []).length > 0) {
-      const faFixed = await agent(
+      const faFixed = await agentR(
         [
           'あなたは ArcadeRelay の実装 engineer。QA-PLAY で未通過となった acceptance を満たすよう修正せよ。',
           '未通過一覧:',
           qaResult.failedAcceptance.map(function (fa, idx) { return (idx + 1) + '. ' + fa; }).join('\n'),
           '参照: ' + ART.qaReport + '（QA 所見全文）/ ' + STATE.stories + '（acceptance 原文）/ ' + ART.conventions + ' / ' + DOCS.techStack + '。',
           '修正後 ' + EP.verifyCmd + ' が exit 0 を確認し、パス限定で add してコミット: `git add game state && git commit -m "phase2: fix QA — failed acceptance"`（`git add -A` 禁止）。',
+          '修正原因がエンジン/テストランナー起因の一般則（環境の落とし穴）だった場合は、tech-stack 文書の「既知の落とし穴」節へ即時追記せよ（無ければ新設 — gates.md QA-PLAY）。',
           '修正内容を簡潔に返せ。',
         ].join('\n'),
         { label: 'fix-qa-acceptance-r' + round, phase: 'QA', agentType: 'gameplay-engineer', effort: 'high' }
@@ -1230,7 +1252,7 @@ function cdPrompt(attemptNote) {
     unresolvedFindings.length > 0 ? unresolvedFindings.map(function (f) { return '- ' + f; }).join('\n') : '- なし',
     '',
     '観点: 1) ビジョン一貫性（brief・P-xx から逸脱していないか） 2) 提示品質（人間が5分で判断できる要約か） 3) 正直さ（未達・妥協点が列挙されているか）。',
-    '併せて ' + STATE.active + ' を「Phase 2 完了・Checkpoint B 待ち」に更新せよ。',
+    '併せて ' + STATE.active + ' を「Phase 2 完了・Checkpoint B 待ち」に更新せよ（日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う — 推測記入禁止）。',
     '',
     '応答の1行目は「CD-CHECKPOINT: APPROVE|CONCERNS|REJECT」（contract.md §5）とし、構造化返却の verdict にも同じ判定を入れよ。',
     '構造化返却:',
@@ -1243,7 +1265,7 @@ function cdPrompt(attemptNote) {
   ].filter(Boolean).join('\n');
 }
 
-let cd = await agent(cdPrompt(null), {
+let cd = await agentR(cdPrompt(null), {
   label: 'cd-checkpoint-b',
   phase: 'Final',
   agentType: 'creative-director',
@@ -1257,7 +1279,7 @@ if (cd) {
 // REJECT なら指示に従い修正後 1 回だけ再判定（review-loops.md: CD-CHECKPOINT MAX_ITER 1）
 if (cd && cd.verdict === 'REJECT' && cd.rejectInstructions && cd.rejectInstructions.length > 0) {
   log('[CD-CHECKPOINT] REJECT → 指示に従い修正して1回だけ再判定');
-  const cdFix = await agent(
+  const cdFix = await agentR(
     [
       'あなたは ArcadeRelay の tech-director。CD-CHECKPOINT が REJECT した。以下の指示に従い、Checkpoint B 提示物を修正せよ（必要なら各担当の成果物を直接修正・再ビルド・再コミット）。',
       '指示一覧:',
@@ -1267,8 +1289,8 @@ if (cd && cd.verdict === 'REJECT' && cd.rejectInstructions && cd.rejectInstructi
     { label: 'cd-reject-fix', phase: 'Final', agentType: 'tech-director', effort: 'high' }
   );
   if (cdFix !== null) {
-    const cdRetry = await agent(cdPrompt('（REJECT 指示への修正後の再判定。これが最後の判定）'), {
-      label: 'cd-checkpoint-b-retry',
+    const cdRetry = await agentR(cdPrompt('（REJECT 指示への修正後の再判定。これが最後の判定）'), {
+      label: 'cd-checkpoint-b-rejudge',
       phase: 'Final',
       agentType: 'creative-director',
       effort: 'high',

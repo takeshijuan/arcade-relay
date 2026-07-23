@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="1" result="Failed(Child)" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-07-21 14:00:38Z" end-time="2026-07-21 14:00:38Z" duration="0.2829764">
+  <test-suite type="TestSuite" id="1070" name="game" fullname="game" runstate="Runnable" testcasecount="49" result="Failed" site="Child" start-time="2026-07-21 14:00:38Z" end-time="2026-07-21 14:00:38Z" duration="0.282976" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="PlayMode" />
+    </properties>
+    <failure>
+      <message><![CDATA[One or more child tests had errors]]></message>
+    </failure>
+    <test-suite type="Assembly" id="1059" name="ForgeGame.PlayMode.Tests.dll" fullname="<repo>/game/Library/ScriptAssemblies/ForgeGame.PlayMode.Tests.dll" runstate="Runnable" testcasecount="47" result="Failed" site="Child" start-time="2026-07-21 14:00:38Z" end-time="2026-07-21 14:00:38Z" duration="0.278159" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="32604" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="PlayMode" />
+        <property name="EditorOnly" value="False" />
+      </properties>
+      <failure>
+        <message><![CDATA[One or more child tests had errors]]></message>
+      </failure>
+      <test-suite type="TestSuite" id="1060" name="ForgeGame" fullname="ForgeGame" runstate="Runnable" testcasecount="47" result="Failed" site="Child" start-time="2026-07-21 14:00:38Z" end-time="2026-07-21 14:00:38Z" duration="0.277075" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <failure>
+          <message><![CDATA[One or more child tests had errors]]></message>
+        </failure>
+        <test-suite type="TestSuite" id="1061" name="Tests" fullname="ForgeGame.Tests" runstate="Runnable" testcasecount="47" result="Failed" site="Child" start-time="2026-07-21 14:00:38Z" end-time="2026-07-21 14:00:38Z" duration="0.276148" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <failure>
+            <message><![CDATA[One or more child tests had errors]]></message>
+          </failure>
+          <test-suite type="TestSuite" id="1062" name="PlayMode" fullname="ForgeGame.Tests.PlayMode" runstate="Runnable" testcasecount="47" result="Failed" site="Child" start-time="2026-07-21 14:00:38Z" end-time="2026-07-21 14:00:38Z" duration="0.275353" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <failure>
+              <message><![CDATA[One or more child tests had errors]]></message>
+            </failure>
+            <test-suite type="TestFixture" id="1049" name="TitleScreenPlayModeTests" fullname="ForgeGame.Tests.PlayMode.TitleScreenPlayModeTests" classname="ForgeGame.Tests.PlayMode.TitleScreenPlayModeTests" runstate="Runnable" testcasecount="5" result="Failed" site="Child" start-time="2026-07-21 14:00:38Z" end-time="2026-07-21 14:00:38Z" duration="0.273675" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <failure>
+                <message><![CDATA[One or more child tests had errors]]></message>
+              </failure>
+              <test-case id="1051" name="LeftClick_TransitionsToMenu" fullname="ForgeGame.Tests.PlayMode.TitleScreenPlayModeTests.LeftClick_TransitionsToMenu" methodname="LeftClick_TransitionsToMenu" classname="ForgeGame.Tests.PlayMode.TitleScreenPlayModeTests" runstate="Runnable" seed="909975684" result="Failed" start-time="2026-07-21 14:00:38Z" end-time="2026-07-21 14:00:38Z" duration="0.267658" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <failure>
+                  <message><![CDATA[  Expected string length 4 but was 5. Strings differ at index 0.
+  Expected: "Menu"
+  But was:  "Title"
+  -----------^
+]]></message>
+                  <stack-trace><![CDATA[at ForgeGame.Tests.PlayMode.TitleScreenPlayModeTests+<LeftClick_TransitionsToMenu>d__3.MoveNext () [0x00134] in <repo>/game/Assets/Tests/PlayMode/TitleScreenPlayModeTests.cs:59
+at UnityEngine.TestTools.TestEnumerator+<Execute>d__7.MoveNext () [0x0004e] in ./Library/PackageCache/com.unity.test-framework@aebcb98460c6/UnityEngine.TestRunner/NUnitExtensions/Attributes/TestEnumerator.cs:44
+]]></stack-trace>
+                </failure>
+                <output><![CDATA[[DIAG] frame=14 click=False anyKey=False mapEnabled=True
+[DIAG] frame=15 click=False anyKey=False mapEnabled=True
+[DIAG] frame=16 click=False anyKey=False mapEnabled=True
+[DIAG] frame=17 click=False anyKey=False mapEnabled=True
+[DIAG] frame=18 click=False anyKey=False mapEnabled=True
+[DIAG] frame=19 click=False anyKey=False mapEnabled=True
+[DIAG] frame=20 click=False anyKey=False mapEnabled=True
+[DIAG] frame=21 click=False anyKey=False mapEnabled=True
+[DIAG] frame=22 click=False anyKey=False mapEnabled=True
+Saving results to: <path-redacted> Support/DefaultCompany/game/TestResults.xml
+]]></output>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

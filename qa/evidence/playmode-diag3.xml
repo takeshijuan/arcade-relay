@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="1" result="Failed(Child)" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-07-22 20:26:31Z" end-time="2026-07-22 20:26:31Z" duration="0.3288101">
+  <test-suite type="TestSuite" id="1148" name="game" fullname="game" runstate="Runnable" testcasecount="118" result="Failed" site="Child" start-time="2026-07-22 20:26:31Z" end-time="2026-07-22 20:26:31Z" duration="0.328810" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="PlayMode" />
+    </properties>
+    <failure>
+      <message><![CDATA[One or more child tests had errors]]></message>
+    </failure>
+    <test-suite type="Assembly" id="1137" name="ForgeGame.PlayMode.Tests.dll" fullname="<repo>/game/Library/ScriptAssemblies/ForgeGame.PlayMode.Tests.dll" runstate="Runnable" testcasecount="116" result="Failed" site="Child" start-time="2026-07-22 20:26:31Z" end-time="2026-07-22 20:26:31Z" duration="0.324336" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="20487" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="PlayMode" />
+        <property name="EditorOnly" value="False" />
+      </properties>
+      <failure>
+        <message><![CDATA[One or more child tests had errors]]></message>
+      </failure>
+      <test-suite type="TestSuite" id="1138" name="ForgeGame" fullname="ForgeGame" runstate="Runnable" testcasecount="116" result="Failed" site="Child" start-time="2026-07-22 20:26:31Z" end-time="2026-07-22 20:26:31Z" duration="0.322873" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <failure>
+          <message><![CDATA[One or more child tests had errors]]></message>
+        </failure>
+        <test-suite type="TestSuite" id="1139" name="Tests" fullname="ForgeGame.Tests" runstate="Runnable" testcasecount="116" result="Failed" site="Child" start-time="2026-07-22 20:26:31Z" end-time="2026-07-22 20:26:31Z" duration="0.321588" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <failure>
+            <message><![CDATA[One or more child tests had errors]]></message>
+          </failure>
+          <test-suite type="TestSuite" id="1140" name="PlayMode" fullname="ForgeGame.Tests.PlayMode" runstate="Runnable" testcasecount="116" result="Failed" site="Child" start-time="2026-07-22 20:26:31Z" end-time="2026-07-22 20:26:31Z" duration="0.320245" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <failure>
+              <message><![CDATA[One or more child tests had errors]]></message>
+            </failure>
+            <test-suite type="TestFixture" id="1118" name="TowerActionPanelPlayModeTests" fullname="ForgeGame.Tests.PlayMode.TowerActionPanelPlayModeTests" classname="ForgeGame.Tests.PlayMode.TowerActionPanelPlayModeTests" runstate="Runnable" testcasecount="7" result="Failed" site="Child" start-time="2026-07-22 20:26:31Z" end-time="2026-07-22 20:26:31Z" duration="0.317607" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <failure>
+                <message><![CDATA[One or more child tests had errors]]></message>
+              </failure>
+              <test-case id="1119" name="ClickPlacedTower_OpensActionPanel_WithLv1Info" fullname="ForgeGame.Tests.PlayMode.TowerActionPanelPlayModeTests.ClickPlacedTower_OpensActionPanel_WithLv1Info" methodname="ClickPlacedTower_OpensActionPanel_WithLv1Info" classname="ForgeGame.Tests.PlayMode.TowerActionPanelPlayModeTests" runstate="Runnable" seed="992918429" result="Failed" start-time="2026-07-22 20:26:31Z" end-time="2026-07-22 20:26:31Z" duration="0.311890" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <failure>
+                  <message><![CDATA[  設置済みタワー左クリックでアップグレード/売却パネルが開いていない
+  Expected: True
+  But was:  False
+]]></message>
+                  <stack-trace><![CDATA[at ForgeGame.Tests.PlayMode.TowerActionPanelPlayModeTests+<ClickPlacedTower_OpensActionPanel_WithLv1Info>d__3.MoveNext () [0x000e9] in <repo>/game/Assets/Tests/PlayMode/TowerActionPanelPlayModeTests.cs:64
+at UnityEngine.TestTools.TestEnumerator+<Execute>d__7.MoveNext () [0x0004e] in ./Library/PackageCache/com.unity.test-framework@aebcb98460c6/UnityEngine.TestRunner/NUnitExtensions/Attributes/TestEnumerator.cs:44
+]]></stack-trace>
+                </failure>
+                <output><![CDATA[[DIAG] click frame=26 pointer=(139.81, 265.15) towersCount=1
+[DIAG] spot0 world=(-15.20, 0.00, 3.00) screen=(139.81, 265.15, 38.89) distToPointer=0
+[DIAG] spot1 world=(-15.20, 0.00, -3.00) screen=(117.75, 211.77, 34.65) distToPointer=57.75478
+[DIAG] spot2 world=(0.00, 0.00, 3.00) screen=(320.00, 265.15, 38.89) distToPointer=180.1899
+[DIAG] spot3 world=(0.00, 0.00, -3.00) screen=(320.00, 211.77, 34.65) distToPointer=187.9287
+[DIAG] spot4 world=(15.20, 0.00, 3.00) screen=(500.19, 265.15, 38.89) distToPointer=360.3798
+[DIAG] spot5 world=(15.20, 0.00, -3.00) screen=(522.25, 211.77, 34.65) distToPointer=386.1504
+[DIAG] hitSpot=1
+Saving results to: <path-redacted> Support/DefaultCompany/game/TestResults.xml
+]]></output>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

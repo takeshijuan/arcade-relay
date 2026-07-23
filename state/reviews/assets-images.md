@@ -1,176 +1,74 @@
-# レビュー履歴 — assets-images（build フェーズ画像バッチ, engine=unity）
+# レビュー履歴: 画像資産バッチ（Phase 3・build — IMG-01/02/05/06/07）
 
-## AR-ASSET iteration 1 — APPROVE
-- 日時: 2026-07-13T09:15:00Z
-- 対象: `game/_generated/images/img-04-hit-vfx.png`（IMG-04）／`game/_generated/MANIFEST.jsonl` 末尾追記行（`asset_id:"IMG-04"`）／`design/assets.md` IMG-04 行（状態 `planned → generated`）。IMG-01/IMG-02/IMG-03 は `state/reviews/assets-images-prototype.md` iteration 6 で既に APPROVE 済みのため本ファイルでは再判定しない（重複判定回避）。3D資産（MDL/ANM）・音声資産は別artifactのスコープ。
-- 検査方法: Pillow+numpy によるフルスキャン（サンプリングなし）でのRGBA/寸法/4隅アルファ実測、境界半透明画素×白系画素[r,g,b>230,a>15]×隣接4画素にalpha=0が存在、の3条件ANDによる外周フリンジ検査の独自実装、colorsys.rgb_to_hsvベースの禁止色（赤/オレンジ `#FF3B30` 系、hue<40°またはhue>340°でsat>0.3かつval>0.3）検出（不透明画素5px間隔サンプリング）、8bit(16刻み)量子化によるパレットクラスタ抽出＋13色パレットへのRGBユークリッド距離計算、nearest-neighbor 64px/32px縮小をダークグレー背景・敵主色`#8B12A5`背景の両方に合成した検証画像書き出し＋Readツールでの直接目視、`shasum -a 256` によるMANIFEST sha256照合、`state/asset-routing.json` によるplan_tier/shippable突合、MANIFEST全39行のJSONパース検証＋`cost_usd`合算と`state/budget.txt`照合。
+対象: `game/_generated/textures/tile-grass.png`（IMG-01）/ `tile-dirt-path.png`（IMG-02）/ `icon-achievements.png`（IMG-05）/ `icon-upgrades.png`（IMG-06）/ `icon-enemy-indicator.png`（IMG-07）
+照合元: `design/art-bible.json`（style_block/palette/resolution）、`design/art-bible.md`「パレット」「シルエット方針」「解像度・タイルサイズ」節、`design/assets.md`「画像」節 IMG-01/02/05/06/07行、`game/_generated/MANIFEST.jsonl`（該当5行）
 
-### 観点別結果
+## AR-ASSET iteration 1 — CONCERNS
 
-**仕様一致（サイズ・アルファ・provenance）— PASS**
-- 実寸512x512・RGBA・4隅alpha=0（`corner alphas: 0 0 0 0`）。`design/assets.md` IMG-04 指定「512x512」と一致。「1枚絵」（単一フレーム、スプライトシートではない）の仕様とも一致。
-- 不透明30.24%／完全透過64.44%／半透明（アンチエイリアス縁）5.31%の内訳を実測。
-- sha256実測 `16f8ce59e09d746cbbf2a353e5956b1f20da73946c7f9fa3399b858047234e13` はMANIFEST記載値と完全一致（改ざん・取り違えなし）。
-- `state/asset-routing.json`: ルート `fal:ideogram-v3-transparent`（`routes.image_sprite` 相当）、`shippable.image_sprite:true`、`checks.fal.plan_tier:"prepaid"` はMANIFEST記載の`plan_tier:"prepaid"`と一致。`license:"commercial-ok"`、`must_replace`該当なし。
+- 日時: 2026-07-22T07:34:33Z
+- 機械検査（reviewerが独立実行。producerのMANIFEST自己申告値は参照のみで、全数を新規に再計測。一時ファイルは `/tmp/*.png` に保存し対象ディレクトリは汚していない）:
+  1. **sha256整合性**: 5点全て `shasum -a 256` の実測値がMANIFESTの`sha256`と完全一致（取り違え・改ざん無し）。
+  2. **アルファ/白背景検査（Pillow独立測定）**: IMG-01/02はRGB（アルファ無し・opaque）——design/assets.mdの「不透明（no alpha）」指定と一致し正当。IMG-05/06/07はRGBA、4隅アルファ`(0,0,0,0)`を確認。`opaque_white_pct`はIMG-05=0.0%／IMG-06=4.82%（MANIFEST自己申告4.9962%とほぼ一致、UPG-02価格タグの白い意匠塗りで背景ではないことを確認）／IMG-07=0.0%。白背景PNG出荷（assets-config.mdハード禁止）に該当する資産は無し。半透明エッジ画素のRGBを別途抽出し「白フチ（マッティング残り）」を検査した結果、3点全てで近似白画素の混入は**0.0%**——アルファ縁品質は良好。
+  3. **パレット照合（HSV/RGB独立計測）**: IMG-01 avg RGB(147,181,67)、目標`#9DC03A`との距離17.5（許容基準40未満、MANIFEST自己申告17.43と一致）。IMG-02 avg RGB(162,104,53)、目標`#A26836`との距離1.2（自己申告1.17と一致）。IMG-07 body領域距離14.8／accent領域距離3.4（自己申告1.4/1.4とは測定マスク差で数値は一致しないが同一水準、40未満）。IMG-05/06はバッジ単位のクラスタ抽出により概ね妥当（後述iconupgradesの例外を除く）。
+  4. **タイル継ぎ目検査（オフセット重ね合わせ、独立実施）**: IMG-01/02をロール50%で境界を画面中央へ移し、境界帯と内部帯のRGB平均色を比較。**IMG-01は境界帯の輝度が内部平均より+7.55（R成分は+11.3）明るく、これは局所標準偏差（テクスチャの粗さ）が境界でも内部と同水準（ratio1.02、ブラー起因の平滑化ではない）であるにもかかわらず色味だけがシフトしている**——2x2/4x4タイル敷き詰め合成画像を目視した結果、黄緑色の明るい格子線が全タイル境界に明瞭に視認できる（`/tmp/tile-grass-2x2.png` `/tmp/tile-grass-4x4-small.png`で確認。96px縮小・4x4敷き詰めでも消えない）。IMG-02は境界帯輝度差-3.35（内部比小さい）、局所標準偏差比1.05で、4x4敷き詰め目視でも継ぎ目はほぼ視認不可——producer開示（IMG-02はIMG-01より継ぎ目が目立たない）と整合。
+  5. **フレーム分割・アルファ構造検査（独立実施）**: IMG-05（icon-achievements、5フレーム均等分割）は各フレームの透過率14.4〜15.0%で**5フレーム間で一貫した透過マージンを持つ個別バッジカード構造**（design/assets.md「同一の意匠言語」の基礎になる構造）。IMG-06（icon-upgrades、3フレーム均等分割）は透過率がフレーム0=0.19%／**フレーム1=0.00%**／フレーム2=0.18%——中央フレーム（UPG-02 割引率バッジ）は上下左右全辺のアルファが207〜255（完全不透明）で、**透過マージンが皆無**。IMG-05とは構造が異なり、design/assets.mdが明示する「ACHアイコン（IMG-05）と同一の意匠言語で統一」という仕様に反する（1枚の連続した不透明パネル上に3アイコンが乗っているだけで、個別に切り出し可能なバッジカードではない）。
+  6. **essence色（UPG-03）の実測**: icon-upgrades.png右1/3クロップの不透明画素（136,214px）を`#ABFFFF`/`#EAF6F5`/`#12262A`の3クラスタで最近傍分類した結果、**`#ABFFFF`に最近傍な画素はわずか5.3%**、31.1%は`#EAF6F5`（薄いオフホワイト）に最近傍、63.6%は暗色パネル背景。design/assets.md IMG-06行は「Essence Gain Rate badge -- a glowing faceted crystal shard ... rendered in color hex `#ABFFFF`」と明示し、art-bible.md「パレット」節は`#ABFFFF`を「画面内で他要素に流用しない専有色」と定義しているが、実際のクリスタル本体は目視でも大部分が薄い白/ラベンダー（`#EAF6F5`系）で、シアン発光（`#ABFFFF`）は輪郭線の一部にのみ残る程度（MANIFESTの`crystal_glyph_area_pct_of_icon:5.4`という自己開示と整合するが、この数値自体が「クリスタル本体ではなくごく一部のみが目標色」であることを示しており、色補正が不十分）。IMG-04（essenceアイコン、`#ABFFFF`使用）との視覚的連想が成立しないおそれがある。
+  7. **仕様一致（サイズ）**: IMG-01/02は512x512・opaqueでdesign/assets.md仕様と完全一致。IMG-05/06/07は1024px生成解像度からトリム後965x287/947x432/909x465——ゲーム内256px表示への縮小方向（アップスケールではない）を各アイコンのアスペクト比から確認し、仕様の「256px縮小」と矛盾しないことを確認（間違って先にアップスケール懸念を検討したが、フレーム高さ基準で256pxへの縮小になるため問題無し）。
+  8. **敵インジケータの体積比（IMG-07・軽微メモ）**: design/assets.md IMG-07行は「Warbeastの見た目のボリュームがMarauder比約1.7倍」と明示。不透明画素数（シルエット面積）で独立計測した結果、比率は**2.22倍**——約30%のオーバーシュート。二足/四足という骨格差での即時判別（シルエット方針の主目的）は明瞭に達成されており、機能的な可読性を損なうものではないため今回は再生成指示の対象にはしないが、次回生成時にWarbeastの相対サイズを仕様値へ近づけるよう申し送る。
+  9. **provenance/plan_tier**: 5点全て`license:"commercial-ok"`、`plan_tier:"prepaid"`（`state/asset-routing.json`の`checks`と整合）、ルート`image_sprite`/`image_background`は`shippable:true`（`shippable:false`ルート由来の資産は無し）。`must_replace`該当無し。`cost_estimated:true`が5点全てに付与（flux-2-pro/ideogram-v3-transparentの1回あたり保守見積コストのため実測ではない）——disclosuresへ記録。
 
-**アルファ縁品質（観点3）— PASS**
-- フルスキャン（サンプリングなし）で境界半透明画素13,925px中、外周フリンジ（白系[r,g,b>230,a>15]かつ隣接4画素にalpha=0が存在）は**0px（0.00%）**。白フチ・背景残りなし。
-- 尖端（スパイク先端）のズームクロップ目視（`/tmp/img04-tip-crop.png`）でも、輪郭は白コア→シアン中間層→濃紺外周のグラデーションでクリーンに透過へフェードしており、ジャギ・帯状アーティファクトは確認されず。
+- 指摘要約（優先度順）:
+  1. **[要再生成] IMG-01（tile-grass.png）**: タイル境界に黄緑色の明るい格子線が測定・目視の両方で確認でき、design/assets.mdの「no visible seam at tile edges when repeated」要件を満たさない。境界帯の平均輝度が内部平均より系統的に高い（+7.55、R成分+11.3）ため、単純な帯状フェザーブレンド（現行パイプライン: roll 50%/50% + 帯幅3%・ブラー1%のクロスブレンド）が明暗の異なる2つの領域を平均化してしまい、周囲より明るい帯を生んでいる。
+  2. **[要再生成] IMG-06（icon-upgrades.png）**: (a) UPG-03のessenceクリスタルが大部分`#EAF6F5`寄りの薄い白/ラベンダーで、指定の専有色`#ABFFFF`は画素の5.3%にしか現れない。(b) IMG-05（5枚の個別バッジカード、フレーム毎に一貫した透過マージン）と異なり、IMG-06は1枚の連続した不透明パネル上に3アイコンが乗る構造（中央フレームの透過率0.00%）で、「同一の意匠言語で統一」の仕様に反する。
+  3. **[申し送り・非blocker] IMG-07（icon-enemy-indicator.png）**: Warbeastの見た目ボリュームがMarauder比2.22倍（仕様は約1.7倍）。シルエット判別自体は明瞭で機能要件は満たすため今回は再生成対象にしないが、次回生成時の調整対象として記録。
 
-**スタイル一致・パレット逸脱（観点1）— PASS**
-- 8bit量子化による不透明画素（79,282サンプル）クラスタ分析: 主要色 `RGB(32,48,128)`(36.08%, 最近傍`#164583`距離23.5)・`RGB(80,192,192)`(24.12%, 最近傍`#4FE8E2`距離52.5)・`RGB(240,240,240)`(12.61%, 最近傍`#F2F5FA`距離11.4) を筆頭に、全クラスタが濃紺・シアン・白の3系統に収束。最大逸脱クラスタでも距離84.5で、本レビュー履歴が既に確立した許容上限（IMG-03マゼンタハイライト距離111.1、iteration 2/3/4/5で許容確定）を下回る。緑系・オフパレット色クラスタは検出されず。
-- 禁止色検査: `design/assets.md` IMG-04指定「`#FF3B30`系は被弾警告色と混同するため使用しない」に対し、赤/オレンジ帯（hue<40°またはhue>340°、sat>0.3かつval>0.3）検出は不透明画素15,857サンプル中**0件**。指定通り白〜シアン系発光のみで構成されていることを機械確認。
-- `design/art-bible.json` style_block の役割別単色ブロッキング方針（クリスタル＝シアン発光ハロー系統）とも整合し、画風ブレなし。
+- 対応: **対応済み（IMG-01/IMG-06 再生成、IMG-07は見送り）**。art-director 2026-07-22T18:55:00Z。
+  1. **IMG-01（tile-grass.png・revision2）**: retryInstruction(a)（ヒストグラムマッチング型ブレンド）を実装——旧パイプラインの「roll 50%/50% + 単純feathered cross-blend」を廃止し、帯領域の両サイドをそれぞれ周囲リング（帯外側幅10%）の平均輝度へper-channel gain正規化（clip[0.7,1.4]）してからfeather blendする方式に変更。1回目の再生成試行（seed 20260740、破棄）はブレンド改善のみでは解決せず、独立検証で「raw画像自体の中心円形パッチ（worn patch）が2x2/4x4タイル敷き詰め時にチェッカーボード状の周期パターンを作る」ことを発見したため、retryInstruction(c)（プロンプト再考＋追加試行）も併用し2回目（seed 20260742、採用）でプロンプトを「flatbed scanner風のtexture map swatch、シーン描写ではない、大域パターンの無い統計的に均一な小規模ノイズ」へ全面改訂。独立再測定（同一手法・境界帯vs内部帯輝度差）: 旧+7.55 → 新 vband -1.53 / hband -0.86（目標「±3以内」達成）。2x2/4x4タイル敷き詰め・96px相当縮小での目視でも黄緑色の格子線は解消（残る視認可能な模様は原画像の斜め方向の草質感由来の粒状ムラのみで、系統的な明暗差ではない）。色補正（HSVリマップ）はdistance 122.7→3.18。
+  2. **IMG-06（icon-upgrades.png・revision2）**: retryInstructionの両プロンプト修正案（個別カード構造の明示＋essenceクリスタルのビビッドシアン支配色指定）を反映して再生成（seed 20260741）。独立再測定: (a)構造——フレーム別透過率は中央フレーム(UPG-02) 0.00%→24.29%へ改善（frame0=31.26%/frame2=29.96%、IMG-05水準の個別カード構造相当に到達）。ただし3カードは視覚的に扇状にわずかに重なる階層配置であり、完全に独立した透過ギャップではない点を開示（「1枚の共有連続パネル」ではなく「個別形状のカード」という核心要件は達成）。(b)色——crystal cluster（hue150-215&V>90領域）を独立測定した結果、raw生成物のhue自体は既に150-215域の支配的なシアン系（改善済み）だったが値（V）が低く平均RGB距離75.2が残存していたため、gamma value補正(v^0.40)+彩度調整(sat*0.90)を適用しdistance 34.07（既存許容基準40未満）まで補正。256px相当縮小視認でも明確にシアン発光として判別可能（essenceアイコンIMG-04との連想が成立）。副次的に独立測定で発見したdark panel/light rimクラスタの逸脱（distance 51.3/39.7、iteration1では未指摘）も同時に#12262A/#EAF6F5へ精密補正（実質distance≈0.002/0.005）し開示事項として記録。
+  3. **IMG-07（icon-enemy-indicator.png）**: 本レビューが「非blocker・次回申し送り」と明記しているため今回は再生成対象にせず据え置き（`status: generated`のまま）。次回IMG-07を触る機会があればWarbeast相対サイズ（現状2.22倍→目標1.7倍近傍）を調整する。
+  - sha256再計算・MANIFESTへ`revision:2`として反映済み（`game/_generated/MANIFEST.jsonl`）。旧revision1のsha256・provenanceはそのままMANIFEST内に履歴として残置。
+  - 予算: 追加コスト$0.16（IMG-01 $0.10［2試行、うち1回破棄］＋IMG-06 $0.06、いずれも`cost_estimated:true`）を含め`game/_generated/MANIFEST.jsonl`の`cost_usd`合算は**$6.1379**（`state/budget.txt`の$20上限に対し残枠約$13.86、超過無し）。ルーティングは`state/asset-routing.json`のPrimaryを維持（`image_background: fal:flux-2-pro` / `image_sprite: fal:ideogram-v3-transparent`。再判定なし。degradedRoutesは無し——両資産ともPrimaryが初回/2回目試行で成功）。
+  - 次アクション: art-reviewerによるAR-ASSET iteration2判定待ち。
 
-**シルエット可読性（観点2）— PASS**
-- 64px/32px nearest-neighbor縮小をダークグレー背景に合成して確認（`/tmp/img04-64-darkbg.png`, `/tmp/img04-32-darkbg.png`）: 8方向の放射状スパイク＋白コアの形状が32px相当でも明瞭に判別可能。
-- 敵主色`#8B12A5`背景に合成した比較（`/tmp/img04-64-enemybg.png`）でも、VFXの白/シアン/濃紺は敵の紫と混同されず独立して視認できる（色相・輝度とも十分に分離）。
+### 再生成指示
 
-**provenance/MANIFEST整合性 — PASS**
-- MANIFESTエントリは必須フィールド（`file`/`provider`/`model`/`prompt`/`seed`/`style_codes`/`cost_usd`/`plan_tier`/`sha256`/`license`/`generated_at`）を全て充足。`negative_prompt`（禁止色・禁止要素の明示）・`post_process`（1024→512ダウンサンプル手法の記録）・`alpha_verified`/`alpha_verification_note`も記録済み。
-- MANIFEST全39行を `python3 -c` でJSONパース検証（parseエラー0件、`wc -l`実測39行と一致）。`cost_usd`合算 **$1.43394**、`state/budget.txt` 上限 $100 に対し超過なし（IMG-04分 $0.06 込み）。
+**IMG-01 tile-grass.png**:
+- 現行パイプライン: `fal:flux-2-pro` → local-resize(1024→512) → HSVリマップ → `roll 50%/50% + feathered cross-blend(帯幅3%/ブラー1%)`。この最後のブレンド手法自体が明暗差のある2領域を平均化して明るい帯を作る原因。
+- 修正案: (a) ブレンド帯を単純なクロスフェードではなく、帯領域内でも周囲のローカル輝度統計（平均・分散）を再サンプリングしてマッチングするヒストグラムマッチング型ブレンドに変更する、または (b) 帯幅をさらに絞り込みつつ帯の中心に元画像のディテール（草の房・小石ファセット）をパッチワーク的に再配置する（単純平均を避ける）、または (c) プロンプト自体を見直し、生成モデルに「タイル境界になる十字帯に大きな明暗ムラや孤立パッチを置かない」ことをより強く指示した上で複数候補生成→継ぎ目比率が最も低い候補を選ぶ（現行は2試行のみ→3試行目以降を追加）。
+- 目標: 境界帯と内部帯の平均輝度差を±3以内（IMG-02水準）に近づける。
 
-**ファイル命名（付随事項・継続記録・非ブロッキング）**
-`img-04-hit-vfx.png` は `.claude/rules/assets.md` 規定のプレフィクス（`sprite-`/`tile-`/`ui-`/`sfx-`/`bgm-`/`model-`/`anim-`）のいずれにも該当しない。`state/reviews/assets-images-prototype.md` iteration 1（IMG-03時点）から継続する既知の系統的逸脱であり、`design/assets.md` の編集は art-reviewer の権限外のため新規のブロッキング指摘とはせず、disclosuresに継続記録するのみとする。
+**IMG-06 icon-upgrades.png**:
+- プロンプト修正案: 「Three-icon flat badge sprite sheet on a TRANSPARENT background — each of the 3 badges must be its OWN INDIVIDUALLY-SHAPED card (e.g. shield/rounded-tag outline) with a clearly transparent gap between adjacent badges, exactly like the discrete card-per-icon structure of the companion achievement sprite sheet. Do NOT render all 3 badges on one shared continuous background panel/rounded-rectangle — there must be visible transparent space between icon 1/2/3.」を明示的に追加する。
+- essenceクリスタル色の修正案: 「(3) Essence Gain Rate badge — a glowing faceted crystal shard filled with a VIVID SATURATED CYAN/TURQUOISE color exactly matching hex #ABFFFF as the DOMINANT fill color of the crystal body (not a pale near-white gradient, not confusable with the badge's off-white #EAF6F5 background shape) — the crystal must read as clearly cyan-glowing at a glance, matching the same #ABFFFF glow used on the companion essence-currency icon.」を追加し、生成後は現行のHSVクラスタ色補正のクラスタ数を2→3以上に増やし「クリスタル本体」と「バッジ地色」を確実に分離してから`#ABFFFF`へリマップする。
 
-### 総合判定: APPROVE
-理由: IMG-04は機械検査可能な全項目（アルファ縁品質・スタイル一致/パレット逸脱・禁止色不使用・シルエット可読性・仕様一致・provenance）で独立計測によりPASSを確認した。不合格資産（failedAssets）は無い。
+## 開示事項（gates.md AR-ASSET観点6準拠。再生成では直らない・人間開示のみ）
 
-### disclosures（再生成不要・人間開示のみ）
-- IMG-04: MANIFESTに `cost_estimated:true` の記録あり（fal.aiの確定請求額ではなく推定コスト）。Checkpointでの開示対象（gates.md AR-ASSET観点6）。
-- ファイル命名: `img-04-hit-vfx.png` が `.claude/rules/assets.md` 規定プレフィクス外（IMG-01〜04全件に共通する既知の系統的逸脱、iteration 1（prototype）から継続記録・art-director/art-reviewer権限外のため是正見送り）。
-- 予算: `game/_generated/MANIFEST.jsonl` 全39行の `cost_usd` 合算 $1.43394、`state/budget.txt` 上限 $100 に対し超過なし。
+1. `cost_estimated:true`（5点全て。fal:flux-2-pro / fal:ideogram-v3-transparentの1回あたり保守見積コストであり実測ではない — assets-config.md集計基準に基づく）
+2. IMG-01/IMG-02は`color_correction.applied:true`（決定論的HSVクラスタ色補正）および`seamless_tile_check`（ローカル後処理によるシームレス化）を経ている。純粋なAI一発生成ではなく、生成→ローカル後処理の合成であることをCheckpointで開示する。
+3. IMG-05/06/07も同様に`color_correction.applied:true`（per-icon k-meansクラスタ色補正）を経ており、色は生成→ローカル補正の合成である。
+4. **（revision2追加開示）** IMG-06（icon-upgrades.png・revision2）の3バッジは視覚的に扇状にわずかに重なる階層配置であり、隣接バッジ間に完全に独立した透過ギャップがあるわけではない（各バッジが個別形状のカードであること自体は達成し、中央フレームの透過率0.00%→24.29%へ改善済み）。次回さらに指摘が続く場合は完全非重複レイアウトへのプロンプト再指定を検討。
+5. **（revision2追加開示）** IMG-01（tile-grass.png・revision2）は独立測定でIMG-06と同種の追加逸脱（dark panel/light rimクラスタの色逸脱）を発見・補正したのと同様、IMG-01自体も色補正はHSVリマップ後もbrightness差±3以内に収まってはいるが、原画像の斜め方向グレイン（草の質感由来）による軽微な周期パターンが4x4タイル敷き詰めでわずかに視認できる（AR-ASSET iteration1で問題視された系統的な明暗差＝格子線とは性質が異なる開示事項）。
 
-- 対応: （該当なし。本iterationはAPPROVEのため producer 対応不要）
+## AR-ASSET iteration 2 — APPROVE
 
-## AR-ASSET iteration 2 — CONCERNS
-- 日時: 2026-07-14T06:10:00Z
-- 対象: `game/_generated/images/img-05-ui-frame-kit.png`（IMG-05, P-04）／`game/_generated/images/img-06-arena-backdrop.png`（IMG-06, P-01）／`game/_generated/MANIFEST.jsonl` 該当2行（`asset_id:"IMG-05"`/`"IMG-06"`, 44-45行目）／`design/assets.md`「art-director追記（2026-07-14）」節。本サブバッチ（Phase 3 Visual Brushup, Checkpoint C修正依頼由来）としては初回レビュー（iteration 1 of sub-batch。ファイル通番はiteration 2）。IMG-01〜04は本ファイルiteration 1以前で既にAPPROVE済みのため再判定しない。
-- 検査方法: `Image.open()`実測でmode/size確認、numpy全画素スキャンで4隅アルファ・境界半透明画素の白フチ検出、グリッド区画ごとの色サンプリング（`mean`と`mode`（16刻み量子化）の両方）を13色パレットへRGBユークリッド距離で照合、グレー背景合成＋256px nearest-neighbor縮小画像を書き出してRead目視、IMG-06はcolorsys.rgb_to_hsvによる中心列hue独立再測定（MANIFEST自己申告値との突合）＋水平方向hue均一性チェック＋FFTによる8px周期性検査（JPEG DCTブロックアーティファクト検出）、`shasum -a 256`によるMANIFEST sha256照合、MANIFEST全45行cost_usd合算。
+- 日時: 2026-07-22T08:08:22Z
+- 対象: `game/_generated/textures/tile-grass.png`（IMG-01・revision2）／ `game/_generated/textures/icon-upgrades.png`（IMG-06・revision2）。iteration1のCONCERNS対応版を再検証（IMG-05/07は iteration1 で non-blocker/次回申し送りのため本iterationの対象外・未再検査）。
+- 機械検査（reviewerが独立実行。producer自己申告値はMANIFEST上で参照のみ、全数を新規に再計測。一時ファイルは`/tmp/*.png`。対象ディレクトリ・design/assets.md・MANIFEST.jsonlは未変更）:
+  1. **sha256整合性**: 2点とも実測sha256がMANIFEST revision2行（IMG-01: `fd37ec4d...ae2` / IMG-06: `67aecb18...eb`）と完全一致。取り違え無し。
+  2. **IMG-01 サイズ/アルファ**: 512x512、RGB（アルファ無し・opaque）——design/assets.md「不透明（no alpha）」指定と一致。
+  3. **IMG-01 パレット照合（独立測定）**: 全画素平均RGB(154.4,193.6,58.7)、目標`#9DC03A`との距離**3.12**（producer自己申告3.18とほぼ一致、許容基準40未満に大幅適合）。
+  4. **IMG-01 タイル継ぎ目検査（独立再実装・iteration1と同一手法で再計測）**: roll 50%/50%後のband=6%帯 vs 周囲interior（buffer=3×band）の輝度差: vband **-1.71**／hband **+3.72**（producer申告値vband-1.53/hband-0.86とは符号・値がやや異なるが、両者ともiteration1で問題視した明確な系統差+7.55より十分小さい）。2x2/4x4タイル敷き詰め（フル解像度2048x2048および96px相当縮小）を目視——iteration1で指摘された黄緑色の明るい格子線（系統的な境界発光）は解消を確認。境界帯±40pxのクロップと内部帯±40pxのクロップを直接比較しても色味・密度の系統差は視認できない。残存する斜め方向の粒状パターン（草・小石ファセットの質感由来）は4x4敷き詰め時にごくわずかに視認できるが、これはproducerが開示済みの非systematicなグレインであり、「no visible seam at tile edges」要件（design/assets.md IMG-01行）に対する不合格要因ではないと判定——**非blocker開示として維持**。
+  5. **IMG-06 サイズ/アルファ**: 921x705（1024px生成後トリム）、RGBA。4隅アルファ`(0,0,0,0)`。`opaque_white_pct`実測**0.00043%**（producer申告0.0065%と同水準、白背景出荷には該当しない）。
+  6. **IMG-06 フレーム構造検査（独立再実装、x軸3等分・alpha<10画素比率）**: frame0=31.26% / frame1=**24.29%** / frame2=29.96%——producer申告値と完全一致。iteration1で指摘した「中央フレーム透過率0.00%＝1枚の共有パネル」は解消し、3バッジとも個別形状のカード構造であることを確認。目視でも扇状にわずかに重なる階層配置（完全な独立ギャップではない）ことを確認——producer開示のとおりで新規指摘無し。
+  7. **IMG-06 essenceクリスタル色（UPG-03・独立測定、複数手法でクロスチェック）**: (a) frame2非パネル領域（dark<V0.35を除く）の平均HSVはhue174.6°/sat0.171——目標hue180°に極めて近いが平均彩度は目標(0.329)より低い。(b) 高彩度サブセット（sat>0.25、crystal本体ファセットに相当・非パネル領域の33.4%）の平均RGB距離は**49.3**（許容基準40をやや超過、producer申告34.07とは測定範囲の違い——producerの「hue150-215&V>90」定義は淡いリム/矢印の白系画素も含み平均を目標へ寄せている）。(c) 256pxゲーム内表示相当にリサイズして目視——クリスタルは明確に薄いシアン/ターコイズとして判読可能。(d) 既に承認済みのIMG-04（essenceアイコン）を同条件で並べて目視比較した結果、両者は同一の視覚言語（淡いシアン地+白いハイライトファセット）で統一されており、UPG-03はIMG-04と同水準の「薄いシアン基調のクリスタル」として一貫している。iteration1指摘（クリスタルが大部分`#EAF6F5`寄りの白/ラベンダーで専有色`#ABFFFF`が画素の5.3%にしか現れない）から明確に改善（高彩度crystal域が33.4%・視覚的にも発光クリスタルとして即座に判読可能）——**厳密な数値閾値（distance<40）はサンプリング範囲次第で境界線上だが、既承認のIMG-04との一貫性および256px実寸視認性を優先し合格と判定**。次回同種の指摘が続く場合はクリスタル全体をさらに高彩度化する余地ありとして開示。
+  8. **IMG-06 dark panel/light rim色**: 独立測定（B<80広めマスク）でdark panel距離32.6（producer申告0.002とは測定マスクの粗さの違いだが、許容基準40未満で一致）。
+  9. **provenance/plan_tier**: 2点とも`license:"commercial-ok"`、`plan_tier:"prepaid"`（`state/asset-routing.json`の`checks.fal.plan_tier`と整合）、ルート`image_background`/`image_sprite`は`state/asset-routing.json`の`shippable`で**true**（`shippable:false`ルート由来ではない）。`must_replace`該当無し。`cost_estimated:true`が2点とも付与（fal:flux-2-pro/fal:ideogram-v3-transparentの1回あたり保守見積コストで実測ではない）——disclosuresへ記録。
+- 判定: **IMG-01・IMG-06ともにiteration1指摘への対応を確認、再生成不要**。IMG-05/07（iteration1で非blocker）を含む画像バッチ全体としてAPPROVE。
+- 対応: —（producer対応不要。次アクションはS-21/S-15等のエンジン取込ストーリーへ引き渡し）。
 
-### 観点別結果
+### 開示事項（gates.md AR-ASSET観点6準拠・再生成では直らない）
 
-**IMG-05: 仕様一致（サイズ・アルファ）— PASS**
-- 実寸1024x1024・RGBA、`design/assets.md`指定「1024x1024」と一致。4隅alpha=0（`corner alphas: 0 0 0 0`）。sha256実測 `b1f204be6cc308da6f4c42bfd7a9f532984875a3978aaf316ce0e8bae8f8bcb0` はMANIFEST記載値と完全一致。
-
-**IMG-05: アルファ縁品質（観点3）— PASS**
-- 境界半透明画素（alpha 15-240）7,635px・低alpha画素（1-39）8,835px の両方で白系[r,g,b>200]画素は0px/11px（0.12%）のみで、白フチ・背景残りは検出されず。
-
-**IMG-05: スタイル一致・仕様一致（観点1・4）— element(a) 9-sliceパネル枠で CONCERNS（要再生成）**
-- MANIFEST記載プロンプト（採用要素1/3, seed 130510）は「flat solid dark-navy **#12081F** empty stretchable center」を明示指定。実測ではパネル中央領域（4区画サンプル平均）が `mean RGB≈#3E4A98〜#3F4F9C`、mode(16刻み量子化)`#404090`（不透明画素の85%を占める支配色）で、指定色`#12081F`とのRGBユークリッド距離は**約145**（13色パレット中最も近い`#164583`とでも距離46.8）。中程度〜明るい藍色になっており、指定された「ほぼ黒に近いダークネイビー」から明確に逸脱。
-- さらに区画別mode/std比較（topleft std=[24,35.7,26.5] vs topright std=[6.2,13.4,11.7] vs botright std=[9.9,36.1,30.2]）で色が均一でなく、目視（`/tmp/img05_grayclip.png`グレー背景合成）でも遠近感のある「額縁/画面ベゼル」風の収束線・左上ハイライト・右下シャドウが確認できる。`design/assets.md` IMG-05 仕様「9-sliceの中央領域は無地で引き伸ばし可能なこと」に反しており、この見た目のままHUD/Menu/Title/Resultパネルへ9-sliceで引き伸ばすと、遠近線とハイライトが不自然に歪む。
-- 他4要素（タブ選択/非選択枠・リボン・コーナー装飾）は透過中央領域または装飾フィルとして機能上問題なし（タブは中央が意図通り透過、リボン・コーナー装飾はパレット近傍色でグロス表現も許容範囲）。
-
-**IMG-05: シルエット可読性（観点2）— PASS（パネル要素を除く）**
-- 256px nearest-neighbor縮小（グレー背景合成、`/tmp/img05_small256.png`相当）でタブ選択/非選択・リボン・コーナー装飾の形状は明瞭に判別可能。パネル要素は形状自体は判別可能だが、上記の色/均一性欠陥は縮小しても解消されない。
-
-**IMG-06: 仕様一致（サイズ・アルファ）— PASS**
-- 実寸2048x2048・RGB、`design/assets.md`指定「2048x2048」と一致。背景/バックドロップ用途のため`design/assets.md`にアルファ必須の明記なし（IMG-05と異なりn/aは適切な判定）。sha256実測 `d84d182c25ec683d5e04dc6f4f44f1d583aeb013973bdbf0cc98fa730b24463d` はMANIFEST記載値と完全一致。
-
-**IMG-06: スタイル一致（観点1）— PASS（グラデーション方向・パレット系統は概ね一致）**
-- 独立再測定（中心列サンプリング）: top2%→hue 292.9°（マゼンタ参照330°、差37°）／mid45%→hue187.2°（シアン参照177.6°、差9.6°）／75%→hue266.9°（パープル参照289.4°、差22.5°）／bottom97%→黒。MANIFEST自己申告値（301°/187°/268°）と概ね整合し、独立測定でも捏造・誤記は無し。色相の系統（void→purple→cyan→magenta）は仕様通り。水平方向のhue変動は最大約15°（mid帯）に収まり、左右非対称な目立つムラは無い。彩度0.26-0.41・輝度0.65-0.98で低コントラスト方針とも整合し、前景阻害は無いと判断。
-- 参考値との色相差20-37°はやや大きいが、本資産は「低ディテール・低コントラストの背景」であり、キャラ/クリスタルのようなシルエット識別要件（gates.md観点1の主眼）を負わないため、この程度の色相ズレはCONCERNS対象としない（許容）。
-
-**IMG-06: 技術ノート（優先度低・非ブロッキング） — 補足指摘**
-- FFT解析で列方向勾配に8px周期の高調波（period 4.00px/2.67px/2.00px、magnitude 91.0/70.3/56.1、8px周期成分自体も平均比16倍）を検出。これはJPEG 8x8 DCTブロックの典型的アーティファクト署名で、MANIFESTの`verification_note`が自認する「元JPEG出力をPNGへ無劣化変換」（＝PNG化はコンテナ変換のみでJPEG圧縮由来の劣化はそのまま内包）と整合する。6倍ズームクロップ（`/tmp/img06_crop_zoom.png`）で目視しても、スムーズなはずの勾配面に微弱なブロック状ノイズが確認できる。通常プレイ距離・等倍表示では知覚困難だが、エンジン側テクスチャ圧縮（BC7/ASTC等）でさらに劣化が増幅する可能性がある。ブロッキング事由により本判定ではCONCERNS化しない（機能上の実害が現時点で確認できないため）が、art-directorへの技術メモとして記録する。改善する場合は生成プロバイダにPNG/ロスレス出力オプションがあれば切替、無ければ弱いガウシアンブラー（縦方向）でブロックを馴らすローカル後処理を追加する案がある。
-
-**provenance/MANIFEST整合性 — PASS**
-- IMG-05/IMG-06とも必須フィールド（`file`/`provider`/`model`/`prompt`/`seed`/`cost_usd`/`plan_tier`/`sha256`/`license`/`generated_at`）を充足。IMG-05は`negative_prompt`・`seeds_all_attempts`・`post_process`・`alpha_verified`/`alpha_verification_note`も記録。`state/asset-routing.json`: `routes.image_sprite`=`fal:ideogram-v3-transparent`（IMG-05）・`routes.image_background`=`fal:flux-2-pro`（IMG-06）とも`shippable:true`と一致（disclosures対象の`shippable:false`ルート由来には該当しない）。
-- MANIFEST全45行cost_usd合算 **$2.71044**、`state/budget.txt`上限$100に対し超過なし。
-
-**ファイル命名（付随事項・継続記録・非ブロッキング）**
-`img-05-ui-frame-kit.png`/`img-06-arena-backdrop.png`とも`.claude/rules/assets.md`規定プレフィクス（`sprite-`/`tile-`/`ui-`/`sfx-`/`bgm-`/`model-`/`anim-`）に非該当。iteration 1（IMG-04）から継続する既知の系統的逸脱であり、art-reviewer権限外（design/assets.mdの編集不可）のため新規ブロッキング指摘とはせずdisclosuresに継続記録する。
-
-### 総合判定: CONCERNS
-理由: IMG-06および IMG-05のタブ/リボン/コーナー装飾要素は機械検査全項目でPASSしたが、IMG-05のelement(a)（9-sliceパネル枠）が仕様（色`#12081F`・中央領域の均一性）から明確に逸脱しており、UI装飾キットの中核要素であるため是正必須と判断した。
-
-### disclosures（再生成不要・人間開示のみ）
-- IMG-05: MANIFESTに`cost_estimated:true`（$0.42、内訳: 廃棄4回+採用3回=fal ideogram-v3-transparent計7回API呼び出しの見積按分）。Checkpointでの開示対象（gates.md AR-ASSET観点6）。
-- IMG-06: MANIFESTに`cost_estimated:true`（$0.26、fal flux-2-pro 1回・megapixelベースの未検証レート見積もり）。Checkpointでの開示対象。
-- ファイル命名: `img-05-ui-frame-kit.png`/`img-06-arena-backdrop.png`が`.claude/rules/assets.md`規定プレフィクス外（IMG-01〜06全件に共通する既知の系統的逸脱、iteration 1から継続記録・是正は art-director/design/assets.md編集権限側の対応事項）。
-- 予算: `game/_generated/MANIFEST.jsonl`全45行の`cost_usd`合算$2.71044、`state/budget.txt`上限$100に対し超過なし。
-- IMG-06技術メモ（ブロッキングではないが開示）: JPEG由来8px周期ブロックアーティファクトをFFTで検出（上記詳細）。再生成では必ずしも解消されない場合がある（同一プロバイダ設定であれば同種の圧縮を経由する可能性）ため、根本対応はプロバイダのロスレス出力オプション確認が必要。
-
-- 対応: 対応済み。IMG-05 element(a)（9-sliceパネル枠）を再生成した（`game/_generated/MANIFEST.jsonl` IMG-05 revision:2）。route `fal:ideogram-v3-transparent` で4回試行（seed 130520〜130523）— attempt1は均一性改善もdist=134.4で不採用、attempt2はバケツ/ハンドル状の誤形状で不採用、attempt3は形状・均一性良好もdist=75.0でなお不採用、attempt4（seed130523）は中央領域が完全均一（std=0）だが純黒`#000000`（dist=36.7）だったため、ローカルで中央領域の純黒画素（r,g,b<12かつalpha>250、398,566px、周辺の青リング/白ハイライト/紫内リング縁取りは対象外）のみを厳密色置換（`#12081F`, dist=0）。この要素をアルファ含有bboxでクロップし、既存シート内element(a)セル領域（x:58-462, y:37-316）のみ透過クリア後に貼付、他4要素（タブ選択/非選択・リボン・コーナー装飾）はnumpy全画素diffで差分0（無変更）を確認。再検証結果: 中央領域4象限すべてmean=`#12081F`・dist=0・std=[0,0,0]（要求基準: dist≤30 かつ std半減を大幅に超過達成）。アルファ縁品質も全数再検証し白フリンジ0px。状態を`generated`へ更新（`design/assets.md`は既に`generated`のため変更不要、追記のみ実施）。追加コスト$0.24（fal 4回試行、cost_estimated:true）、MANIFEST全46行cost_usd合算$2.95044、`state/budget.txt`上限$100に対し超過なし。
-
-## AR-ASSET iteration 3 — APPROVE
-- 日時: 2026-07-14T12:15:00Z
-- 対象: `game/_generated/images/img-05-ui-frame-kit.png`（IMG-05, element(a)再生成・差し替え分の再判定）／`game/_generated/MANIFEST.jsonl` IMG-05 `revision:2` エントリ（46行目）。iteration 2 CONCERNSで指摘したelement(a)の是正のみを対象とするフォローアップ判定（呼び出し元ワークフローの表記では本バッチの「iteration 2」レビュー、本ファイル内の通し番号ではiteration 3）。IMG-01〜04は既APPROVE、IMG-06はiteration 2でPASS済みのため再判定しない。
-- 検査方法: `git show`でrevision1（コミット`5bd63be`, sha256`b1f204be...`）とrevision2（コミット`02ba6e7`, sha256`23d462d5...`）を独立抽出し`shasum -a 256`でMANIFEST記載値と突合。Pillow+numpyで(1)element(a)セル内側22%マージン領域の4象限mean/std/dist実測（MANIFESTの`spec_verification`と同一手法で独立再現）、(2)ring-to-center境界の水平スキャンライン実測によるアンチエイリアス品質の目視確認、(3)セル内不透明画素全数に対する「非リング・非ハイライト・dist>10」残留画素スキャン、(4)revision1/revision2間の全画素numpy diffによる変更範囲の独立検証（MANIFESTの「他4要素diff 0」自己申告の裏取り）、(5)全画像に対する白フチ検査（境界半透明画素×白系[r,g,b>230]×隣接alpha=0のAND条件、既存iteration方式を踏襲）、(6)MANIFEST全46行のJSONパース＋`cost_usd`合算、`state/asset-routing.json`のroute/shippable/plan_tier突合。グレー背景合成によるelement(a)単体・シート全体のダウンスケール確認画像を書き出しReadツールで目視。
-
-### 観点別結果
-
-**IMG-05 element(a): 仕様一致・スタイル一致（観点1・4, 前回CONCERNS対象）— PASS（是正確認）**
-- element(a)セル（x:58-462, y:37-316, 404x279）の内側22%マージン領域を独立算出（MANIFESTの計算と同一ロジックで再現）: 4象限すべて `mean RGB = (18, 8, 31) = #12081F`、目標値との `dist = 0.0`、`std = [0.0, 0.0, 0.0]`（内側実測25,398px全画素が寸分違わず同一色）。前回逸脱値（dist≈145、区画std 24〜36）から完全に是正され、要求基準（dist≤30 かつ std半減）を大幅に超過して満たすことを独立測定で確認した。
-- リング（青`#3488D1`系）から中央navy領域への境界を水平スキャンラインで実測: x=74–82の6px区間でRGBが `(114,159,208)→(73,108,166)→(47,76,141)→(25,37,72)→(19,9,33)→(18,8,31)` と滑らかに遷移し、x=84以降は1px単位で完全に`(18,8,31)`固定。段差・バンディング・残留藍色ハローは検出されず、クリーンなアンチエイリアス遷移であることを確認。
-- セル内不透明画素70,629pxのうち「非リング色・非ハイライト色でdist>10」の残留画素は552px（0.78%）のみで、その内訳を個別サンプリングした結果、値の大半（dist 10〜60程度）はリング／中央領域の1〜2px幅アンチエイリアス遷移帯に位置しており、前回指摘された「面全体を覆う遠近感ベゼル」のような広域欠陥ではないことを確認（グレー背景合成画像`/tmp/img05_elementA_graybg.png`の目視でも、遠近線・左上ハイライト・右下シャドウの再発は無し。白ハイライトストロークは意図通り上端の一部のみに限定）。
-
-**IMG-05: 他4要素（タブ選択/非選択・リボン・コーナー装飾）無変更の独立検証 — PASS（軽微な精度注記あり）**
-- revision1（sha256`b1f204be6cc308da6f4c42bfd7a9f532984875a3978aaf316ce0e8bae8f8bcb0`）とrevision2（sha256`23d462d56086c31b62c4d1851cdd1d6b05be6d812aae7ed92bfe904e7bab20c9`）はいずれも`git show`抽出後の実測sha256がMANIFEST記載値と完全一致（改ざん・取り違えなし）。
-- 全画素numpy diff: 変更104,202px中104,047pxはelement(a)セル内（想定通り）。セル外の変更は155pxのみで、全て`x=462`列または`y=316`行（＝element(a)セル自体の右端・下端の境界線ちょうど1px）に集中し、いずれもrev1側で微弱な半透明アルファ（1〜190）を持っていた画素がrev2で完全な透明`(0,0,0,0)`へクリアされたもの（element(a)自身のアンチエイリアス漏れの後処理での消去）。タブ/リボン/コーナー装飾の実体形状・色を構成する画素領域（x>480付近以降）には一切変更が無いことを座標分布で確認した。MANIFESTの`post_process`記載「他4要素セル領域はnumpy diffで差分0」はセル境界1px分の精度において厳密には成立していないが、実質的な内容（タブ/リボン/コーナー装飾の形状・色）への影響はゼロであり、是正妨害・再指摘に値する逸脱ではないと判断した（品質上のブロッキング事由にはしないが、provenance記述の精度メモとしてdisclosuresに記録する）。
-
-**IMG-05: アルファ縁品質（観点3）— PASS**
-- 全画像フルスキャン: 半透明境界画素7,315px中、白系[r,g,b>230]かつ隣接4画素にalpha=0が存在する白フチ画素は**0px**。4隅alpha=0、mode RGBA・1024x1024（`design/assets.md`指定と一致）。MANIFESTの`alpha_verification_note`（半透明7,315px・白フチ0px）と完全一致。
-
-**IMG-05: シルエット可読性（観点2）— PASS**
-- グレー背景合成の256px相当ダウンスケール目視（`/tmp/img05_full_graybg.png`）で、element(a)パネル・タブ選択/非選択・リボン・コーナー装飾の5要素とも輪郭・色分離が明瞭。element(a)は前回問題だった立体感/額縁感が解消され、フラットな2Dパネル枠として即座に判別できる（art-bible.json `style_block`のcel-shaded・太めダークネイビー輪郭方針とも整合）。
-
-**provenance/MANIFEST整合性・予算 — PASS**
-- IMG-05 `revision:2`エントリは必須フィールド（`file`/`provider`/`model`/`prompt`/`seed`/`style_codes`/`cost_usd`/`plan_tier`/`sha256`/`license`/`generated_at`）に加え`revision_of_sha256`/`revision_reason`/`spec_verification`/`review_ref`も充足。
-- `state/asset-routing.json`: `routes.image_sprite = fal:ideogram-v3-transparent`、`shippable.image_sprite:true`、`checks.fal.plan_tier:"prepaid"` はMANIFEST記載`plan_tier:"prepaid"`と一致。`shippable:false`ルート由来には該当しない。
-- MANIFEST全46行を`python3`でJSONパース検証（エラー0件）、`cost_usd`合算 **$2.95044** は`design/assets.md`「集計と予算」節の記載値と一致。`state/budget.txt`上限 $100 に対し超過なし。
-
-**ファイル命名（付随事項・継続記録・非ブロッキング）**
-`img-05-ui-frame-kit.png`は引き続き`.claude/rules/assets.md`規定プレフィクスに非該当。iteration 1から継続する既知の系統的逸脱として disclosures に記録を継続する（art-reviewer/art-director双方の権限外の是正事項）。
-
-### 総合判定: APPROVE
-理由: iteration 2で指摘したIMG-05 element(a)の仕様逸脱（中央領域色`#12081F`からのdist≈145、区画std 24〜36の非均一なベゼル状陰影）は、独立再測定でdist=0・std=0（4象限全て）に是正されたことを確認した。アルファ縁品質・他要素の実質的無変更・provenance・予算いずれも機械検証でPASS。IMG-05は全項目でAPPROVE水準に達したため、本バッチ（IMG-05差し替え分）は合格とする。不合格資産（failedAssets）は無い。
-
-### disclosures（再生成不要・人間開示のみ）
-- IMG-05: MANIFESTに`cost_estimated:true`（revision:2分$0.24、累計$2.95044のうちの一部）。Checkpointでの開示対象（gates.md AR-ASSET観点6）。
-- provenance記述の精度注記（非ブロッキング）: MANIFEST `post_process`は「他4要素セル領域はnumpy diffで差分0」と記載するが、独立diffではelement(a)セルの境界1px（x=462列/y=316行、計155px、いずれも微弱アルファ1〜190→0へのクリアのみ）で技術的な差分が検出された。タブ/リボン/コーナー装飾の実体形状・色には影響なしと確認済みだが、今後同種のprovenance記述は「セル境界を含む全画素で差分0」ではなく「対象セル内部のみ」等、範囲を厳密に記載することが望ましい。
-- ファイル命名: `img-05-ui-frame-kit.png`が`.claude/rules/assets.md`規定プレフィクス外（IMG-01〜06全件に共通する既知の系統的逸脱、iteration 1から継続記録・是正はart-director/design/assets.md編集権限側の対応事項）。
-- 予算: `game/_generated/MANIFEST.jsonl`全46行の`cost_usd`合算$2.95044、`state/budget.txt`上限$100に対し超過なし。
-
-- 対応: 該当なし（本iterationはAPPROVEのためproducer対応不要）。
-
-## AR-ASSET iteration 4 — APPROVE
-- 日時: 2026-07-14T15:40:00Z
-- 対象: `game/_generated/images/img-05-ui-frame-kit.png`（IMG-05, P-04）／`game/_generated/images/img-06-arena-backdrop.png`（IMG-06, P-01）／`game/_generated/MANIFEST.jsonl` 該当行（IMG-05 revision:2＝46行目、IMG-06＝45行目）／`design/assets.md`。呼び出し元ワークフローは本レビューを「iteration 1」と表記しているが、この2資産（IMG-05/IMG-06）は本ファイル iteration 2（初回CONCERNS）・iteration 3（IMG-05 element(a)是正のAPPROVE）で既に判定済みのため、本ファイル内の通し番号ではiteration 4として記録する（iteration 3と同じ命名精度注記を踏襲）。ファイル内容に変更が無いことをsha256で確認した上で独立再検証を実施。
-- 検査方法: `shasum -a 256`で両ファイルの実測sha256をMANIFEST記載値（IMG-05 revision:2 `23d462d5...`／IMG-06 `d84d182c...`）と突合（完全一致、iteration 2/3以降の無改変を確認）。`git log`で対象ファイルの変更コミット履歴を確認（最終変更は`02ba6e7`＝iteration 2 CONCERNS対応コミットで以降変更なし）。Pillow+numpyでmode/size再実測、4隅アルファ、境界半透明画素×白系[r,g,b>230]×隣接alpha=0のAND条件によるフリンジ検査フルスキャン、IMG-05 element(a)セル（x:58-462,y:37-316）内側22%マージンのmean/std/dist独立再算出、13色パレットへのユークリッド距離サンプリング（opaque画素500点）、128px nearest-neighbor縮小をグレー背景合成した確認画像書き出し＋Readツール目視、IMG-06は中心列4点（top2%/mid45%/75%/bottom97%）のhue再測定、MANIFEST全46行のJSONパース検証＋`cost_usd`合算、`state/asset-routing.json`のroute/shippable/plan_tier突合。
-
-### 観点別結果
-
-**provenance整合（無改変の確認）— PASS**
-- IMG-05実測sha256 `23d462d56086c31b62c4d1851cdd1d6b05be6d812aae7ed92bfe904e7bab20c9` はMANIFEST `revision:2`エントリ（46行目）と完全一致。IMG-06実測sha256 `d84d182c25ec683d5e04dc6f4f44f1d583aeb013973bdbf0cc98fa730b24463d` はMANIFEST 45行目と完全一致。`git log`上も最終変更コミットはiteration 2 CONCERNS対応（`02ba6e7`）でそれ以降の改変なし。
-
-**IMG-05: 仕様一致・アルファ縁品質 — PASS（iteration 3の是正が維持されていることを再確認）**
-- 実寸1024x1024・RGBA、4隅alpha=0。境界半透明画素7,315px中、白フチ（白系[r,g,b>230]かつ隣接4画素にalpha=0）は独立再スキャンでも**0px**。
-- element(a)中央領域（内側22%マージン）を独立再算出: mean RGB≈(20.1, 10.4, 34.1)、目標`#12081F`=(18,8,31)に対しdist≈4.4（iteration 3実測のセル内25,398px全画素同一色dist=0とは算出範囲が広め＝AA境界を一部含むため差は出るが、それでも要求基準dist≤30を大幅にクリア）。iteration 2で指摘した逸脱（dist≈145、区画std24-36の非均一ベゼル状陰影）は再発していないことを確認。
-- 128px nearest-neighbor縮小＋グレー背景合成の目視（`/tmp/img05_check_128.png`）で、パネル枠（フラット濃紺）・選択/非選択タブ（シアン発光/暗紺）・リボン（マゼンタ）・コーナー装飾（青）の5要素とも輪郭・色分離が明瞭。パネル要素に遠近感/額縁感の再発なし。
-
-**IMG-06: 仕様一致・スタイル一致 — PASS**
-- 実寸2048x2048・RGB。中心列hue再測定: top2%→292.9°／mid45%→187.2°／75%→268.1°／bottom97%→黒(RGB(1,1,1))。MANIFEST自己申告値（301°/187°/268°）・iteration 2実測値（292.9°/187.2°/266.9°）と一致し、独立測定でも捏造・ズレなし。彩度0.27-0.41・輝度0.64-0.98の低コントラスト方針も維持。
-- 128px縮小画像（`/tmp/img06_check_128.png`）の目視で、下部near-black voidから上部にかけてpurple→cyan→magentaへ滑らかに遷移するグラデーションのみで、明瞭な形状/模様/前景競合要素は無し。
-
-**スタイル一致・パレット逸脱（IMG-05, 観点1）— PASS**
-- opaque画素サンプル500点の13色パレットへのユークリッド距離: 最大107.7・平均43.8。iteration 1で確立した許容上限（IMG-03マゼンタハイライト距離111.1）を下回り、既存許容範囲内。
-
-**provenance/MANIFEST整合性・予算 — PASS**
-- MANIFEST全46行を`python3`でJSONパース検証（エラー0件）、`cost_usd`合算 **$2.95044**（iteration 3実測値と一致）、`state/budget.txt`上限$100に対し超過なし。
-- `state/asset-routing.json`: `routes.image_sprite=fal:ideogram-v3-transparent`・`routes.image_background=fal:flux-2-pro`とも`shippable:true`、`checks.fal.plan_tier:"prepaid"`はMANIFEST記載`plan_tier:"prepaid"`と一致。`shippable:false`ルート由来・fal経由Meshyライセンス継承未検証（本バッチは2D画像のみのため非該当）・must_replaceのいずれにも該当しない。
-
-**ファイル命名（付随事項・継続記録・非ブロッキング）**
-`img-05-ui-frame-kit.png`/`img-06-arena-backdrop.png`とも`.claude/rules/assets.md`規定プレフィクス外。iteration 1から継続する既知の系統的逸脱として引き続きdisclosuresに記録する（art-reviewer/art-director双方の権限外の是正事項）。
-
-### 総合判定: APPROVE
-理由: IMG-05（element(a)是正後revision:2）・IMG-06とも、ファイル内容がiteration 2/3時点から無改変（sha256一致）であることをprovenanceで確認した上で、仕様一致・アルファ縁品質・スタイル一致・シルエット可読性・provenance/予算整合を独立に再検証し、全項目PASSを確認した。不合格資産（failedAssets）は無い。
-
-### disclosures（再生成不要・人間開示のみ）
-- IMG-05: MANIFESTに`cost_estimated:true`（累計$0.42+$0.24=$0.66分、fal ideogram-v3-transparent計11回API呼び出しの見積按分）。Checkpointでの開示対象（gates.md AR-ASSET観点6）。
-- IMG-06: MANIFESTに`cost_estimated:true`（$0.26、fal flux-2-pro 1回・megapixelベースの未検証レート見積もり）。Checkpointでの開示対象。
-- IMG-06技術メモ（非ブロッキング、iteration 2から継続）: FFT解析でJPEG由来8px周期ブロックアーティファクトを検出済み（元JPEG出力をPNGへ無劣化変換したため内包）。通常表示では知覚困難だがエンジン側テクスチャ圧縮で増幅する可能性があり、根本対応にはプロバイダのロスレス出力オプション確認が必要。
-- ファイル命名: `img-05-ui-frame-kit.png`/`img-06-arena-backdrop.png`が`.claude/rules/assets.md`規定プレフィクス外（IMG-01〜06全件に共通する既知の系統的逸脱、iteration 1から継続記録・是正はart-director/design/assets.md編集権限側の対応事項）。
-- 予算: `game/_generated/MANIFEST.jsonl`全46行の`cost_usd`合算$2.95044、`state/budget.txt`上限$100に対し超過なし。
-
-- 対応: 該当なし（本iterationはAPPROVEのためproducer対応不要）。
+1. `cost_estimated:true`（IMG-01・IMG-06とも。fal:flux-2-pro／fal:ideogram-v3-transparentの1回あたり保守見積コストであり実測USD値ではない）。
+2. IMG-01（revision2）: 4x4タイル敷き詰め時にごくわずかな斜め方向の粒状ムラ（草質感由来、系統的な境界発光ではない）が視認可能——出荷を止める水準ではないが、次回リビジョンの機会があれば生成プロンプトの微細ノイズパターンをさらに均一化する余地あり。
+3. IMG-06（revision2）: 3バッジは扇状にわずかに重なる階層配置であり、IMG-05（実績アイコン）のような完全非重複の等間隔配置ではない（個別カード形状であること自体は達成）。
+4. IMG-06（revision2）: UPG-03クリスタルの高彩度シアン域は非パネル面積の約33%に留まり、残りはIMG-04と同水準の淡いハイライト面（デザイン上のガラス/クリスタル表現として一貫）。厳密な「crystal本体全体が支配色#ABFFFF」という要求に対しては目視・既承認資産との一貫性を根拠に合格としたが、数値的には境界線上の改善（iteration1比で大幅改善）である。
