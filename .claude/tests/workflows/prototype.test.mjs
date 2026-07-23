@@ -12,7 +12,7 @@ const SETUP = {
     { id: 'S-01', title: 'メタ進行永続化', assignee: 'gameplay-engineer', pillar: 'P-01', acceptance: 'a' },
     { id: 'S-02', title: 'Title シーン', assignee: 'ui-engineer', pillar: 'P-01', acceptance: 'a' },
     { id: 'S-03', title: 'Menu シーン', assignee: 'ui-engineer', pillar: 'P-01', acceptance: 'a' },
-    { id: 'S-04', title: 'コアループと環境ビジュアル', assignee: 'gameplay-engineer', pillar: 'P-01', acceptance: 'a' },
+    { id: 'S-04', title: 'コアループと環境ビジュアル', assignee: 'gameplay-engineer', pillar: 'P-01', acceptance: '可視の地面/背景・ライト・カメラ構図と画面レイアウトが確定している' }, // 全 engine の必須環境要素を充足（validateSetup の acceptance 検証）
   ],
   titleStoryId: 'S-02',
   menuStoryId: 'S-03',
@@ -175,6 +175,46 @@ test('Setup 環境検証: 環境 story の assignee が gameplay-engineer 以外
   assert.equal(fix.length, 1);
   assert.ok(fix[0].includes('環境ビジュアル story S-02 の assignee が gameplay-engineer でない'), 'assignee 不正の指摘が差し戻し文言に無い');
   assert.equal(callsBy(calls, /^implement-/).length, 4, '修正応答で実装フェーズへ続行しない');
+});
+
+test('Setup 環境検証: acceptance が必須環境要素を欠くと差し戻し（欠落要素を列挙）', async () => {
+  const thinEnv = {
+    ...SETUP,
+    prototypeStories: SETUP.prototypeStories.map((st) =>
+      st.id === 'S-04' ? { ...st, acceptance: '背景を可視化する' } : st), // レイアウト言及なし（phaser 要件は 背景+画面レイアウト）
+  };
+  const routes = [
+    R(/^setup-scaffold-stories/, thinEnv),
+    R(/^setup-fix-required-stories/, SETUP),
+    R(/^setup-crosscheck-stories/, CROSSCHECK),
+    R(/^qa-play-round/, QA_OK),
+    R(/^verify-evidence-round/, EV_OK),
+    R(/^batch-verify-/, BATCH_OK),
+  ];
+  const { calls } = await runWorkflow(WF, { args: ARGS, routes });
+  const fix = promptsBy(calls, /^setup-fix-required-stories$/);
+  assert.equal(fix.length, 1, 'acceptance 記述不足で差し戻しが発行されない');
+  assert.ok(fix[0].includes('必須環境要素を欠く: 画面レイアウト'), '欠落要素（画面レイアウト）が差し戻し文言に列挙されない');
+  assert.equal(callsBy(calls, /^implement-/).length, 4, '修正応答で実装フェーズへ続行しない');
+});
+
+test('Setup 環境検証: stories.yaml 実体の phase が prototype 以外は独立突合で不合格', async () => {
+  const ccBuildPhase = {
+    found: CROSSCHECK.found.map((f) => (f.id === 'S-04' ? { ...f, phase: 'build' } : f)),
+  };
+  const routes = [
+    R(/^setup-scaffold-stories/, SETUP),
+    R(/^setup-crosscheck-stories/, ccBuildPhase),
+    R(/^qa-play-round/, QA_OK),
+    R(/^verify-evidence-round/, EV_OK),
+    R(/^batch-verify-/, BATCH_OK),
+  ];
+  const { calls, result } = await runWorkflow(WF, { args: ARGS, routes });
+  assert.equal(callsBy(calls, /^implement-/).length, 0, 'phase 不一致のまま実装フェーズへ進んでいる');
+  assert.ok(
+    result.unresolvedFindings.some((f) => f.includes('phase が build')),
+    'phase 不一致が unresolvedFindings に記録されない'
+  );
 });
 
 // ---- retro-e3 追随: fallback 必須文言 / date -u 統一 / 取込先 ----
