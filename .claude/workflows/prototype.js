@@ -344,9 +344,19 @@ function validateSetup(s) {
   else if (meta.assignee !== 'gameplay-engineer') problems.push('メタ進行永続化 story ' + meta.id + ' の assignee が gameplay-engineer でない（Systems/Meta + Persistence 層の実装 — tech-director.md）');
   if (!env) problems.push('environmentStoryId=' + s.environmentStoryId + ' が prototypeStories に実在しない');
   else if (env.assignee !== 'gameplay-engineer') problems.push('環境ビジュアル story ' + env.id + ' の assignee が gameplay-engineer でない（可視の地面/背景・ライト・カメラ構図の実装 — contract §11）');
-  else if (!/地面|背景|ライト|照明|カメラ|環境|ground|background|light|camera|environment/i.test((env.title || '') + ' ' + (env.acceptance || ''))) {
-    // ID の自己申告だけでは無関係 story の流用を検出できない — acceptance/title が環境要素に言及していることを機械検証する
-    problems.push('環境ビジュアル story ' + env.id + ' の title/acceptance が環境要素（地面/背景/ライト/カメラ）に言及していない（contract §11 — 無関係 story を environmentStoryId として申告している疑い）');
+  else {
+    // ID の自己申告だけでは無関係 story の流用を検出できない — acceptance（title ではなく）が
+    // engine 別の必須環境要素を全てカバーしていることを機械検証する（contract §11:
+    // phaser=背景の可視化+画面レイアウト確定 / unity・unreal=可視の地面+ライト+カメラ構図）
+    const acc = env.acceptance || '';
+    const required = engine === 'phaser'
+      ? [['背景', /背景|background/i], ['画面レイアウト', /レイアウト|layout|画面構成/i]]
+      : [['地面/背景', /地面|背景|ground|background|terrain|床|floor/i], ['ライト', /ライト|照明|light/i], ['カメラ', /カメラ|camera/i]];
+    const missing = required.filter(function (r) { return !r[1].test(acc); }).map(function (r) { return r[0]; });
+    if (missing.length > 0) {
+      problems.push('環境ビジュアル story ' + env.id + ' の acceptance が必須環境要素を欠く: ' + missing.join('・') +
+        '（contract §11 の engine=' + engine + ' 要件。無関係 story の申告か acceptance の記述不足 — acceptance に検証可能な形で明記せよ）');
+    }
   }
   return problems;
 }
@@ -420,6 +430,7 @@ if (setup) {
       const f = ccById[e.id];
       if (!f || !f.exists) ccProblems.push(e.name + ' story ' + e.id + ' が ' + STATE.stories + ' 実体に存在しない（自己申告と不一致）');
       else if (f.assignee && f.assignee !== e.assignee) ccProblems.push(e.name + ' story ' + e.id + ' の実体 assignee が ' + f.assignee + '（期待: ' + e.assignee + '）');
+      else if (f.phase && f.phase !== 'prototype') ccProblems.push(e.name + ' story ' + e.id + ' の実体 phase が ' + f.phase + '（期待: prototype — phase: build に置かれた必須 story は Phase 2 の実装・QA 対象から漏れる）');
     }
   }
   if (ccProblems.length > 0) {
