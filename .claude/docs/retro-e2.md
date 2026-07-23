@@ -20,6 +20,7 @@
 - **B. 検証のバッチ化**: story ごとの EditMode+Build を「実装2〜3件ごと」または「レーン合流点」にまとめる（コンパイル検証は EditMode 1回で全体を兼ねるため冗長度が高い）。失敗時の切り分けが粗くなるトレードオフは、失敗時のみ二分探索で個別再検証する規約で緩和。期待短縮 20〜30%。
 - **C. 依存グラフ並列**: tech-director が stories.yaml に `depends_on: [S-xx]` を宣言し、独立 story を最大N並列。git worktree 分離は Unity では Library 複製コスト（数GB・初回インポート数分）と単一インスタンスロックの制約が重く、**worktree 分離は非推奨**。同一ツリー並列は A の一般化として実装可能だが競合レビュー（同一ファイル編集検出）を Setup で機械化する必要あり。
 - 注意: Unity 起動を伴う工程（検証・取込・QA）は現行どおり**必ず直列**（単一インスタンスロック — tech-stack-unity.md）。並列化はコード編集と review agent に限る。
+- **実装済み（2026-07-21）**: 案A+B を prototype.js / full-build.js に実装した。assignee 2レーン並走（レーン内直列・LANE_RULE で担当領域/共有ファイル/stories.yaml のピンポイント Edit を強制）+ レーン中はエンジン検証禁止（EP.laneVerifyLine — phaser は typecheck のみ可）+ レーン合流後の batchVerify（直列・失敗は story コミット単位で切り分け、記録は state/reviews/batch-verify.md）。正本規約は各 tech-stack 文書の検証節に追記済み。案C（依存グラフ並列）は未実装のまま（次回検討）。
 
 ### 2. AA 品質ギャップ — Unity 機能別スキル/専門知識の分割（エフェクト・UI・UX）
 

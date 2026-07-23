@@ -19,6 +19,43 @@ artifact contracts stabilize.
 - Public project name changed from GameForge to ArcadeRelay while preserving the
   `/forge` command namespace.
 
+## [0.3.0.0] - 2026-07-21
+
+### Added
+
+- Parallel build execution: code stories now run in two concurrent assignee
+  lanes (gameplay / ui) alongside asset generation in both the prototype and
+  full-build pipelines, cutting Build/Polish wall-clock by an expected 50-60%
+  (E2 baseline: 6h + 9h + 9h of serial story implementation).
+- Batched engine verification: lanes never launch Unity/Unreal (single-instance
+  lock) or `npm run build`; a serial batch-verification step at each lane join
+  point runs the full engine checks, isolates failures to the offending story
+  via per-file commit history (bisecting story commits when attribution is
+  unclear), and records diagnoses in
+  `state/reviews/batch-verify.md`. Failures escalate as `[BLOCKER]` items and
+  inject warnings into all downstream phase prompts.
+- Parallel-lane discipline (LANE_RULE) enforced in every lane-side agent
+  prompt: ownership boundaries, append-only shared config with an explicit
+  balance-tuning exception, pinpoint edits of shared state files, and
+  cross-lane API references resolved by the batch verifier.
+- Workflow DSL stub test harness (`.claude/tests/workflows/`, `node --test`):
+  15 tests covering every batch-verification escalation branch, lane
+  partitioning, warning propagation, and prompt-wiring regressions.
+
+### Changed
+
+- Commit discipline hardened for shared-index parallelism: per-file adds,
+  pathspec-only commits, immediate solo commits for shared files, and
+  commit-hash retrieval validated with `git show --stat` instead of trusting
+  `rev-parse HEAD`.
+- Engineer agent definitions gained lane-mode exceptions so per-story engine
+  verification and `state/active.md` updates defer to the workflow's lane
+  rules; code reviewers are read-only during lanes and treat cross-lane
+  forward references per the new CR-CODE premise in `gates.md`.
+- QA fix loops are resume-safe: fix prompts now carry round-scoped labels
+  (`fix-qa-r<N>-...`), so resuming a workflow can no longer replay a previous
+  round's cached fix result and silently skip a re-fix.
+
 ## [0.2.0.0] - 2026-07-17
 
 ### Added

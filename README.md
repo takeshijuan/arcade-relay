@@ -110,6 +110,7 @@ Review intensity is controlled by `state/review-mode.txt`:
 | `.claude/agents/` | Specialized producer and reviewer agent prompts |
 | `.claude/skills/forge*/` | Claude Code command entry points |
 | `.claude/workflows/` | Autonomous phase orchestration scripts |
+| `.claude/tests/workflows/` | Workflow DSL stub tests (run with `node --test`) |
 | `.claude/docs/contract.md` | Naming, IDs, paths, engines, and command contract |
 | `.claude/docs/tech-stack*.md` | Per-engine stack rules (phaser / unity / unreal) |
 | `.claude/docs/pipeline.yaml` | Pipeline stages consumed by status and hooks |
@@ -135,6 +136,13 @@ For repository-only changes:
 
 ```bash
 git diff --check
+```
+
+For harness workflow changes (`.claude/workflows/*.js`), also run the workflow
+DSL stub tests:
+
+```bash
+node --test '.claude/tests/workflows/**/*.test.mjs'
 ```
 
 For generated game changes, run the checks for the engine recorded in

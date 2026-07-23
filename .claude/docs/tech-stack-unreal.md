@@ -68,6 +68,8 @@ game/
 
 エディタ自動化スクリプトは Python（`unreal` モジュール）を使い、`UnrealEditor-Cmd <uproject> -run=pythonscript -script="script.py"` で headless 実行する。
 
+**直列化と検証バッチ化（Build/Polish 並走レーン規約 — retro-e2 案A+B）**: UE のビルド（UBT/UAT）とエディタ起動を伴う工程は同一プロジェクトで並走させない（ビルド中間物・エディタロックが衝突する）。コード story の実装は assignee レーン（gameplay/ui）で並走するため、**レーン中の agent は UE/UBT を一切起動しない**。story ごとの検証は「参照する型・メンバ・ヘッダ include の実在を Read/Grep で静的確認」までとし、BuildCookRun の一括検証は**レーン合流後のバッチ検証区間（直列）**で行う。失敗時はエラーのファイルパスと `git log --oneline -- <path>` で原因 story を特定（困難なら story コミット単位の二分探索）し、最小修正と原因 story を `state/reviews/batch-verify.md` に記録する（正本実装は workflow の batchVerify）。
+
 ## コード規約（rules/unreal-code.md が編集時に強制する内容の正本）
 
 1. **マジックナンバー禁止** — 全ゲームパラメータは `Source/ForgeGame/GameConfig.h` の `namespace GameConfig` 内 `constexpr` 定数に集約。チューニングは GameConfig.h だけで完結させる

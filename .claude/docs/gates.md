@@ -62,6 +62,7 @@ CONCERNSの場合、修正すべき箇所を優先度順の箇条書きで示せ
 新規agentは使わない。`/code-review` スキル、または `pr-review-toolkit:code-reviewer` + `pr-review-toolkit:silent-failure-hunter` を story 単位の diff に対して起動する。
 判定の読み替え: findings 0件 = APPROVE / 修正可能な指摘 = CONCERNS / 設計欠陥 = REJECT。
 加えてエンジン別コード規約 rule（contract.md §11 の表: phaser=`rules/gameplay-code.md`+`rules/ui-code.md` / unity=`rules/unity-code.md` / unreal=`rules/unreal-code.md`。共通してマジックナンバー禁止・delta-time・エンジン非依存コア・永続化 I/O の Persistence 層集約）への違反を確認する。
+**並走レーン中の前提**（Build/Polish の assignee レーン並走 — 各 tech-stack 文書「検証バッチ化」節）: 他レーンの story が提供予定の API への参照は、docs/architecture.md の設計に合致していれば「実体未実装」だけを理由に blocker/REJECT としない（コンパイル整合はレーン合流後のバッチ検証が保証する。設計との不一致・誤用は通常どおり指摘してよい）。
 特に確認する silent-failure パターン:
 - diff 内で `LogError`/`console.error`/`UE_LOG(Error)` が Warning 級へ降格されている場合、直前のヘッダコメントで縮退の正当性が文書化されていなければ CONCERNS 以上（Warning は QA のエラー0検査を素通りするため、バグ隠しの抜け道になる）。**新規コードが回復不能条件を最初から Warning 以下で記録している場合も同様**（「降格」の形を取らない同種の抜け道）
 - batchmode ツール（`-executeMethod` 等）の回復不能エラーを LogError+return で握り潰していないか（throw か Exit(1) で非0終了が必須 — 各 tech-stack 文書）
