@@ -344,6 +344,10 @@ function validateSetup(s) {
   else if (meta.assignee !== 'gameplay-engineer') problems.push('メタ進行永続化 story ' + meta.id + ' の assignee が gameplay-engineer でない（Systems/Meta + Persistence 層の実装 — tech-director.md）');
   if (!env) problems.push('environmentStoryId=' + s.environmentStoryId + ' が prototypeStories に実在しない');
   else if (env.assignee !== 'gameplay-engineer') problems.push('環境ビジュアル story ' + env.id + ' の assignee が gameplay-engineer でない（可視の地面/背景・ライト・カメラ構図の実装 — contract §11）');
+  else if (!/地面|背景|ライト|照明|カメラ|環境|ground|background|light|camera|environment/i.test((env.title || '') + ' ' + (env.acceptance || ''))) {
+    // ID の自己申告だけでは無関係 story の流用を検出できない — acceptance/title が環境要素に言及していることを機械検証する
+    problems.push('環境ビジュアル story ' + env.id + ' の title/acceptance が環境要素（地面/背景/ライト/カメラ）に言及していない（contract §11 — 無関係 story を environmentStoryId として申告している疑い）');
+  }
   return problems;
 }
 
@@ -1178,7 +1182,7 @@ for (let round = 1; round <= QA_MAX; round++) {
           '詳細: ' + bug.detail,
           bug.storyId ? '関連 story: ' + bug.storyId : '',
           '参照: ' + ART.qaReport + '（QA 所見全文）/ ' + ART.conventions + ' / ' + DOCS.techStack + '。',
-          '修正後 ' + EP.verifyCmd + ' が exit 0 を確認し、パス限定で add してコミット: `git add game state && git commit -m "phase2: fix QA — ' + bug.title + '"`（`git add -A` 禁止）。',
+          '修正後 ' + EP.verifyCmd + ' が exit 0 を確認し、パス限定で add してコミット: `git add game state .claude/docs && git commit -m "phase2: fix QA — ' + bug.title + '"`（`git add -A` 禁止。`.claude/docs` は下記の落とし穴昇格を同一コミットに含めるため）。',
           '修正原因がエンジン/テストランナー起因の一般則（環境の落とし穴）だった場合は、tech-stack 文書の「既知の落とし穴」節へ即時追記せよ（無ければ新設 — gates.md QA-PLAY）。',
           '修正内容を簡潔に返せ。',
         ].filter(Boolean).join('\n'),
@@ -1198,7 +1202,7 @@ for (let round = 1; round <= QA_MAX; round++) {
           '未通過一覧:',
           qaResult.failedAcceptance.map(function (fa, idx) { return (idx + 1) + '. ' + fa; }).join('\n'),
           '参照: ' + ART.qaReport + '（QA 所見全文）/ ' + STATE.stories + '（acceptance 原文）/ ' + ART.conventions + ' / ' + DOCS.techStack + '。',
-          '修正後 ' + EP.verifyCmd + ' が exit 0 を確認し、パス限定で add してコミット: `git add game state && git commit -m "phase2: fix QA — failed acceptance"`（`git add -A` 禁止）。',
+          '修正後 ' + EP.verifyCmd + ' が exit 0 を確認し、パス限定で add してコミット: `git add game state .claude/docs && git commit -m "phase2: fix QA — failed acceptance"`（`git add -A` 禁止。`.claude/docs` は落とし穴昇格を同一コミットに含めるため）。',
           '修正原因がエンジン/テストランナー起因の一般則（環境の落とし穴）だった場合は、tech-stack 文書の「既知の落とし穴」節へ即時追記せよ（無ければ新設 — gates.md QA-PLAY）。',
           '修正内容を簡潔に返せ。',
         ].join('\n'),
