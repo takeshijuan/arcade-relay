@@ -50,12 +50,12 @@ The pipeline is intentionally checkpointed:
 
 ## Current Status
 
-ArcadeRelay is early-stage infrastructure. The repository currently contains the
-Claude Code harness, agent prompts, workflow definitions, and generated-output
-directories. A generated game appears under `game/` after the harness runs. The
-current `game/` tree holds a complete Unity 3D sample (an arena survivor with
-generated 3D models, audio, and automated tests) produced end-to-end by the E2
-evaluation run.
+ArcadeRelay is early-stage infrastructure. The repository contains only the
+Claude Code harness: agent prompts, skills, workflow definitions, hooks, rules,
+and docs. Generated output (`design/`, `docs/architecture.md`,
+`docs/conventions.md`, `game/`, `qa/`, `state/`) is created by the harness at
+run time and is not tracked in this template repository. Sample games produced
+by evaluation runs are archived separately.
 
 ## Requirements
 

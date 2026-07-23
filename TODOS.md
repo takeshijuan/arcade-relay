@@ -1,51 +1,5 @@
 # TODOS
 
-## Game (E2 arena survivor)
-
-### MDL-02（スウォーマー）の正式リグ化
-**What:** must-replace 印付きの MDL-02（敵スウォーマー）をリグ・アニメ付きモデルに差し替える。
-**Why:** 現状は S-21 のコードモーション代替（プロシージャル・ボブ/回転）で出荷しており、`game/_generated/MANIFEST.jsonl` に must-replace が残っている。rules/assets.md は must-replace 残存での出荷を禁止しており、Checkpoint C で人間開示済みの暫定容認状態。
-**Context:** Meshy rigging が quadruped 形状で 422、Tripo 直 API はクレジット不足で 403 だった（E2 AssetGen ログ・state/reviews 参照）。Tripo クレジット補充後に `TRIPO_API_KEY` ルートで再リグ→ANM 再生成→Integrate 再実行が最短。
-**Effort:** M
-**Priority:** P1
-**Depends on:** Tripo クレジット補充（人間）
-
-### Ideogram AI 生成表記の MANIFEST/開示追記
-**What:** Ideogram 生成画像（IMG-01〜06 の該当分）について「アプリ内 AI 生成表記」条項への対応注記を MANIFEST とリリース開示文へ追記する。
-**Why:** assets-config.md「Checkpoint で人間に提示するライセンスフラグ」に列挙済みだが、機械可読の追記が未実施。Steam AI 開示文の自動生成が MANIFEST を情報源とするため欠落すると開示漏れになる。
-**Effort:** S
-**Priority:** P1
-**Depends on:** None
-
-### バッチモード・テスト生成パス（カバレッジギャップ 30 件）
-**What:** /ship Step 7 のカバレッジ監査で特定した約 30 件の未テスト分岐（主に Components 層の配線ガード・縮退経路）へ EditMode/PlayMode テストを追加する。
-**Why:** diff カバレッジ 86% で出荷したが、未カバー分岐の多くはエラー縮退経路＝退行が無症状化しやすい箇所。
-**Context:** ギャップ一覧は /ship レビュー記録（~/.gstack/projects/<slug>/<branch>-reviews.jsonl）と PR 本文のカバレッジ節を参照。
-**Effort:** L
-**Priority:** P2
-**Depends on:** None
-
-### S-19 SFX テスト債務
-**What:** S-19（音声統合）の SFX 配線に対する自動テスト（AudioSource 配線・音量バス・autoplay 対応）を追加する。
-**Why:** S-19 は CR-CODE 指摘で「テスト債務」として見送り理由付きで出荷しており、state/reviews/s-19.md に記録が残っている。
-**Effort:** M
-**Priority:** P2
-**Depends on:** None
-
-### S-20/S-22 南側可視性の残存制約
-**What:** ARENA_RADIUS 全域の南側（カメラ手前側）可視性を完全カバーする（現状は部分対応）。
-**Why:** Checkpoint C 申し送り事項。カメラレンジ拡張は見た目（key image 構図）とのトレードオフで art-director 協議が要る。
-**Effort:** M
-**Priority:** P3
-**Depends on:** art-director 協議
-
-### CrystalSceneTests の flaky 管理
-**What:** PlayMode フルスイート中に 1 回だけ発生した CrystalSceneTests の failure（再現せず）を flaky 管理項目として監視し、次回発生時は原因調査を打ち切らない。
-**Why:** S-27 CR-CODE iteration 2 で「timing 起因とみられる」として棄却されかけた項目。マスクされた欠陥の温床になり得るため qa-lead 引き継ぎ済み（state/active.md）。
-**Effort:** S
-**Priority:** P3
-**Depends on:** None
-
 ## Harness (ArcadeRelay)
 
 ### 依存グラフ並列（retro-e2 案C — 案A+B の次段）
