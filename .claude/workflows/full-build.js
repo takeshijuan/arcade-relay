@@ -95,7 +95,7 @@ const CODE_REVIEW_SCHEMA = {
 
 const ASSET_GEN_SCHEMA = {
   type: 'object',
-  required: ['generated', 'budgetExceeded', 'remainingPlanned'],
+  required: ['generated', 'budgetExceeded', 'remainingPlanned', 'degradedRoutes'], // degradedRoutes 省略で fallback 記録が消えるのを防ぐ（無ければ空配列を明示）
   properties: {
     generated: { type: 'array', items: { type: 'string' }, description: '生成してMANIFESTに追記した資産パス一覧' },
     budgetExceeded: { type: 'boolean', description: '予算超過見込みで生成を停止した場合 true' },

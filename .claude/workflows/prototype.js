@@ -327,6 +327,16 @@ const SETUP_SCHEMA = {
 
 // contract §11: Title/Menu/メタ進行 story の存在を機械検証する（tech-director の自己申告 ID が
 // 実在し、Title/Menu は assignee: ui-engineer であること）。不合格なら1回だけ差し戻す。
+// contract §11 の engine 別必須環境要素（validateSetup / Setup 差し戻しプロンプト / stories.yaml 独立突合で共用 —
+// 検証と修正指示が同一セットを参照しないと、差し戻しに従った修正が validator に落ちて Setup が中断する）
+const ENV_REQUIRED_ELEMENTS = engine === 'phaser'
+  ? [['背景', /背景|background/i], ['画面レイアウト', /レイアウト|layout|画面構成/i]]
+  : [['地面/背景', /地面|背景|ground|background|terrain|床|floor/i], ['ライト', /ライト|照明|light/i], ['カメラ', /カメラ|camera/i]];
+const ENV_REQUIRED_TEXT = ENV_REQUIRED_ELEMENTS.map(function (r) { return r[0]; }).join('・');
+function envAcceptanceMissing(acc) {
+  return ENV_REQUIRED_ELEMENTS.filter(function (r) { return !r[1].test(acc || ''); }).map(function (r) { return r[0]; });
+}
+
 function validateSetup(s) {
   if (!s || !Array.isArray(s.prototypeStories) || s.prototypeStories.length === 0) return ['prototypeStories が空'];
   const byId = {};
@@ -348,11 +358,7 @@ function validateSetup(s) {
     // ID の自己申告だけでは無関係 story の流用を検出できない — acceptance（title ではなく）が
     // engine 別の必須環境要素を全てカバーしていることを機械検証する（contract §11:
     // phaser=背景の可視化+画面レイアウト確定 / unity・unreal=可視の地面+ライト+カメラ構図）
-    const acc = env.acceptance || '';
-    const required = engine === 'phaser'
-      ? [['背景', /背景|background/i], ['画面レイアウト', /レイアウト|layout|画面構成/i]]
-      : [['地面/背景', /地面|背景|ground|background|terrain|床|floor/i], ['ライト', /ライト|照明|light/i], ['カメラ', /カメラ|camera/i]];
-    const missing = required.filter(function (r) { return !r[1].test(acc); }).map(function (r) { return r[0]; });
+    const missing = envAcceptanceMissing(env.acceptance);
     if (missing.length > 0) {
       problems.push('環境ビジュアル story ' + env.id + ' の acceptance が必須環境要素を欠く: ' + missing.join('・') +
         '（contract §11 の engine=' + engine + ' 要件。無関係 story の申告か acceptance の記述不足 — acceptance に検証可能な形で明記せよ）');
@@ -377,7 +383,7 @@ let setup = await agentR(setupPrompt, {
       [
         'ストーリー分解が contract §11 の必須要件を満たしていない。以下を修正して ' + STATE.stories + ' を更新し、修正後の phase:prototype ストーリー一覧を再返却せよ:',
         problems.map(function (p, i) { return (i + 1) + '. ' + p; }).join('\n'),
-        '必須: Title story と Menu story（いずれも assignee: ui-engineer / phase: prototype）と メタ進行永続化 story と 環境の最低限ビジュアル story（assignee: gameplay-engineer / phase: prototype。acceptance に「可視の地面/背景・ライト・カメラ構図の確定」を含める）。既存 S-xx の振り直しは禁止（続番で追加）。',
+        '必須: Title story と Menu story（いずれも assignee: ui-engineer / phase: prototype）と メタ進行永続化 story と 環境の最低限ビジュアル story（assignee: gameplay-engineer / phase: prototype。acceptance に必須環境要素「' + ENV_REQUIRED_TEXT + '」（contract §11 の engine=' + engine + ' 要件）を検証可能な形で全て含める）。既存 S-xx の振り直しは禁止（続番で追加）。',
         '修正後 git add ' + STATE.stories + ' && git commit（メッセージ: "phase2: fix required stories"）。',
       ].join('\n'),
       { label: 'setup-fix-required-stories', phase: 'Setup', agentType: 'tech-director', effort: 'high', schema: SETUP_SCHEMA }
@@ -395,7 +401,7 @@ let setup = await agentR(setupPrompt, {
 if (setup) {
   const crosscheck = await agentR(
     [
-      '読み取り専用の検証タスク。' + STATE.stories + ' を読み、以下の story ID それぞれについて実在・assignee・phase を返せ。ファイルの変更は禁止。',
+      '読み取り専用の検証タスク。' + STATE.stories + ' を読み、以下の story ID それぞれについて実在・assignee・phase・acceptance（原文そのまま）を返せ。ファイルの変更は禁止。',
       '対象 ID(JSON): ' + JSON.stringify([setup.titleStoryId, setup.menuStoryId, setup.metaPersistenceStoryId, setup.environmentStoryId]),
     ].join('\n'),
     {
@@ -407,7 +413,7 @@ if (setup) {
             type: 'array',
             items: {
               type: 'object', required: ['id', 'exists'],
-              properties: { id: { type: 'string' }, exists: { type: 'boolean' }, assignee: { type: 'string' }, phase: { type: 'string' } },
+              properties: { id: { type: 'string' }, exists: { type: 'boolean' }, assignee: { type: 'string' }, phase: { type: 'string' }, acceptance: { type: 'string' } },
             },
           },
         },
@@ -428,9 +434,20 @@ if (setup) {
     ];
     for (const e of expect) {
       const f = ccById[e.id];
-      if (!f || !f.exists) ccProblems.push(e.name + ' story ' + e.id + ' が ' + STATE.stories + ' 実体に存在しない（自己申告と不一致）');
-      else if (f.assignee && f.assignee !== e.assignee) ccProblems.push(e.name + ' story ' + e.id + ' の実体 assignee が ' + f.assignee + '（期待: ' + e.assignee + '）');
-      else if (f.phase && f.phase !== 'prototype') ccProblems.push(e.name + ' story ' + e.id + ' の実体 phase が ' + f.phase + '（期待: prototype — phase: build に置かれた必須 story は Phase 2 の実装・QA 対象から漏れる）');
+      if (!f || !f.exists) { ccProblems.push(e.name + ' story ' + e.id + ' が ' + STATE.stories + ' 実体に存在しない（自己申告と不一致）'); continue; }
+      // フィールド欠落は検証スキップではなく不合格（optional フィールドの省略で突合を素通りさせない）
+      if (!f.assignee) ccProblems.push(e.name + ' story ' + e.id + ' の実体 assignee を突合 agent が返さなかった（検証不能）');
+      else if (f.assignee !== e.assignee) ccProblems.push(e.name + ' story ' + e.id + ' の実体 assignee が ' + f.assignee + '（期待: ' + e.assignee + '）');
+      if (!f.phase) ccProblems.push(e.name + ' story ' + e.id + ' の実体 phase を突合 agent が返さなかった（検証不能）');
+      else if (f.phase !== 'prototype') ccProblems.push(e.name + ' story ' + e.id + ' の実体 phase が ' + f.phase + '（期待: prototype — phase: build に置かれた必須 story は Phase 2 の実装・QA 対象から漏れる）');
+      if (e.id === setup.environmentStoryId) {
+        // stories.yaml 実体の acceptance も engine 別必須環境要素で突合（自己申告のみの検証にしない）
+        if (!f.acceptance) ccProblems.push(e.name + ' story ' + e.id + ' の実体 acceptance を突合 agent が返さなかった（検証不能）');
+        else {
+          const ccMissing = envAcceptanceMissing(f.acceptance);
+          if (ccMissing.length > 0) ccProblems.push(e.name + ' story ' + e.id + ' の実体 acceptance が必須環境要素を欠く: ' + ccMissing.join('・') + '（contract §11 の engine=' + engine + ' 要件）');
+        }
+      }
     }
   }
   if (ccProblems.length > 0) {
@@ -698,7 +715,7 @@ async function buildStories() {
 // AR-ASSET ループ: 資産ごと MAX 3 + fallback プロバイダ切替後さらに 1 回（review-loops.md）
 const GEN_SCHEMA = {
   type: 'object',
-  required: ['generated', 'budgetExceeded', 'remainingPlanned'],
+  required: ['generated', 'budgetExceeded', 'remainingPlanned', 'degradedRoutes'], // degradedRoutes 省略で fallback 記録が消えるのを防ぐ（無ければ空配列を明示）
   properties: {
     generated: { type: 'array', items: { type: 'string' }, description: '生成して MANIFEST に追記した資産パス一覧' },
     budgetExceeded: { type: 'boolean', description: '予算超過見込みで生成を停止した場合 true' },
