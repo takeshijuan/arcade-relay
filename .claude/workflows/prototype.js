@@ -334,7 +334,8 @@ const SETUP_SCHEMA = {
 // 検証と修正指示が同一セットを参照しないと、差し戻しに従った修正が validator に落ちて Setup が中断する）
 const ENV_REQUIRED_ELEMENTS = engine === 'phaser'
   ? [['背景', /背景|background/i], ['画面レイアウト', /レイアウト|layout|画面構成/i]]
-  : [['地面/背景', /地面|背景|ground|background|terrain|床|floor/i], ['ライト', /ライト|照明|light/i], ['カメラ', /カメラ|camera/i]];
+  // 3D は「可視の地面」（プレースホルダ地形可）が明示必須 — 背景のみの acceptance は不合格（contract §11）
+  : [['地面', /地面|ground|terrain|床|floor/i], ['ライト', /ライト|照明|light/i], ['カメラ', /カメラ|camera/i]];
 const ENV_REQUIRED_TEXT = ENV_REQUIRED_ELEMENTS.map(function (r) { return r[0]; }).join('・');
 function envAcceptanceMissing(acc) {
   return ENV_REQUIRED_ELEMENTS.filter(function (r) { return !r[1].test(acc || ''); }).map(function (r) { return r[0]; });
