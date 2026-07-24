@@ -7,6 +7,8 @@ artifact contracts stabilize.
 
 ## [Unreleased]
 
+## [0.4.0.0] - 2026-07-24
+
 ### Added
 
 - OSS community-health files: license, contributing guide, security policy,
