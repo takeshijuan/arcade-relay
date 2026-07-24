@@ -17,6 +17,7 @@ paths: ["game/Assets/**/*.cs"]
 - **Do**: Components 層はライフサイクルと配線のみ（System の生成・入力の受け渡し・Transform への反映）。判定・状態遷移・スコア計算のロジックは `Systems/` の純粋クラスへ
 - **Do**: 入力は Input System（`com.unity.inputsystem`）を使い、`Assets/Scripts/Input/` の1モジュールに集約する
 - **Don't**: 旧 `Input.GetKey` / `Input.GetAxis` を使わない。MonoBehaviour ごとに入力読み取りを散らさない
+- **Don't**: PlayMode テストで `[UnitySetUp]` と `[UnityTest]` の境界を跨いで入力デバイス追加と擬似発行を分けない — シーンロードと入力擬似発行は同一コルーチンに収める。Title/Menu/HUD のクリック判定は入力ポーリングの初期化タイミングに注意（正本: tech-stack-unity.md「既知の落とし穴」）
 - **Do**: 資産参照（プレハブ・マテリアル・AudioClip 等の動的ロード）は `GameConfig.cs` の `AssetKeys` 定数経由。インスペクタ直参照（`[SerializeField]`）は可
 - **Don't**: `Resources.Load("Hero")` のようなパス文字列直書き禁止
 - **Do**: 永続化 I/O（`Application.persistentDataPath`・`File`・`PlayerPrefs`）は `Assets/Scripts/Persistence/` のみで行う。メタ進行ロジックは `Systems/Meta/` の pure C#（値を受けて値を返す reducer）に置く（tech-stack-unity.md「セーブ / 永続化」）

@@ -28,6 +28,22 @@ const ENGINEERS = ['gameplay-engineer', 'ui-engineer'];
 
 const GIT_RETRY_NOTE = 'git commit が index.lock で失敗したら1〜2秒待って1回だけリトライせよ。';
 
+// ---------- agentR: agent() null の1回自動リトライ ----------
+// transient エラー（safety classifier 一時失敗等）への1回だけの自動リトライ（retro-e3 指摘5）。
+// label に -retry を付けて opts を変える = キャッシュキーが変わり、失敗結果の replay を避ける。
+// リトライ後も null なら従来どおり呼び出し側がエスカレーションする
+async function agentR(prompt, opts) {
+  let r = await agent(prompt, opts);
+  if (r === null) {
+    log('agent null（transient の可能性）→ 1回リトライ: ' + ((opts && opts.label) || ''));
+    // 盲目再実行の禁止: 初回呼び出しが「作業完了後に構造化応答だけ喪失」した可能性があるため、
+    // 完了済み作業（コミット・資産生成・課金 API 呼び出し）の重複実行を防ぐ resume ガードを前置する
+    const guarded = '【リトライ実行】直前の同一タスク呼び出しが構造化応答を失って中断した可能性がある。作業開始前に既存の成果（git log の直近コミット・生成済みファイル・MANIFEST 追記）を確認し、完了済みの操作（コミット・資産生成・課金 API 呼び出し）は繰り返すな。未完了分のみ実行し、全て完了済みなら再実行せず結果の構造化返却のみを行え。\n\n' + prompt;
+    r = await agent(guarded, Object.assign({}, opts, { label: (((opts && opts.label) || 'agent') + '-retry') }));
+  }
+  return r;
+}
+
 // ---------- schemas ----------
 
 const STORY_LIST_SCHEMA = {
@@ -82,13 +98,13 @@ const CODE_REVIEW_SCHEMA = {
 
 const ASSET_GEN_SCHEMA = {
   type: 'object',
-  required: ['generated', 'budgetExceeded', 'remainingPlanned'],
+  required: ['generated', 'budgetExceeded', 'remainingPlanned', 'degradedRoutes'], // degradedRoutes 省略で fallback 記録が消えるのを防ぐ（無ければ空配列を明示）
   properties: {
     generated: { type: 'array', items: { type: 'string' }, description: '生成してMANIFESTに追記した資産パス一覧' },
     budgetExceeded: { type: 'boolean', description: '予算超過見込みで生成を停止した場合 true' },
     remainingPlanned: { type: 'number', description: '対象範囲（design/assets.md のうち MANIFEST 未記載）でまだ生成できていない資産の件数（0 = 全て生成済み）' },
     notes: { type: 'string', description: '開示事項（shippable:false ルート使用・Meshy 403→fal 切替・quota 制約等）。無ければ空文字' },
-    degradedRoutes: { type: 'array', items: { type: 'string' }, description: 'Primary から縮退したルートの一覧。無ければ空配列' }
+    degradedRoutes: { type: 'array', items: { type: 'string' }, description: '縮退・fallback 試行の全記録（ルート名+HTTPコード必須。例: "model_character: meshy:direct→422 / fal:meshy-v6→429 / tripo:direct→403 → local縮退"）。無ければ空配列' }
   }
 };
 
@@ -287,14 +303,14 @@ const BATCH_VERIFY_SCHEMA = {
 };
 
 async function batchVerify(phaseName, contextNote) {
-  const bv = await agent(
+  const bv = await agentR(
     'バッチ検証（直列区間 — 並走レーンは合流済み。エンジン検証をここで一括実行する。engine=' + engine + '）。\n' +
     contextNote + '\n' +
     '手順:\n' +
     '1) ' + EP.verifyCmd + ' を実行\n' +
     '2) 失敗があれば、エラーのファイルパスと `git log --oneline -- <該当パス>` で原因 story を特定する（切り分け困難ならレーン中の story コミット単位で二分探索）\n' +
-    '3) 最小修正で合格に到達させる（他 story の設計を作り替えない。チューニング値の変更は ' + EP.configPath + ' のみ。**直列区間の例外として、バッチ検証の最小修正に限り担当領域外のファイル — ui 層含む — も編集してよい**。**機能の削除・呼び出しの除去・無効化による回避は最小修正ではない** — コンパイル整合を保ったまま意図を維持し、やむを得ず挙動を変えた場合は fixedNotes に明記せよ）\n' +
-    '4) 修正した場合は state/reviews/batch-verify.md に「phase / 原因 story / 修正内容 / ISO8601 日時」を追記し、コミット規律のパス指定形で git commit（メッセージ: "batch-verify fix (' + phaseName + ')"）。state/active.md の現在地を「' + phaseName + ' バッチ検証完了」に更新（直列区間 — レーン規律の対象外）。' + CODE_COMMIT_RULE + '\n' +
+    '3) 最小修正で合格に到達させる（他 story の設計を作り替えない。チューニング値の変更は ' + EP.configPath + ' のみ。**直列区間の例外として、バッチ検証の最小修正に限り担当領域外のファイル — ui 層含む — も編集してよい**。**機能の削除・呼び出しの除去・無効化による回避は最小修正ではない** — コンパイル整合を保ったまま意図を維持し、やむを得ず挙動を変えた場合は fixedNotes に明記せよ。修正原因がエンジン/テストランナー起因の一般則（環境の落とし穴）だった場合は、tech-stack 文書の「既知の落とし穴」節へ即時追記せよ（無ければ新設 — gates.md QA-PLAY）。）\n' +
+    '4) 修正した場合は state/reviews/batch-verify.md に「phase / 原因 story / 修正内容 / ISO8601 日時」を追記し（日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う — 推測記入禁止）、コミット規律のパス指定形で git commit（メッセージ: "batch-verify fix (' + phaseName + ')"）。state/active.md の現在地を「' + phaseName + ' バッチ検証完了」に更新（直列区間 — レーン規律の対象外）。' + CODE_COMMIT_RULE + '\n' +
     '構造化返却: ok（最終合格で true。到達できなければ false を正直に）/ fixedNotes / unresolved。',
     { label: 'batch-verify-' + phaseName.toLowerCase(), phase: phaseName, agentType: 'gameplay-engineer', schema: BATCH_VERIFY_SCHEMA, effort: 'high' }
   );
@@ -327,7 +343,7 @@ async function implementStoryWithReview(story, phaseName) {
   const sid = String(story.id || 's-unknown').toLowerCase();
   const assignee = ENGINEERS.indexOf(story.assignee) >= 0 ? story.assignee : 'gameplay-engineer';
 
-  const impl = await agent(
+  const impl = await agentR(
     laneContextWarn +
     'story ' + story.id + '「' + story.title + '」を実装せよ。\n' +
     '読むこと: state/stories.yaml（該当story）、design/gdd.md、design/concept.md（ピラー ' + (story.pillar || 'P-xx') + '）、docs/architecture.md、docs/conventions.md、' + EP.techStackDoc + '。\n' +
@@ -359,8 +375,8 @@ async function implementStoryWithReview(story, phaseName) {
       '前提（並走レーン設計）: 他レーンの story が提供予定の API への参照は、docs/architecture.md の設計に合致していれば「実体未実装」だけを理由に blocker としない（コンパイル整合はレーン合流後のバッチ検証が保証する。設計との不一致・誤用は通常どおり指摘してよい）。**このレビューは読み取り専用 — エンジン起動・ビルド/テストコマンドの実行禁止**（並走レーン中の単一インスタンスロック/dist 競合）。\n' +
       'findings は severity（blocker=設計欠陥 / major / minor）付きで返せ。0件なら空配列。';
     const reviews = await parallel([
-      () => agent(reviewPrompt, { label: 'cr-' + sid + '-' + iter, phase: phaseName, agentType: 'pr-review-toolkit:code-reviewer', schema: CODE_REVIEW_SCHEMA }),
-      () => agent(reviewPrompt + '\n特に黙殺されたエラー・握り潰された失敗パス・catchして無視している箇所を重点的に洗え。',
+      () => agentR(reviewPrompt, { label: 'cr-' + sid + '-' + iter, phase: phaseName, agentType: 'pr-review-toolkit:code-reviewer', schema: CODE_REVIEW_SCHEMA }),
+      () => agentR(reviewPrompt + '\n特に黙殺されたエラー・握り潰された失敗パス・catchして無視している箇所を重点的に洗え。',
         { label: 'sfh-' + sid + '-' + iter, phase: phaseName, agentType: 'pr-review-toolkit:silent-failure-hunter', schema: CODE_REVIEW_SCHEMA })
     ]);
     const validReviews = reviews.filter(Boolean);
@@ -388,10 +404,10 @@ async function implementStoryWithReview(story, phaseName) {
 
     if (verdict === 'APPROVE') {
       approved = true;
-      await agent(
+      await agentR(
         'story ' + story.id + ' の CR-CODE iteration ' + iter + ' が APPROVE（findings 0件）。後処理をせよ:\n' +
         '1) state/stories.yaml の ' + story.id + ' を status: done に更新\n' +
-        '2) state/reviews/' + sid + '.md に ' + DOCS + '/review-loops.md の追記形式で「CR-CODE iteration ' + iter + ' — APPROVE」を追記（日時は date コマンドで ISO8601 を取得）\n' +
+        '2) state/reviews/' + sid + '.md に ' + DOCS + '/review-loops.md の追記形式で「CR-CODE iteration ' + iter + ' — APPROVE」を追記（日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う — 推測記入禁止）\n' +
         '3) ' + CODE_COMMIT_RULE + '\n' +
         LANE_RULE,
         { label: 'close-' + sid, phase: phaseName, agentType: assignee, effort: 'low' }
@@ -400,12 +416,12 @@ async function implementStoryWithReview(story, phaseName) {
     }
 
     const isLast = iter === 2;
-    const fix = await agent(
+    const fix = await agentR(
       'story ' + story.id + ' の CR-CODE iteration ' + iter + ' 判定: ' + verdict + '。findings(JSON):\n' + JSON.stringify(findings) + '\n' +
       '対応せよ:\n' +
       '1) 各finding に修正で対応するか、見送るなら理由を明記（黙殺禁止）\n' +
       '2) 修正後の検証: ' + EP.laneVerifyLine + '\n' +
-      '3) state/reviews/' + sid + '.md に ' + DOCS + '/review-loops.md の追記形式で iteration 記録（verdict・指摘要約・対応/見送り＋理由・ISO8601日時）を追記\n' +
+      '3) state/reviews/' + sid + '.md に ' + DOCS + '/review-loops.md の追記形式で iteration 記録（verdict・指摘要約・対応/見送り＋理由・ISO8601日時。日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う — 推測記入禁止）を追記\n' +
       '4) git commit -m "' + story.id + ': fix CR-CODE iteration ' + iter + '" し、そのコミットhashを commitHash として報告する。' + CODE_COMMIT_RULE + '\n' +
       LANE_RULE + '\n' +
       (isLast
@@ -429,7 +445,7 @@ async function implementStoryWithReview(story, phaseName) {
     // 状態ファイル＝真実（CLAUDE.md 絶対規約5）: レビューペア両方失敗等で fix agent の status 更新
     // （fix プロンプト step5）が走らなかった経路でも、story を review/in-progress のまま放置しない
     // （adversarial W-2）。エスカレーション注記つきで確定させる（prototype.js の bookkeep と同型）
-    await agent(
+    await agentR(
       'state/stories.yaml の ' + story.id + ' の status を確認し、done でなければ done に更新して\n' +
       '「# note: CR-CODE unresolved — state/reviews/' + sid + '.md 参照」の注記を acceptance 行の下にコメントで追加せよ\n' +
       '（MAX_ITER 到達エスカレーション。既に done かつ注記済みなら何もしない）。' + CODE_COMMIT_RULE + '\n' + LANE_RULE,
@@ -447,7 +463,8 @@ async function assetBatchLoop(kind, producerAgent, producerBrief, replanStories)
     'API キー: **API を呼ぶ Bash に限り**冒頭で `set -a; source .env 2>/dev/null; set +a` を実行してから curl する（検証・後処理 — ffmpeg/npx 等 — の Bash では source しない: サードパーティ子プロセスへのキー継承を避ける。キー値の echo・ログ出力禁止 — contract §10）。API エラー（401/403/429/5xx）は握り潰さず HTTP ステータスと共に報告。' +
     '予算規律（' + DOCS + '/assets-config.md）: 各生成の前に ' + MANIFEST + ' の cost_usd 合算＋今回の見込みコストを state/budget.txt と比較。' +
     '超過見込みなら生成を停止し budgetExceeded: true で報告（Checkpointで人間に提示される）。ルーティングは state/asset-routing.json が真実（生成中の再判定禁止。shippable:false ルートで生成した資産は必ず notes で報告）。' +
-    '全生成を ' + MANIFEST + ' に1行1資産で追記（provider/model/prompt/seed/cost_usd/plan_tier/sha256/license/generated_at。3D資産は kind/polycount/bone_count/rigged/format/units/bbox_authoring_m/validator も必須。クレジット換算見積は cost_estimated:true）。';
+    '全生成を ' + MANIFEST + ' に1行1資産で追記（provider/model/prompt/seed/cost_usd/plan_tier/sha256/license/generated_at。3D資産は kind/polycount/bone_count/rigged/format/units/bbox_authoring_m/validator も必須。クレジット換算見積は cost_estimated:true）。' +
+    '**Primary が API 失敗（4xx/5xx/timeout）の場合、fallback を 1 段も試さずにローカル縮退/プレースホルダ/must-replace 化することを禁止**（品質不合格による再生成は従来どおり Primary 固定 — この規則は API 失敗時のルート切替の話）。state/asset-routing.json の fallbacks を上から順に全段試行し、各試行の『ルート名 + HTTP ステータス（または失敗理由）』を degradedRoutes に必ず列挙する（例: "model_character: meshy:direct→422 / fal:meshy-v6→429 / tripo:direct→403 → local縮退"）。全段失敗の場合のみローカル縮退可（retro-e3 指摘7）。';
   const replanNote = (replanStories && replanStories.length > 0)
     ? 'Replan由来の資産story(JSON・design/assets.md に反映済みのはず。エントリが漏れていれば design/assets.md に追記した上で生成対象に含めよ):\n' + JSON.stringify(replanStories)
     : '';
@@ -464,7 +481,7 @@ async function assetBatchLoop(kind, producerAgent, producerBrief, replanStories)
       ? '【fallback回】AR-ASSET 3回不合格のため、state/asset-routing.json の fallback プロバイダへ切替えて再生成せよ（' + DOCS + '/assets-config.md のルーティング表参照）。'
       : '';
 
-    const gen = await agent(
+    const gen = await agentR(
       producerBrief + '\n' + target + '\n' + route + '\n' + budgetRule + '\n' + ASSET_COMMIT_RULE + '\n' +
       '生成後パイプライン（' + DOCS + '/assets-config.md「生成後パイプライン」節）を全段実施してから報告せよ。',
       { label: 'gen-' + kind + '-' + iter, phase: 'AssetGen', agentType: producerAgent, schema: ASSET_GEN_SCHEMA, effort: 'high' }
@@ -502,14 +519,14 @@ async function assetBatchLoop(kind, producerAgent, producerBrief, replanStories)
       break;
     }
 
-    const review = await agent(
+    const review = await agentR(
       'AR-ASSET 判定（' + kind + ' バッチ、iteration ' + iter + '）。' + DOCS + '/gates.md の AR-ASSET 節に従え。\n' +
       '対象資産(JSON): ' + JSON.stringify(gen.generated || []) + '\n' +
       '照合先: design/art-bible.json（style_block/palette/解像度）・design/assets.md（サイズ/向き/フレーム数）。\n' +
       '- 画像は実ファイルを開き、ゲーム内サイズへ縮小した可読性とアルファ縁品質を確認\n' +
       '- 音声は長さ・ラウドネス・仕様一致を確認。BGMはループ検証済みであることを生成報告とファイルで確認\n' +
       '- 3D（MDL/ANM）は gates.md AR-ASSET の 3D 観点で機械検査（gltf validate / ポリ数・ボーン数 / authoring スケール / スタイルは ' + EP.rawAssetDir + 'previews/ のレンダリング。エンジン取込後項目は※節どおり Integrate 側の責務）\n' +
-      '- ' + reviewFile + ' に ' + DOCS + '/review-loops.md の追記形式で iteration 記録を追記（追記は判定者たるあなたの責務）\n' +
+      '- ' + reviewFile + ' に ' + DOCS + '/review-loops.md の追記形式で iteration 記録を追記（追記は判定者たるあなたの責務。日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う — 推測記入禁止）\n' +
       '応答の1行目は「AR-ASSET: APPROVE|CONCERNS|REJECT」とし、構造化返却の verdict にも同じ判定を入れよ。\n' +
       '不合格資産には retryInstruction（プロンプト修正案）を必ず付けよ。\n' +
       '**再生成では直らない開示事項**（gates.md AR-ASSET 観点6: shippable:false ルート由来 / fal 経由 Meshy のライセンス継承未検証 / cost_estimated:true / must_replace 等）は failedAssets ではなく disclosures に入れよ（failedAssets に入れると無意味な再生成ループが走る。品質合格＋開示事項ありは APPROVE + disclosures）。',
@@ -560,18 +577,18 @@ log('full-build 開始 / review-mode: ' + reviewMode + ' / feedback: ' + feedbac
   '（全 verdict は verdictHistory に蓄積して返す。full ではスキルが完了後に全件を人間へ提示する）');
 
 const replanResults = await parallel([
-  () => agent(
+  () => agentR(
     'Phase 3 再計画（tech-director）。\n' +
     '読むこと: ' + feedbackPath + '、state/stories.yaml、design/gdd.md、design/concept.md、design/assets.md、docs/architecture.md、' + DOCS + '/contract.md（§7 stories.yaml スキーマ・§8 安定ID）。\n' +
     '手順:\n' +
     '1) checkpoint-b-feedback の各項目を story に落とす。新storyのIDは既存の最大 S-xx の続番（振り直し・削除禁止）、phase: build、status: todo、pillar は design/concept.md の P-xx を必ず参照、assignee は contract §2 のagent名、acceptance は検証可能な文で書く。バランス調整系 story は**変更対象の定数名を acceptance に明示**し、同一定数を複数 story・複数 assignee に割り当てない（並走レーンの共有ファイル規律 — 実装側の値変更例外はこの明示が条件）\n' +
     '2) 資産（画像/SFX/BGM/MDL/ANM）に関わる feedback は design/assets.md にもエントリ追加/修正で反映せよ（AssetGen フェーズは design/assets.md を生成対象の真実とする。assignee が art-director / audio-designer の story は生成対象リストとしても渡される。**既生成資産の再生成**が必要な場合は design/assets.md の該当行の状態を must-replace または rejected に変更すること — MANIFEST 記載済み資産の再生成はこの状態変更が唯一のトリガー）\n' +
     '3) 既存の phase: build 未完了storyと合わせ、依存順（先に必要なものが先）に整理して state/stories.yaml を更新\n' +
-    '4) state/active.md を更新（現在地: Phase3 Replan完了）\n' +
+    '4) state/active.md を更新（現在地: Phase3 Replan完了。日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う — 推測記入禁止）\n' +
     '返却: phase: build かつ status が done 以外の全story（実装すべき順）。',
     { label: 'replan-stories', phase: 'Replan', agentType: 'tech-director', schema: STORY_LIST_SCHEMA, effort: 'high' }
   ),
-  () => agent(
+  () => agentR(
     'Phase 3 GDD改訂判断（game-designer）。\n' +
     '読むこと: ' + feedbackPath + '、design/gdd.md、design/concept.md。\n' +
     'checkpoint-b-feedback がゲームデザイン（数値・ルール・フロー）の変更を要求している場合のみ、design/gdd.md の該当節を更新せよ。\n' +
@@ -583,7 +600,7 @@ const replanResults = await parallel([
 let replan = replanResults[0];
 if (!replan || !Array.isArray(replan.stories)) {
   log('Replan: tech-director の構造化返却が得られず。stories.yaml から再抽出する');
-  replan = await agent(
+  replan = await agentR(
     'state/stories.yaml を読み、phase: build かつ status が done 以外の全storyを実装すべき順で返せ。ファイルの変更はするな。',
     { label: 'replan-extract', phase: 'Replan', agentType: 'tech-director', schema: STORY_LIST_SCHEMA, effort: 'low' }
   );
@@ -657,10 +674,10 @@ await parallel([
 
     // 全資産生成後: バッチ一貫性チェック（style drift 検出）
     for (let pass = 1; pass <= 2; pass++) {
-      const drift = await agent(
+      const drift = await agentR(
         'AR-ASSET バッチ一貫性チェック（style drift 検出、pass ' + pass + '）。\n' +
         EP.rawAssetDir + ' の全画像資産' + (EP.assets3d ? 'と3Dモデルのレンダリングプレビュー' : '') + ' を ' + MANIFEST + ' の生成順に並べ、design/art-bible.json（palette/style_block）に照らして時系列のパレット逸脱・画風ブレ・シルエット可読性の劣化を検出せよ。' +
-        '判定観点は ' + DOCS + '/gates.md の AR-ASSET 節。state/reviews/assets-batch.md に記録を追記（追記は判定者たるあなたの責務）。\n' +
+        '判定観点は ' + DOCS + '/gates.md の AR-ASSET 節。state/reviews/assets-batch.md に記録を追記（追記は判定者たるあなたの責務。日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う — 推測記入禁止）。\n' +
         '応答の1行目は「AR-ASSET: APPROVE|CONCERNS|REJECT」とし、構造化返却の verdict にも同じ判定を入れよ。\n' +
         'drift している資産には retryInstruction を付けよ。',
         { label: 'ar-batch-drift-' + pass, phase: 'AssetGen', agentType: 'art-reviewer', schema: ASSET_REVIEW_SCHEMA }
@@ -685,7 +702,7 @@ await parallel([
         );
         break;
       }
-      const regen = await agent(
+      const regen = await agentR(
         'style drift 指摘資産の再生成（art-director）。failedAssets(JSON):\n' + JSON.stringify(drift.failedAssets) + '\n' +
         'design/art-bible.json の style_block/palette へ厳密に寄せて retryInstruction 通り再生成。state/asset-routing.json のルート・予算チェック（MANIFEST合算 vs state/budget.txt）・MANIFEST追記は通常通り。\n' +
         ASSET_COMMIT_RULE,
@@ -721,12 +738,12 @@ if (EP.assets3d) {
       summary: { type: 'string' },
     },
   };
-  integrate3d = await agent(
+  integrate3d = await agentR(
     BUILD_VERIFY_WARN +
     '生成済み 3D 資産（MDL/ANM）を game/ に取り込め（engine: ' + engine + '。直列区間 — 他に Unity/UE を起動する処理は走っていない）。\n' +
     '読むこと: ' + MANIFEST + '（今回追記分）、design/assets.md、' + EP.techStackDoc + '「資産の取り扱い」、' + DOCS + '/gates.md の AR-ASSET ※節（エンジン取込後検証はあなたの責務）。\n' +
     (engine === 'unity'
-      ? '手順: ' + EP.rawAssetDir + ' の合格資産を game/Assets/Generated/ にコピーして Unity にインポートさせ、リグ付き FBX は ModelImporter の animationType を設定して Avatar 生成を確認（Avatar.isValid を機械確認。失敗は Generic へ縮退し degradations に必ず含める）。取込後バウンディングボックスでスケール検証。プレースホルダを実資産に差し替え、資産定数（' + EP.configPath + '）に登録。\n'
+      ? '手順: ' + EP.rawAssetDir + ' の合格資産を game/Assets/Resources/Generated/{models,textures,audio}/ にコピーして Unity にインポートさせ（Resources.Load 方式 — contract §11 / tech-stack-unity.md「資産の取り扱い」。AssetKeys の値は Resources 相対パス）、リグ付き FBX は ModelImporter の animationType を設定して Avatar 生成を確認（Avatar.isValid を機械確認。失敗は Generic へ縮退し degradations に必ず含める）。取込後バウンディングボックスでスケール検証。プレースホルダを実資産に差し替え、資産定数（' + EP.configPath + '）に登録。\n'
       : '手順: Interchange（Python: unreal.InterchangeManager）で ' + EP.rawAssetDir + ' の合格資産を game/Content/Generated/ にインポートし、リグ付きはリターゲット成功を確認（失敗は degradations に必ず含める）。取込後バウンディングボックスでスケール検証（1 unit = 1cm）。資産定数（' + EP.configPath + '）に登録。\n') +
     '検証結果は ' + MANIFEST + ' の validator にも記録。検証: ' + EP.verifyCmd + ' が exit 0。\n' +
     'コミット規律（取込専用）: 触ったパスのみ明示して git add（' + (engine === 'unity' ? '例: git add game/Assets game/_generated state' : '例: git add game/Content game/_generated game/Source game/Config state') + '。git add -A 禁止 — MANIFEST の validator 追記と取込資産を漏らさない）。' + GIT_RETRY_NOTE + '\n' +
@@ -747,7 +764,7 @@ if (EP.assets3d) {
 
 // ===== Phase: Polish =====
 phase('Polish');
-const polishPlan = await agent(
+const polishPlan = await agentR(
   BUILD_VERIFY_WARN +
   'Phase 3 Polish 計画（game-designer）。\n' +
   '読むこと: ' + EP.configPath + '、design/gdd.md（数値の初期値＋調整レンジ）、design/concept.md（ピラー P-xx）、' + feedbackPath + '、state/stories.yaml、' + DOCS + '/contract.md（§7 スキーマ・§8 ID・§11 エンジン）。\n' +
@@ -804,13 +821,13 @@ await parallel([
   // 資産監査（MANIFESTコスト合算・予算比較・ライセンスフラグ抽出）
   // 書き先は state/reviews/assets-audit.md（qa/report.md は並走する QA-PLAY の qa-lead 記録専有）
   async () => {
-    audit = await agent(
+    audit = await agentR(
       '資産監査（qa-lead）。読むこと: ' + MANIFEST + '、state/budget.txt、' + DOCS + '/assets-config.md（「ハード禁止事項」「Checkpointで人間に提示するライセンスフラグ」節）。\n' +
       '1) MANIFEST の cost_usd を合算し totalAssetCost、state/budget.txt を budgetUsd として比較（overBudget）\n' +
       '2) ライセンスフラグ抽出: assets-config.md の提示項目（ElevenLabs Studio Games条項 / Ideogram AI生成表記条項 / 純AI出力の著作権不確定性と人間関与記録の有無）に加え、MANIFEST 内の license が commercial-ok 以外・must_replace: true・placeholder-nc の残存を列挙\n' +
       '3) スプライトの白背景PNG混入を**全数**機械検査する（MANIFEST 記載の全画像資産に対し ImageMagick/Pillow でアルファチャンネル有無と不透明背景を検査。抜き取りではなく全数 — 検査は軽量。違反は mustReplaceAssets 相当としてフラグに含める）\n' +
       '3b) 3D 資産（MDL/ANM）の MANIFEST 必須フィールド（plan_tier / bbox_authoring_m / validator / license）の記録漏れと、shippable:false ルート由来・cost_estimated:true の資産を列挙する（構造化返却の provenanceGaps に入れる）\n' +
-      '結果を state/reviews/assets-audit.md に追記せよ（qa/report.md には書かない — 並走する QA-PLAY の記録専有のため）。',
+      '結果を state/reviews/assets-audit.md に追記せよ（qa/report.md には書かない — 並走する QA-PLAY の記録専有のため。日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う — 推測記入禁止）。',
       { label: 'asset-audit', phase: 'FullQA', agentType: 'qa-lead', schema: AUDIT_SCHEMA }
     );
     if (audit === null) {
@@ -830,16 +847,16 @@ await parallel([
   // QA-PLAY（review-loops.md: MAX_ITER 2 = QA1→修正→QA2→非APPROVEならエスカレーション）
   async () => {
     for (let round = 1; round <= 2; round++) {
-      const qa = await agent(
+      const qa = await agentR(
         QA_VERIFY_WARN +
         'フルQA（qa-lead、round ' + round + '/2）。' + DOCS + '/gates.md の QA-PLAY 節（engine=' + engine + ' の実行手段）に従い、' + EP.qaTarget + '。\n' +
         (integrate3d && (integrate3d.degradations || []).length > 0
           ? '【Integrate からの縮退報告あり — 該当箇所は重点検証（特にリグ縮退時はアニメ再生の目視確認必須）】: ' + integrate3d.degradations.join(' / ') + '\n'
           : '') +
         '範囲: state/stories.yaml の**全story**（phase: prototype / build の両方）の acceptance を1つずつ実操作で回帰検証。\n' +
-        '加えて: build成功と consoleエラー0 / コアループ1周（開始→挑戦→結果→リスタート）/ 必須シーン遷移 Title→Menu→Game→Result→Menu の1周（contract §11。Menu の必須要素 = プレイ開始・アウトゲーム表示・設定・終了導線 の実在込み — gates.md QA-PLAY 観点2。Title/Menu/Game/Result 各画面のスクリーンショットを撮る）/ メタ進行の永続化（gates.md 観点5: 保存→再起動相当→復元一致、破損セーブ→.bak 退避＋[SaveCorruption] 明示エラー1回＋既定値復旧）/ 実プレイ感が design/concept.md のピラー P-xx を裏切っていないか。\n' +
+        '加えて: build成功と consoleエラー0 / コアループ1周（開始→挑戦→結果→リスタート）/ 必須シーン遷移 Title→Menu→Game→Result→Menu の1周（contract §11。Menu の必須要素 = プレイ開始・アウトゲーム表示・設定・終了導線 の実在込み — gates.md QA-PLAY 観点2。Title/Menu/Game/Result 各画面のスクリーンショットを撮る（Game は開始直後の空盤面不可 — コアループの主要オブジェクトが写るフレームで撮る。gates.md 視覚証跡））/ メタ進行の永続化（gates.md 観点5: 保存→再起動相当→復元一致、破損セーブ→.bak 退避＋[SaveCorruption] 明示エラー1回＋既定値復旧）/ 実プレイ感が design/concept.md のピラー P-xx を裏切っていないか。\n' +
         '視覚証跡の機械検知＋目視（gates.md 視覚証跡の目視義務）: 全スクリーンショットに magick の mean 検査（<0.02 / >0.98 = SUSPECT_BLANK → 撮影方式を切替えて再撮影）を行い、必ず Read で目視して「何が写っているか」を qa/report.md の目視所見表に記録。\n' +
-        '証跡を qa/evidence/ に保存し、qa/report.md に結果を書け（round ' + round + ' として追記）。state/reviews/qa.md に iteration 記録を追記（追記は判定者たるあなたの責務）。\n' +
+        '証跡を qa/evidence/ に保存し、qa/report.md に結果を書け（round ' + round + ' として追記）。state/reviews/qa.md に iteration 記録を追記（追記は判定者たるあなたの責務。日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う — 推測記入禁止）。\n' +
         '応答の1行目は「QA-PLAY: APPROVE|CONCERNS|REJECT」とし、構造化返却の verdict にも同じ判定を入れよ。\n' +
         'バグは severity（blocker/major/minor）と担当（gameplay-engineer/ui-engineer）付きで返せ。failedAcceptance には不合格の story ID を全て入れ、非APPROVE時は summary に判定理由を書け。evidencePaths に保存した証跡パス、screenshotsVisuallyConfirmed に目視実施の有無（未実施なら false を正直に）を入れよ。\n' +
         '判定: 重大バグ0かつacceptance全通過のみ APPROVE。',
@@ -852,7 +869,7 @@ await parallel([
 
       // 証跡実在＋目視宣言の独立機械検証（qa-lead の自己申告を workflow が別 agent で確認）
       {
-        const evCheck = await agent(
+        const evCheck = await agentR(
           [
             '読み取り専用の検証タスク。以下の証跡パス一覧について、各ファイルの実在と非0サイズを Bash（`test -s`・`stat`）で機械検証せよ。ファイルの作成・変更・削除は禁止。',
             '証跡パス(JSON): ' + JSON.stringify(qa.evidencePaths || []),
@@ -907,12 +924,12 @@ await parallel([
         const mine = qaBugs.filter(function (b) { return (b.assignee || 'gameplay-engineer') === eng; });
         const myAcceptance = qaFailedAcceptance;
         if (mine.length === 0 && myAcceptance.length === 0) continue;
-        await agent(
+        await agentR(
           'QA-PLAY round ' + round + ' で検出された問題を修正せよ（QA-PLAY は review 2回上限。修正後 round ' + (round + 1) + ' で再判定される）。\n' +
           'bugs(JSON):\n' + JSON.stringify(mine) + '\n' +
           '不合格acceptance(story ID): ' + JSON.stringify(myAcceptance) + '（自分の担当分のみ対応。担当外は触らない）\n' +
           '参照: qa/report.md（再現手順・証跡）、state/stories.yaml（該当acceptance）、' + EP.techStackDoc + '（規約: チューニングは ' + EP.configPath + ' のみで）。\n' +
-          '修正後 ' + EP.verifyCmd + ' を exit 0 にし、修正内容を qa/report.md の該当バグに追記せよ。\n' +
+          '修正後 ' + EP.verifyCmd + ' を exit 0 にし、修正内容を qa/report.md の該当バグに追記せよ。修正原因がエンジン/テストランナー起因の一般則（環境の落とし穴）だった場合は、tech-stack 文書の「既知の落とし穴」節へ即時追記せよ（無ければ新設 — gates.md QA-PLAY）。\n' +
           'git commit -m "QA-PLAY round ' + round + ' fix (' + eng + ')" すること。' + CODE_COMMIT_RULE,
           { label: 'qa-fix-' + round + '-' + eng, phase: 'FullQA', agentType: eng, effort: 'high' }
         );
@@ -933,7 +950,7 @@ await parallel([
 phase('Final');
 let cd = null;
 for (let attempt = 1; attempt <= 2; attempt++) {
-  cd = await agent(
+  cd = await agentR(
     'CD-CHECKPOINT 最終判定（creative-director、attempt ' + attempt + '/2）。' + DOCS + '/gates.md の CD-CHECKPOINT 節に従え。\n' +
     '対象: Checkpoint C（完成品受け渡し）の提示物一式。\n' +
     '読むこと: design/brief.md、design/concept.md（ピラー）、design/gdd.md、qa/report.md、qa/evidence/、state/stories.yaml、' + MANIFEST + '、state/reviews/ 配下。\n' +
@@ -944,7 +961,7 @@ for (let attempt = 1; attempt <= 2; attempt++) {
     '- summary: 人間が5分で判断できる要約（何を作ったか / 何を判断してほしいか / 既知の課題・妥協点を隠さず列挙。[BLOCKER]・縮退は冒頭で個別警告）\n' +
     '- playInstructions: 起動手順（' + EP.playInstructions + '）と操作方法・見どころ\n' +
     '応答の1行目は「CD-CHECKPOINT: APPROVE|CONCERNS|REJECT」とし、構造化返却の verdict にも同じ判定を入れよ。\n' +
-    '判定を state/reviews/checkpoint-c.md に ' + DOCS + '/review-loops.md の形式で追記せよ（追記は判定者たるあなたの責務）。',
+    '判定を state/reviews/checkpoint-c.md に ' + DOCS + '/review-loops.md の形式で追記せよ（追記は判定者たるあなたの責務。日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う — 推測記入禁止）。',
     { label: 'cd-checkpoint-' + attempt, phase: 'Final', agentType: 'creative-director', schema: CD_SCHEMA, effort: 'high' }
   );
   if (cd === null) {
@@ -964,7 +981,7 @@ for (let attempt = 1; attempt <= 2; attempt++) {
     unresolvedFindings.push('Final: CD-CHECKPOINT が再判定でも REJECT。mustFix: ' + (cd.mustFix || []).join(' / '));
     break;
   }
-  await agent(
+  await agentR(
     'CD-CHECKPOINT が REJECT。人間に見せる前に以下を修正せよ（review-loops.md: 修正後1回だけ再判定される）。mustFix(JSON):\n' + JSON.stringify(cd.mustFix || []) + '\n' +
     '提示物（要約・qa/report.md・成果物の整合）を直し、コード修正が必要なら該当engineerの規約（' + EP.techStackDoc + '）に従って最小限で行い typecheck/build 相当（' + EP.verifyCmd + '）を通せ。\n' +
     '変更した場合は git commit すること。' + CODE_COMMIT_RULE,
@@ -973,9 +990,10 @@ for (let attempt = 1; attempt <= 2; attempt++) {
 }
 
 // 状態の確定（state/stage.txt には触れない — stage 遷移は /forge-build スキルの責務）
-await agent(
+await agentR(
   'Phase 3 終了処理（tech-director）。\n' +
   'state/active.md を更新: 現在地=Checkpoint C 提示待ち / 次アクション=人間の受領判断（review-mode: ' + reviewMode + '）/ 未解決事項(JSON): ' + JSON.stringify(unresolvedFindings) + '\n' +
+  '日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う（推測記入禁止）。\n' +
   '注意: state/stage.txt は更新しない（stage 遷移は /forge-build スキルが行う）。',
   { label: 'finalize-state', phase: 'Final', agentType: 'tech-director', effort: 'low' }
 );

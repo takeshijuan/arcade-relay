@@ -7,17 +7,29 @@ artifact contracts stabilize.
 
 ## [Unreleased]
 
+## [0.4.0.0] - 2026-07-24
+
 ### Added
 
 - OSS community-health files: license, contributing guide, security policy,
   support guide, code of conduct, maintainers, governance, issue templates, and
   pull request template.
 - OSS repository-structure notes in `docs/oss-repository-structure.md`.
+- E3 retrospective notes in `.claude/docs/retro-e3.md` and workflow DSL stub
+  tests expanded from 15 to 27 cases (batch-verify serialization, asset-lane
+  fallback recording, story-lane distribution).
 
 ### Changed
 
 - Public project name changed from GameForge to ArcadeRelay while preserving the
   `/forge` command namespace.
+- Harness improvements promoted from the E3 evaluation run (Crystal Bastion,
+  unity): known-pitfalls auto-promotion into `tech-stack-unity.md`, mandatory
+  timestamp rule (`date -u` output only) in the contract, 3D fallback
+  full-chain-attempt duty in `assets-config.md`, QA-PLAY visual-evidence
+  tightening (SUSPECT_BLANK machine check before eyeballing, core-loop objects
+  required in Game-scene shots), and parallel-lane fixes in the three workflow
+  scripts.
 
 ## [0.3.0.0] - 2026-07-21
 

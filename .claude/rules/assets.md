@@ -19,7 +19,7 @@ paths: ["game/assets/**", "game/_generated/**"]
 - **Do**: 音声は OGG（Vorbis 128–160kbps）と M4A/AAC（Safari 用）の両形式を同名で配置し、MANIFEST には両ファイルを記録する（phaser。unity/unreal はエンジン推奨形式 — assets-config.md「生成後パイプライン」音声行 / 各 tech-stack 文書「資産の取り扱い」）
 - **Don't**: ライセンス不明・非商用（`bria-rmbg` 出力、ElevenLabs Free、audiocraft 出力等）の資産を `license: commercial-ok` として記録しない
 - **Do**: 3Dモデル（`model-*`）は配置前に assets-config.md 3D 節の機械検証（スキーマ検証: GLB=gltf-transform validate / FBX=Blender 変換後 validate、ポリゴン数・ボーン数・マテリアル数・authoring 寸法）を通し、MANIFEST の 3D フィールド（`kind` `polycount` `bone_count` `rigged` `format` `bbox_authoring_m` `validator` `plan_tier`。クレジット換算見積なら `cost_estimated: true`）を必ず記録する
-- **Don't**: エンジン取込先（unity: `game/Assets/Generated/` / unreal: `game/Content/Generated/`）への直接生成禁止。raw は必ず `game/_generated/` に置き、MANIFEST 追記後に取り込む
+- **Don't**: エンジン取込先（unity: `game/Assets/Resources/Generated/` / unreal: `game/Content/Generated/`）への直接生成禁止。raw は必ず `game/_generated/` に置き、MANIFEST 追記後に取り込む
 
 ## 正誤例
 
