@@ -181,3 +181,177 @@ test('取込先: engine=unity の integrate-3d が Assets/Resources/Generated/ �
     assert.ok(!c.prompt.includes('Assets/Generated/'), c.label + ' に旧取込先 Assets/Generated/ が残存');
   }
 });
+
+// ---- 監査追随（2026-07-29）: レーン例外ガード / エラー経路の無記録解消 / W-3 タグ振り分け / M-8b 冪等ガード ----
+
+const BATCH_OK = { ok: true, fixedNotes: [], unresolved: [] };
+
+test('レーン例外: impl が throw しても [BLOCKER] 蓄積 + 他レーンは継続（parallel の null 潰しに先行）', async () => {
+  const routes = [
+    R(/^impl-s-01/, () => { throw new Error('schema mismatch'); }),
+  ].concat(baseRoutes(BATCH_OK));
+  const { calls, result } = await runWorkflow(WF, { args: ARGS, routes });
+  assert.ok(
+    result.unresolvedFindings.some((f) => f.includes('[BLOCKER] Build gameplay レーンが例外中断') && f.includes('schema mismatch')),
+    'レーン例外が無記録: ' + JSON.stringify(result.unresolvedFindings)
+  );
+  assert.equal(callsBy(calls, /^impl-s-02$/).length, 1, 'ui レーンが巻き添え停止している');
+});
+
+test('replan-gdd null: GDD 改訂判断の失敗が unresolvedFindings に載る', async () => {
+  const routes = [R(/^replan-gdd/, null)].concat(baseRoutes(BATCH_OK));
+  const { result } = await runWorkflow(WF, { args: ARGS, routes });
+  assert.ok(result.unresolvedFindings.some((f) => f.includes('GDD 改訂判断 agent（game-designer）が失敗')));
+});
+
+test('close null: APPROVE 後の status:done 更新失敗が記録される', async () => {
+  const routes = [R(/^close-s-01/, null)].concat(baseRoutes(BATCH_OK));
+  const { result } = await runWorkflow(WF, { args: ARGS, routes });
+  assert.ok(result.unresolvedFindings.some((f) => f.includes('S-01: APPROVE 後の status:done 更新 agent が失敗')));
+});
+
+test('CR fix null: fix 失敗が iteration ごとに記録される', async () => {
+  const routes = [
+    R(/^cr-s-01-|^sfh-s-01-/, { findings: [{ summary: 'x', severity: 'major' }] }),
+    R(/^fix-s-01-/, null),
+  ].concat(baseRoutes(BATCH_OK));
+  const { calls, result } = await runWorkflow(WF, { args: ARGS, routes });
+  assert.ok(result.unresolvedFindings.some((f) => f.includes('S-01: CR-CODE iteration 1 の fix agent が失敗')));
+  assert.ok(result.unresolvedFindings.some((f) => f.includes('S-01: CR-CODE iteration 2 の fix agent が失敗')));
+  // M-8b: リトライ多発の fix 経路にこそ冪等ガードが要る（resume 二重適用の主戦場）
+  assert.ok(promptsBy(calls, /^fix-s-01-1$/)[0].includes('冪等ガード'), 'CR fix プロンプトに冪等ガードが前置されない');
+});
+
+test('drift 非APPROVE + failedAssets 空: 無記録で抜けず人間確認事項として蓄積', async () => {
+  const routes = [
+    R(/^ar-batch-drift-1/, { verdict: 'CONCERNS', failedAssets: [], disclosures: [] }),
+  ].concat(baseRoutes(BATCH_OK));
+  const { calls, result } = await runWorkflow(WF, { args: ARGS, routes });
+  assert.ok(result.unresolvedFindings.some((f) => f.includes('バッチ一貫性チェック pass 1 が CONCERNS だが failedAssets が空')));
+  assert.equal(callsBy(calls, /^ar-batch-drift-2/).length, 0, 'break せず pass 2 が走っている');
+});
+
+test('QA fix null: 修正 agent の失敗が記録され再QAへ', async () => {
+  const routes = [
+    R(/^qa-fix-1-gameplay-engineer/, null),
+    R(/^qa-play-1/, { verdict: 'CONCERNS', bugs: [{ summary: 'b', severity: 'major', assignee: 'gameplay-engineer' }], failedAcceptance: [], evidencePaths: ['qa/evidence/e.png'], screenshotsVisuallyConfirmed: true, summary: 'ng' }),
+  ].concat(baseRoutes(BATCH_OK));
+  const { result } = await runWorkflow(WF, { args: ARGS, routes });
+  assert.ok(result.unresolvedFindings.some((f) => f.includes('FullQA: round 1 の修正 agent（gameplay-engineer）が失敗')));
+});
+
+test('W-3: 資産 story はタグ第一・タグ無しは語彙 fallback で振り分け・Replan にタグ指示・M-8b 冪等ガード前置', async () => {
+  const routes = [
+    R(/^replan-stories$/, { stories: [gp('S-01'), ui('S-02'),
+      { id: 'S-20', title: '[MDL] 敵モデル', assignee: 'art-director', pillar: 'P-01', acceptance: 'a' },
+      { id: 'S-21', title: '[IMG] 3Dロゴ風アイコン', assignee: 'art-director', pillar: 'P-01', acceptance: 'a' },
+      { id: 'S-22', title: 'ヒーローのリグ調整', assignee: 'art-director', pillar: 'P-01', acceptance: 'FBX を更新する' }, // タグ無し + 3D 語彙 = fallback 経路
+      { id: 'S-23', title: 'タイトルロゴ差し替え', assignee: 'art-director', pillar: 'P-01', acceptance: 'a' }, // タグ無し + 語彙なし = images
+    ] }),
+    R(/^polish-plan$/, { stories: [] }),
+    R(/^qa-play-/, QA_OK),
+    R(/^verify-evidence-/, EV_OK),
+    R(/^batch-verify-/, BATCH_OK),
+  ];
+  const { calls } = await runWorkflow(WF, { args: { ...ARGS, engine: 'unity' }, routes });
+  assert.ok(promptsBy(calls, /^replan-stories$/)[0].includes('資産種別タグ'), 'Replan にタグ指示が無い');
+  const modelsPrompt = promptsBy(calls, /^gen-models-1$/)[0];
+  const imagesPrompt = promptsBy(calls, /^gen-images-1$/)[0];
+  assert.ok(modelsPrompt.includes('敵モデル'), '[MDL] タグ story が models バッチに来ない');
+  assert.ok(!modelsPrompt.includes('3Dロゴ風'), '「3D」語彙を含む [IMG] タグ story が models へ誤配（タグ優先が効いていない）');
+  assert.ok(imagesPrompt.includes('3Dロゴ風'), '[IMG] タグ story が images バッチに来ない');
+  assert.ok(modelsPrompt.includes('ヒーローのリグ調整'), 'タグ無し 3D 語彙 story が MODEL_WORDS fallback で models に来ない');
+  assert.ok(imagesPrompt.includes('タイトルロゴ差し替え'), 'タグ無し・語彙なし story が images に来ない');
+  for (const re of [/^impl-s-01$/, /^close-s-01$/, /^integrate-3d-assets$/]) {
+    assert.ok(promptsBy(calls, re)[0].includes('冪等ガード'), re + ' に冪等ガードが前置されない');
+  }
+});
+
+test('レーン例外: Polish レーンと AssetGen トラックの laneSafe も実発火する', async () => {
+  const routes = [
+    R(/^impl-s-10/, () => { throw new Error('polish boom'); }),
+    R(/^gen-images-1$/, () => { throw new Error('images boom'); }),
+  ].concat(baseRoutes(BATCH_OK));
+  const { result } = await runWorkflow(WF, { args: ARGS, routes });
+  assert.ok(result.unresolvedFindings.some((f) => f.includes('[BLOCKER] Polish gameplay レーンが例外中断') && f.includes('polish boom')));
+  assert.ok(result.unresolvedFindings.some((f) => f.includes('[BLOCKER] AssetGen(images) トラックが例外中断') && f.includes('images boom')));
+});
+
+test('cd-fix null: REJECT 指示への修正 agent 失敗が記録される（再判定が通っても沈黙しない）', async () => {
+  const routes = [
+    R(/^cd-fix/, null),
+    R(/^cd-checkpoint-1/, { verdict: 'REJECT', summary: 's', playInstructions: 'p', mustFix: ['直せ'] }),
+    R(/^cd-checkpoint-2/, { verdict: 'CONCERNS', summary: 's', playInstructions: 'p', mustFix: [] }),
+  ].concat(baseRoutes(BATCH_OK));
+  const { result } = await runWorkflow(WF, { args: ARGS, routes });
+  assert.ok(result.unresolvedFindings.some((f) => f.includes('REJECT 指示への修正 agent が失敗')));
+  assert.equal(result.verdict, 'CONCERNS');
+});
+
+// ---- silent-failure-hunter 指摘の回帰テスト（2026-07-29） ----
+
+test('FullQA トラック例外: 資産監査 thunk が throw しても [BLOCKER] 蓄積 + QA-PLAY は継続', async () => {
+  const routes = [
+    R(/^asset-audit/, () => { throw new Error('audit boom'); }),
+  ].concat(baseRoutes(BATCH_OK));
+  const { calls, result } = await runWorkflow(WF, { args: ARGS, routes });
+  assert.ok(
+    result.unresolvedFindings.some((f) => f.includes('[BLOCKER] FullQA 資産監査トラックが例外中断') && f.includes('audit boom')),
+    'FullQA 資産監査の例外が無記録: ' + JSON.stringify(result.unresolvedFindings)
+  );
+  assert.equal(callsBy(calls, /^qa-play-1$/).length, 1, 'QA-PLAY トラックが巻き添え停止');
+});
+
+test('FullQA トラック例外: QA-PLAY thunk が throw しても [BLOCKER] 蓄積（QA 未実施が CD に届く）', async () => {
+  const routes = [
+    R(/^qa-play-1/, () => { throw new Error('qa boom'); }),
+  ].concat(baseRoutes(BATCH_OK));
+  const { result } = await runWorkflow(WF, { args: ARGS, routes });
+  assert.ok(result.unresolvedFindings.some((f) => f.includes('[BLOCKER] FullQA QA-PLAY トラックが例外中断') && f.includes('qa boom')));
+});
+
+test('engine=phaser で [MDL] タグ story は黙って脱落せず [BLOCKER] 蓄積', async () => {
+  const routes = [
+    R(/^replan-stories$/, { stories: [gp('S-01'), ui('S-02'),
+      { id: 'S-20', title: '[MDL] 敵モデル', assignee: 'art-director', pillar: 'P-01', acceptance: 'a' },
+    ] }),
+  ].concat(baseRoutes(BATCH_OK));
+  const { calls, result } = await runWorkflow(WF, { args: ARGS, routes });
+  assert.ok(
+    result.unresolvedFindings.some((f) => f.includes('[BLOCKER]') && f.includes('3D 資産（MDL/ANM）非対応') && f.includes('S-20')),
+    '2D エンジンでの 3D story 脱落が無記録: ' + JSON.stringify(result.unresolvedFindings)
+  );
+  assert.equal(callsBy(calls, /^gen-models-/).length, 0, 'phaser で models バッチが走っている');
+});
+
+// ---- adversarial/Codex 指摘の回帰テスト（2026-07-30） ----
+
+test('タグ/assignee 不整合は記録される・phaser では語彙 fallback が無効', async () => {
+  const routes = [
+    R(/^replan-stories$/, { stories: [gp('S-01'), ui('S-02'),
+      { id: 'S-30', title: '[SFX] 打撃音', assignee: 'art-director', pillar: 'P-01', acceptance: 'a' }, // タグ/担当不整合
+      { id: 'S-31', title: '3D風メタリックなロゴ', assignee: 'art-director', pillar: 'P-01', acceptance: 'a' }, // phaser: 語彙 fallback を適用しない → images 残留
+    ] }),
+    R(/^polish-plan$/, { stories: [] }),
+  ].concat(baseRoutes(BATCH_OK));
+  const { calls, result } = await runWorkflow(WF, { args: ARGS, routes });
+  assert.ok(
+    result.unresolvedFindings.some((f) => f.includes('S-30') && f.includes('[SFX]') && f.includes('不整合')),
+    'タグ/assignee 不整合が無記録: ' + JSON.stringify(result.unresolvedFindings)
+  );
+  assert.ok(promptsBy(calls, /^gen-images-1$/)[0].includes('3D風メタリックなロゴ'), 'phaser で語彙 fallback が発動し images から脱落している');
+  assert.ok(!result.unresolvedFindings.some((f) => f.includes('S-31')), 'phaser のタグ無し story が偽 [BLOCKER] を積んでいる');
+});
+
+test('Polish: 資産系 assignee の story は黙って捨てず記録される', async () => {
+  const routes = [
+    R(/^polish-plan$/, { stories: [gp('S-10'),
+      { id: 'S-40', title: 'ヒットエフェクト画像の追加', assignee: 'art-director', pillar: 'P-01', acceptance: 'a' },
+    ] }),
+  ].concat(baseRoutes(BATCH_OK));
+  const { result } = await runWorkflow(WF, { args: ARGS, routes });
+  assert.ok(
+    result.unresolvedFindings.some((f) => f.includes('Polish') && f.includes('S-40') && f.includes('実装対象外')),
+    'Polish の資産 story ドロップが無記録: ' + JSON.stringify(result.unresolvedFindings)
+  );
+});

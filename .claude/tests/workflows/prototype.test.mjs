@@ -98,7 +98,7 @@ test('M-8a: 同一バグが round を跨いでも fix-qa label が round 一意'
     ? { verdict: 'CONCERNS', criticalBugs: [{ title: 'クラッシュ', detail: 'd', assignee: 'gameplay-engineer' }], failedAcceptance: [], evidencePaths: ['qa/evidence/e.png'], screenshotsVisuallyConfirmed: true }
     : QA_OK;
   const { calls } = await runWorkflow(WF, { args: ARGS, routes: baseRoutes({ ok: true, fixedNotes: [], unresolved: [] }, qaReply) });
-  assert.equal(callsBy(calls, /^fix-qa-r1-gameplay-engineer$/).length, 1, 'fix-qa label が round スコープでない');
+  assert.equal(callsBy(calls, /^fix-qa-r1-gameplay-engineer-0$/).length, 1, 'fix-qa label が round スコープでない');
 });
 
 // ---- retro-e3 追随: agentR リトライ ----
@@ -296,4 +296,72 @@ test('取込先: engine=unity の scaffold/Integrate は Assets/Resources/Genera
   for (const c of calls) {
     assert.ok(!c.prompt.includes('Assets/Generated/'), c.label + ' に旧取込先 Assets/Generated/ が残存');
   }
+});
+
+// ---- 監査追随（2026-07-29）: レーン例外ガード / CD 再判定 null 記録 / M-8b（fix-qa bug 単位 label・冪等ガード） ----
+
+test('レーン例外: implement が throw しても [BLOCKER] 蓄積 + ui レーンは継続', async () => {
+  const routes = [
+    R(/^implement-S-01/, () => { throw new Error('schema mismatch'); }),
+  ].concat(baseRoutes(BATCH_OK));
+  const { calls, result } = await runWorkflow(WF, { args: ARGS, routes });
+  assert.ok(
+    result.unresolvedFindings.some((f) => f.includes('[BLOCKER] Build gameplay レーンが例外中断') && f.includes('schema mismatch')),
+    'レーン例外が無記録: ' + JSON.stringify(result.unresolvedFindings)
+  );
+  assert.equal(callsBy(calls, /^implement-S-02$/).length, 1, 'ui レーンが巻き添え停止している');
+  assert.equal(callsBy(calls, /^implement-S-03$/).length, 1);
+});
+
+test('M-8b: 同一 round・同一 assignee の複数バグでも fix-qa label が bug 単位に一意', async () => {
+  const qaReply = (call) => call.label.endsWith('round1')
+    ? { verdict: 'CONCERNS', criticalBugs: [
+        { title: 'クラッシュA', detail: 'd', assignee: 'gameplay-engineer' },
+        { title: 'クラッシュB', detail: 'd', assignee: 'gameplay-engineer' },
+      ], failedAcceptance: [], evidencePaths: ['qa/evidence/e.png'], screenshotsVisuallyConfirmed: true }
+    : QA_OK;
+  const { calls } = await runWorkflow(WF, { args: ARGS, routes: baseRoutes(BATCH_OK, qaReply) });
+  assert.equal(callsBy(calls, /^fix-qa-r1-gameplay-engineer-0$/).length, 1);
+  assert.equal(callsBy(calls, /^fix-qa-r1-gameplay-engineer-1$/).length, 1, '2件目のバグが1件目と label 衝突している');
+});
+
+test('M-8b: implement/bookkeep/integrate に冪等ガード・bookkeep に既に done 文言', async () => {
+  const { calls } = await runWorkflow(WF, { args: ARGS, routes: baseRoutes(BATCH_OK) });
+  for (const re of [/^implement-S-01$/, /^bookkeep-S-01$/, /^integrate-assets$/]) {
+    assert.ok(promptsBy(calls, re)[0].includes('冪等ガード'), re + ' に冪等ガードが前置されない');
+  }
+  assert.ok(promptsBy(calls, /^bookkeep-S-01$/)[0].includes('既に done'), 'bookkeep に冪等文言（既に done なら何もしない）が無い');
+});
+
+test('CD 再判定 null: 初回 REJECT のまま提示される旨が unresolvedFindings に載る', async () => {
+  const routes = [
+    R(/^cd-checkpoint-b-rejudge/, null),
+    R(/^cd-checkpoint-b/, { verdict: 'REJECT', summary: 's', playInstructions: 'p', evidencePaths: [], knownIssues: [], rejectInstructions: ['直せ'] }),
+  ].concat(baseRoutes(BATCH_OK));
+  const { result } = await runWorkflow(WF, { args: ARGS, routes });
+  assert.ok(result.unresolvedFindings.some((f) => f.includes('REJECT 後の再判定 agent が失敗')));
+  assert.equal(result.verdict, 'REJECT');
+});
+
+test('M-8b: CR fix（revise）プロンプトにも冪等ガードが前置される', async () => {
+  const qaOkRoutes = baseRoutes(BATCH_OK);
+  const routes = [
+    R(/^cr-code-S-01-iter1/, { verdict: 'CONCERNS', findings: ['マジックナンバー'] }),
+    R(/^cr-silent-S-01-iter1/, { verdict: 'APPROVE', findings: [] }),
+  ].concat(qaOkRoutes);
+  const { calls } = await runWorkflow(WF, { args: ARGS, routes });
+  const fixPrompt = promptsBy(calls, /^fix-S-01-iter1$/)[0];
+  assert.ok(fixPrompt, 'CONCERNS 後の fix agent が起動しない');
+  assert.ok(fixPrompt.includes('冪等ガード'), 'revise プロンプトに冪等ガードが前置されない');
+});
+
+test('レーン例外: AssetGen(images) トラックの laneSafe も実発火する', async () => {
+  const routes = [
+    R(/^generate-assets-images-prototype/, () => { throw new Error('images boom'); }),
+  ].concat(baseRoutes(BATCH_OK));
+  const { result } = await runWorkflow(WF, { args: ARGS, routes });
+  assert.ok(
+    result.unresolvedFindings.some((f) => f.includes('[BLOCKER] AssetGen(images) トラックが例外中断') && f.includes('images boom')),
+    JSON.stringify(result.unresolvedFindings)
+  );
 });

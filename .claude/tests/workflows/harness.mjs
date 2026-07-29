@@ -5,7 +5,7 @@
 // レーン分配。本物の Workflow ランタイム挙動（キャッシュ・並列上限・schema 強制リトライ）は
 // 再現しない。parallel はスタブでも DSL と同じく「例外を null に潰す」（thunk が投げても落ちない）。
 //
-// 実行: node --test .claude/tests/workflows/
+// 実行: node --test .claude/tests/workflows/*.test.mjs（ディレクトリ指定は Node 24 で MODULE_NOT_FOUND — glob 必須）
 import { readFile } from 'node:fs/promises';
 
 // JSON Schema から最小の妥当値を合成する（required のみ・enum は先頭値・boolean は false —
