@@ -79,7 +79,7 @@
 全生成を MANIFEST.jsonl（正本パスはエンジン別 — contract §6: phaser=`game/assets/MANIFEST.jsonl` / unity・unreal=`game/_generated/MANIFEST.jsonl`）に1行1資産で追記:
 
 ```json
-{"file":"assets/sprites/hero.png","provider":"fal:ideogram-v3-transparent","model":"ideogram-v3","prompt":"...","seed":12345,"style_codes":["..."],"cost_usd":0.06,"plan_tier":"prepaid","sha256":"...","license":"commercial-ok","generated_at":"ISO8601"}
+{"file":"assets/sprites/hero.png","provider":"fal:ideogram-v3-transparent","model":"ideogram-v3","prompt":"...","seed":12345,"style_codes":["..."],"cost_usd":0.06,"plan_tier":"prepaid","sha256":"...","license":"commercial-ok","license_note":"ideogram-in-app-ai-disclosure","generated_at":"ISO8601"}
 ```
 
 3D 資産（MDL/ANM）は追加フィールド必須:
@@ -94,8 +94,9 @@
 - `bbox_authoring_m`: authoring-time 計測寸法 [x,y,z]（m 単位。3D 資産必須 — 生成後パイプライン参照。AR-ASSET のスケール観点はこの値を第一情報源とする）
 - `plan_tier`: preflight の実測値（`state/asset-routing.json` の `checks.<provider>.plan_tier`）をそのまま転記。`cost_estimated: true` はクレジット→USD 換算が未検証見積であることを示す
 
+- `license_note`: プロバイダ固有の表記・条項義務がある資産は**転記必須**（Ideogram のアプリ内 AI 生成表記条項 / Hunyuan3D の Territory 除外 / ElevenLabs「Studio Games」条項 等 — 下記「ライセンスフラグ」節の該当項目）。無条項プロバイダは省略可。E2 で Ideogram 表記条項が口頭開示のみで MANIFEST 未記録のまま完走した再発防止（retro-e2 指摘9）
 - 予算: `state/budget.txt`（既定は `.env` の `ASSET_BUDGET_USD`、無ければ $20）を MANIFEST 合算で強制。超過見込みで生成停止→Checkpointで人間へ
-- Steam AI 開示文は MANIFEST から自動生成
+- Steam AI 開示文は MANIFEST から自動生成（`license_note` の表記条項を集約する）
 - 人間/エージェントによる修正・キュレーション（リタッチ、選別理由）も追記（著作権保護可能性の強化）
 
 ## スタイル一貫性プロトコル（3D 追記）
