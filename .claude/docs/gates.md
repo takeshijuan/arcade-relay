@@ -52,7 +52,8 @@ CONCERNSの場合、修正すべき箇所を優先度順の箇条書きで示せ
 3. **スケール・向き** — MANIFEST の `bbox_authoring_m`（authoring-time 計測。記録漏れは不合格）が想定サイズ（ヒト型 1.6–2.0m 相当。UE は cm 換算）に収まり、前方軸・アップ軸が正しいか
 4. **リグ（rigged 資産のみ）** — ボーン数が仕様内、バインドポーズ正常、指定アニメクリップが全て存在するか
 5. **スタイル一致** — レンダリングプレビュー（Blender headless レンダリング。取込済みならエンジン内スクリーンショットでも可）を design/art-bible.json のコンセプト画・パレットに照らして画風ブレが無いか
-6. **provenance/plan_tier** — MANIFEST に `plan_tier` 実測値と `license` があるか。`shippable: false` ルート（state/asset-routing.json）由来・`cost_estimated: true`・fal 経由 Meshy（ライセンス継承未検証）は指摘として明示する
+6. **provenance/plan_tier** — MANIFEST に `plan_tier` 実測値と `license` があるか。表記条項プロバイダ（Ideogram / Hunyuan3D / ElevenLabs 等 — assets-config.md「Provenance」）由来の資産に `license_note` が転記されているか（欠落は指摘）。`shippable: false` ルート（state/asset-routing.json）由来・`cost_estimated: true`・fal 経由 Meshy（ライセンス継承未検証）は指摘として明示する
+全資産種別共通の追加観点: **MANIFEST provenance** — 当該バッチの MANIFEST 行に必須フィールド（assets-config.md「Provenance」）が揃い、表記条項プロバイダ（Ideogram / Hunyuan3D / ElevenLabs 等）由来の資産に `license_note` が転記されているか。欠落は指摘として明示する（prototype フェーズには FullQA 資産監査が無く、AR-ASSET がバッチ単位の唯一の provenance 検査点）。
 不合格資産は理由と再生成指示（プロンプト修正案）を付けよ。
 
 **※ エンジン取込後検証（AR-ASSET の後段・Integrate 実施者の責務）**: FBX のエンジン取込成功・取込後バウンディングボックス・アニメ再生（unity: Humanoid Avatar 生成成功=`Avatar.isValid` / unreal: IK Retargeter マッピング成功）は Unity/UE の起動を要するため、AssetGen 並走レーンの AR-ASSET では判定対象外（単一インスタンスロック — 各 tech-stack 文書）。これらは **Integrate（直列区間）実施者が機械検証し、構造化返却で workflow に報告する**。失敗・縮退（Humanoid→Generic 等）は workflow が未解決事項として蓄積し Checkpoint で必ず人間に提示する（MANIFEST 注記だけで済ませない）。

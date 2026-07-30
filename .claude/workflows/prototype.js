@@ -542,6 +542,7 @@ async function batchVerify(phaseName, contextNote) {
     '2) 失敗があれば、エラーのファイルパスと `git log --oneline -- <該当パス>` で原因 story を特定する（切り分け困難ならレーン中の story コミット単位で二分探索）\n' +
     '3) 最小修正で合格に到達させる（他 story の設計を作り替えない。チューニング値の変更は ' + EP.configPath + ' のみ。**直列区間の例外として、バッチ検証の最小修正に限り担当領域外のファイル — ui 層含む — も編集してよい**。**機能の削除・呼び出しの除去・無効化による回避は最小修正ではない** — コンパイル整合を保ったまま意図を維持し、やむを得ず挙動を変えた場合は fixedNotes に明記せよ。修正原因がエンジン/テストランナー起因の一般則（環境の落とし穴）だった場合は、tech-stack 文書の「既知の落とし穴」節へ即時追記せよ（無ければ新設 — gates.md QA-PLAY）。）\n' +
     '4) 修正した場合は ' + STATE.reviewsDir + '/batch-verify.md に「phase / 原因 story / 修正内容 / ISO8601 日時」を追記し（日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う — 推測記入禁止）、コミット規律のパス指定形で git commit（メッセージ: "batch-verify fix (' + phaseName + ')"）。' + GIT_ADD_RULE + '\n' +
+    IDEMPOTENT_RULE + '\n' +
     '構造化返却: ok（最終合格で true。到達できなければ false を正直に）/ fixedNotes / unresolved。',
     { label: 'batch-verify-' + phaseName.toLowerCase(), phase: phaseName, agentType: 'gameplay-engineer', schema: BATCH_VERIFY_SCHEMA, effort: 'high' }
   );
@@ -570,15 +571,18 @@ async function batchVerify(phaseName, contextNote) {
 
 async function buildStoryLane(laneStories) {
   for (const story of laneStories) {
-    const sidLower = String(story.id || 's-unknown').toLowerCase(); // id 欠落 story で TypeError → レーン全滅を防ぐ（full-build.js と同ガード）
+    // id 欠落 story で TypeError → レーン全滅を防ぐ（full-build.js と同ガード）。label・コミット
+    // メッセージ・見出しにも生の story.id を使わない（'implement-undefined' / "undefined: <title>" 化を防ぐ）
+    const sid = String(story.id || 'S-unknown');
+    const sidLower = sid.toLowerCase();
     const reviewLogPath = STATE.reviewsDir + '/' + sidLower + '.md';
     const storyHeader =
-      'story: ' + story.id + ' "' + story.title + '"（pillar: ' + (story.pillar || '未指定') + ' / acceptance: ' + story.acceptance + '）';
+      'story: ' + sid + ' "' + story.title + '"（pillar: ' + (story.pillar || '未指定') + ' / acceptance: ' + story.acceptance + '）';
     let lastCommitHash = null;
 
     const loopResult = await reviewLoop({
       gateId: 'CR-CODE',
-      artifactName: story.id,
+      artifactName: sid,
       maxIter: 2, // review-loops.md: CR-CODE MAX_ITER 2
       reviewMode: reviewMode,
 
@@ -591,18 +595,18 @@ async function buildStoryLane(laneStories) {
             '必読: ' + ART.architecture + ' / ' + ART.conventions + ' / ' + ART.gdd + ' / ' + DOCS.techStack + ' / ' + STATE.stories,
             '',
             '手順:',
-            '1. ' + STATE.stories + ' で ' + story.id + ' の status を in-progress に更新。',
+            '1. ' + STATE.stories + ' で ' + sid + ' の status を in-progress に更新。',
             '2. 既存コードの上に積む形で実装（前ストーリーの成果を壊さない）。' + EP.codeRulesLine,
             '   ' + EP.placeholderNote,
             '   ' + LANE_RULE,
             '3. ' + EP.laneVerifyLine + '。',
             '4. ' + STATE.stories + ' で status を review に更新し、コミットする。' + GIT_ADD_RULE,
             '   ' + IDEMPOTENT_RULE,
-            '   コミットメッセージ: "' + story.id + ': ' + story.title + '"。コミット hash は上記コミット規律の方法（`git log --format="%H %s" -20` の自メッセージ一致・最新行）で取得せよ。',
+            '   コミットメッセージ: "' + sid + ': ' + story.title + '"。コミット hash は上記コミット規律の方法（`git log --format="%H %s" -20` の自メッセージ一致・最新行）で取得せよ。',
             '',
             '構造化返却: commitHash（今回のコミット hash。必須）/ changedFiles（変更ファイル一覧）/ summary（実装要点）。',
           ].join('\n'),
-          { label: 'implement-' + story.id, phase: 'Build', agentType: story.assignee, effort: 'high', schema: COMMIT_RESULT_SCHEMA }
+          { label: 'implement-' + sid, phase: 'Build', agentType: story.assignee, effort: 'high', schema: COMMIT_RESULT_SCHEMA }
         );
         if (r && r.commitHash) {
           lastCommitHash = r.commitHash;
@@ -634,7 +638,7 @@ async function buildStoryLane(laneStories) {
                 'レビュー結果を ' + reviewLogPath + ' に追記せよ（review-loops.md の追記形式: iteration ' + iteration + '・verdict・指摘要約・日時。日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う — 推測記入禁止）。',
               ]).join('\n'),
               {
-                label: 'cr-code-' + story.id + '-iter' + iteration,
+                label: 'cr-code-' + sid + '-iter' + iteration,
                 phase: 'Build',
                 agentType: 'pr-review-toolkit:code-reviewer',
                 schema: VERDICT_SCHEMA,
@@ -649,7 +653,7 @@ async function buildStoryLane(laneStories) {
                 STATE.reviewsDir + '/ への追記は不要（追記は code-reviewer 側が行う。あなたは構造化返却のみでよい）。',
               ]).join('\n'),
               {
-                label: 'cr-silent-' + story.id + '-iter' + iteration,
+                label: 'cr-silent-' + sid + '-iter' + iteration,
                 phase: 'Build',
                 agentType: 'pr-review-toolkit:silent-failure-hunter',
                 schema: VERDICT_SCHEMA,
@@ -662,7 +666,7 @@ async function buildStoryLane(laneStories) {
           return null;
         }
         if (valid.length < 2) {
-          knownIssues.push('[CR-CODE][' + story.id + '] iteration ' + iteration + ': レビューペアの片方が結果を返さなかった（片側判定で続行）');
+          knownIssues.push('[CR-CODE][' + sid + '] iteration ' + iteration + ': レビューペアの片方が結果を返さなかった（片側判定で続行）');
         }
         let verdict = 'APPROVE';
         let findings = [];
@@ -688,10 +692,10 @@ async function buildStoryLane(laneStories) {
             '3. ' + reviewLogPath + ' の iteration ' + iteration + ' の「対応:」欄に対応済み/見送り＋理由を追記。',
             '4. コミットする。' + GIT_ADD_RULE,
             '   ' + IDEMPOTENT_RULE,
-            '   コミットメッセージ: "' + story.id + ': fix CR-CODE iter ' + iteration + '"。コミット hash は上記コミット規律の方法（`git log --format="%H %s" -20` の自メッセージ一致・最新行）で取得せよ。',
+            '   コミットメッセージ: "' + sid + ': fix CR-CODE iter ' + iteration + '"。コミット hash は上記コミット規律の方法（`git log --format="%H %s" -20` の自メッセージ一致・最新行）で取得せよ。',
             '構造化返却: commitHash（今回のコミット hash。必須）/ summary（対応要約）。',
           ].join('\n'),
-          { label: 'fix-' + story.id + '-iter' + iteration, phase: 'Build', agentType: story.assignee, effort: 'high', schema: COMMIT_RESULT_SCHEMA }
+          { label: 'fix-' + sid + '-iter' + iteration, phase: 'Build', agentType: story.assignee, effort: 'high', schema: COMMIT_RESULT_SCHEMA }
         );
         if (r && r.commitHash) {
           lastCommitHash = r.commitHash;
@@ -709,19 +713,19 @@ async function buildStoryLane(laneStories) {
     // ステータス確定（done。未解決指摘があれば注記）— state はファイルが真実
     const bookkeep = await agentR(
       [
-        STATE.stories + ' で ' + story.id + ' の status を done に更新せよ。',
+        STATE.stories + ' で ' + sid + ' の status を done に更新せよ。',
         loopResult.ok
           ? '（CR-CODE APPROVE 済み。既に done なら何もしない）'
           : '（CR-CODE 未APPROVE のままエスカレーション。story の acceptance 行の下に「# note: CR-CODE unresolved — ' + STATE.reviewsDir + '/' + sidLower + '.md 参照」とコメント注記を追加すること。既に done かつ注記済みなら何もしない — full-build.js の bookkeep と同じ冪等規約）',
         IDEMPOTENT_RULE,
         STATE.active + ' には触らない（並走レーンと衝突する — 現在地の更新はレーン合流後の Integrate が行う）。' +
         STATE.stories + ' は該当 story の行のみをピンポイント Edit（ファイル全面書き直し禁止）。',
-        'コミットする: `git add ' + STATE.stories + ' && git commit -m "' + story.id + ': status done" -- ' + STATE.stories + '`（素の git commit 禁止 — パス指定形で並走レーンの staged 変更を巻き込まない）。' + GIT_ADD_RULE,
+        'コミットする: `git add ' + STATE.stories + ' && git commit -m "' + sid + ': status done" -- ' + STATE.stories + '`（素の git commit 禁止 — パス指定形で並走レーンの staged 変更を巻き込まない）。' + GIT_ADD_RULE,
       ].join('\n'),
-      { label: 'bookkeep-' + story.id, phase: 'Build', agentType: story.assignee, effort: 'low' }
+      { label: 'bookkeep-' + sid, phase: 'Build', agentType: story.assignee, effort: 'low' }
     );
     if (bookkeep === null) {
-      knownIssues.push(story.id + ' の stories.yaml status 更新が未確認（agent 失敗）');
+      knownIssues.push(sid + ' の stories.yaml status 更新が未確認（agent 失敗）');
     }
   }
   return true;
@@ -1245,6 +1249,7 @@ for (let round = 1; round <= QA_MAX; round++) {
           '参照: ' + ART.qaReport + '（QA 所見全文）/ ' + ART.conventions + ' / ' + DOCS.techStack + '。',
           '修正後 ' + EP.verifyCmd + ' が exit 0 を確認し、パス限定で add してコミット: `git add game state ' + DOCS.techStack + ' && git commit -m "phase2: fix QA — ' + bug.title + '"`（`git add -A`・`.claude/docs` ディレクトリ丸ごと指定は禁止。' + DOCS.techStack + ' は下記の落とし穴昇格を同一コミットに含めるため — 追記した場合のみ stage される）。',
           '修正原因がエンジン/テストランナー起因の一般則（環境の落とし穴）だった場合は、tech-stack 文書の「既知の落とし穴」節へ即時追記せよ（無ければ新設 — gates.md QA-PLAY）。',
+          IDEMPOTENT_RULE,
           '修正内容を簡潔に返せ。',
         ].filter(Boolean).join('\n'),
         // round を label に含める: 同一バグが round を跨いで残存した場合に (prompt, opts) キャッシュが
@@ -1267,6 +1272,7 @@ for (let round = 1; round <= QA_MAX; round++) {
           '参照: ' + ART.qaReport + '（QA 所見全文）/ ' + STATE.stories + '（acceptance 原文）/ ' + ART.conventions + ' / ' + DOCS.techStack + '。',
           '修正後 ' + EP.verifyCmd + ' が exit 0 を確認し、パス限定で add してコミット: `git add game state ' + DOCS.techStack + ' && git commit -m "phase2: fix QA — failed acceptance"`（`git add -A`・`.claude/docs` ディレクトリ丸ごと指定は禁止。' + DOCS.techStack + ' は落とし穴昇格を同一コミットに含めるため）。',
           '修正原因がエンジン/テストランナー起因の一般則（環境の落とし穴）だった場合は、tech-stack 文書の「既知の落とし穴」節へ即時追記せよ（無ければ新設 — gates.md QA-PLAY）。',
+          IDEMPOTENT_RULE,
           '修正内容を簡潔に返せ。',
         ].join('\n'),
         { label: 'fix-qa-acceptance-r' + round, phase: 'QA', agentType: 'gameplay-engineer', effort: 'high' }

@@ -17,7 +17,7 @@ test('W-3: contract §8 の資産 ID 種別が full-build.js のタグ判定・�
   assert.ok(kinds.length >= 5, 'contract §8 から資産 ID 種別をパースできない: ' + JSON.stringify(kinds));
 
   const src = await read('workflows/full-build.js');
-  const tag = src.match(/const ASSET_TAG = \/(.+?)\/;/);
+  const tag = src.match(/const ASSET_TAG = \/(.+?)\/[a-z]*;/);
   assert.ok(tag, 'full-build.js に ASSET_TAG が無い');
   for (const k of kinds) {
     assert.ok(tag[1].includes(k), 'ASSET_TAG が contract §8 の種別 ' + k + ' を含まない（contract 変更にスクリプトが未追随）');

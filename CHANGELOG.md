@@ -54,7 +54,7 @@ artifact contracts stabilize.
 - The asset-manifest template now states the canonical filename prefixes
   (sprite-/tile-/ui-/sfx-/bgm-/anim-) per section and gains a filename column
   for animation entries, preventing naming drift at authoring time.
-- Workflow DSL stub tests grew from 31 to 57 cases, including two new suites:
+- Workflow DSL stub tests grew from 31 to 59 cases, including two new suites:
   contract-sync (machine-verifies contract §8 asset kinds and state
   vocabulary, the readability threshold, and the `license_note` wiring against
   the script prompts) and concept-design coverage.

@@ -64,7 +64,7 @@
 **Completed:** v0.4.1.0 (2026-07-30)
 
 ### レーン/トラック例外・エラー経路の無記録解消（監査 2026-07-29）
-**What:** parallel() の例外 null 潰しでレーン中断が未解決事項に載らない穴を laneSafe（thunk 内 catch → [BLOCKER] 蓄積）で全 parallel サイト（Build/Polish/AssetGen/FullQA）に適用。full-build.js の close/fix/replan-gdd/QA fix/cd-fix/drift 空 failedAssets、prototype.js の CD 再判定 null、concept-design.js の CD fix null の無記録経路を解消。DSL テスト 31→57 件（concept-design.test.mjs / contract-sync.test.mjs 新設）。
+**What:** parallel() の例外 null 潰しでレーン中断が未解決事項に載らない穴を laneSafe（thunk 内 catch → [BLOCKER] 蓄積）で全 parallel サイト（Build/Polish/AssetGen/FullQA）に適用。full-build.js の close/fix/replan-gdd/QA fix/cd-fix/drift 空 failedAssets、prototype.js の CD 再判定 null、concept-design.js の CD fix null の無記録経路を解消。DSL テスト 31→59 件（concept-design.test.mjs / contract-sync.test.mjs 新設）。
 **Completed:** v0.4.1.0 (2026-07-30)
 
 ### Build Phase の並列化（retro-e2 案A+B）

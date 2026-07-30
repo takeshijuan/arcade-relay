@@ -351,7 +351,47 @@ test('Polish: 資産系 assignee の story は黙って捨てず記録される'
   ].concat(baseRoutes(BATCH_OK));
   const { result } = await runWorkflow(WF, { args: ARGS, routes });
   assert.ok(
-    result.unresolvedFindings.some((f) => f.includes('Polish') && f.includes('S-40') && f.includes('実装対象外')),
-    'Polish の資産 story ドロップが無記録: ' + JSON.stringify(result.unresolvedFindings)
+    result.unresolvedFindings.some((f) => f.includes('Polish') && f.includes('S-40') && f.includes('実装対象外') && f.includes('art-director')),
+    'Polish の資産 story ドロップが無記録（または assignee 非表示）: ' + JSON.stringify(result.unresolvedFindings)
   );
+});
+
+// ---- code-review --fix 追随（2026-07-31）: レーン網羅の残穴・タグ正規化・冪等ガード網羅の回帰テスト ----
+
+test('Replan: engineer 割当のタグ story は記録・非レーン assignee は [BLOCKER]・小文字タグも正規化', async () => {
+  const routes = [
+    R(/^replan-stories$/, { stories: [gp('S-01'), ui('S-02'),
+      { id: 'S-50', title: '[IMG] HUD アイコン', assignee: 'ui-engineer', pillar: 'P-01', acceptance: 'a' }, // タグ × engineer 割当 = コードレーン行き
+      { id: 'S-51', title: 'パーティクル調整', assignee: 'art-directer', pillar: 'P-01', acceptance: 'a' },   // 綴り誤り = 全レーン脱落
+      { id: 'S-52', title: '[mdl] 敵モデル', assignee: 'art-director', pillar: 'P-01', acceptance: 'a' },     // 小文字タグ = 正規化して models へ
+    ] }),
+    R(/^polish-plan$/, { stories: [] }),
+    R(/^qa-play-/, QA_OK),
+    R(/^verify-evidence-/, EV_OK),
+    R(/^batch-verify-/, BATCH_OK),
+  ];
+  const { calls, result } = await runWorkflow(WF, { args: { ...ARGS, engine: 'unity' }, routes });
+  assert.ok(
+    result.unresolvedFindings.some((f) => f.includes('S-50') && f.includes('コードレーン')),
+    'タグ付き story の engineer 割当が無記録: ' + JSON.stringify(result.unresolvedFindings)
+  );
+  assert.ok(
+    result.unresolvedFindings.some((f) => f.includes('[BLOCKER]') && f.includes('S-51') && f.includes('全レーンから脱落')),
+    '非レーン assignee の全レーン脱落が無記録: ' + JSON.stringify(result.unresolvedFindings)
+  );
+  assert.ok(promptsBy(calls, /^gen-models-1$/)[0].includes('敵モデル'), '小文字タグ [mdl] が正規化されず models バッチに来ない');
+});
+
+test('冪等ガード: bookkeep（MAX_ITER 到達）と qa-fix のプロンプトにも前置される', async () => {
+  const routes = [
+    R(/^cr-s-01-|^sfh-s-01-/, { findings: [{ summary: 'x', severity: 'major' }] }), // 2 iteration 非APPROVE → bookkeep 経路
+    R(/^qa-play-1/, { verdict: 'CONCERNS', bugs: [{ summary: 'b', severity: 'major', assignee: 'gameplay-engineer' }], failedAcceptance: [], evidencePaths: ['qa/evidence/e.png'], screenshotsVisuallyConfirmed: true, summary: 'ng' }),
+  ].concat(baseRoutes(BATCH_OK));
+  const { calls } = await runWorkflow(WF, { args: ARGS, routes });
+  const bookkeep = promptsBy(calls, /^bookkeep-s-01$/)[0];
+  assert.ok(bookkeep, 'MAX_ITER 到達で bookkeep が走らない');
+  assert.ok(bookkeep.includes('冪等ガード'), 'bookkeep プロンプトに冪等ガードが前置されない');
+  const qaFix = promptsBy(calls, /^qa-fix-1-gameplay-engineer$/)[0];
+  assert.ok(qaFix, 'QA CONCERNS で qa-fix が走らない');
+  assert.ok(qaFix.includes('冪等ガード'), 'qa-fix プロンプトに冪等ガードが前置されない');
 });

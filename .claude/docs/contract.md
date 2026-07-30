@@ -76,7 +76,7 @@ design/refs/               # key image候補・参照画像・crop置き場（ar
 docs/architecture.md       # ゲームアーキテクチャ（シーン/レベル構成・システム境界）
 docs/conventions.md        # このゲーム固有のコード規約
 game/                      # 自己完結ゲームプロジェクト（中身はエンジン別 — §11）
-game/assets/MANIFEST.jsonl # 生成provenance（engine=phaser のみ。1行1資産: provider/model/prompt/seed/cost_usd/sha256/license）
+game/assets/MANIFEST.jsonl # 生成provenance（engine=phaser のみ。1行1資産: provider/model/prompt/seed/cost_usd/sha256/license。表記条項プロバイダは license_note 必須 — assets-config.md「Provenance」）
 game/_generated/           # raw生成資産＋MANIFEST.jsonl（engine=unity/unreal のみ — §11。macOSの大文字小文字非区別FSで game/Assets と game/assets が衝突するため分離）
 qa/report.md               # プレイテスト報告
 qa/evidence/               # スクリーンショット・録画等の証跡

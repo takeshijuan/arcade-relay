@@ -332,6 +332,7 @@ async function batchVerify(phaseName, contextNote) {
     '2) 失敗があれば、エラーのファイルパスと `git log --oneline -- <該当パス>` で原因 story を特定する（切り分け困難ならレーン中の story コミット単位で二分探索）\n' +
     '3) 最小修正で合格に到達させる（他 story の設計を作り替えない。チューニング値の変更は ' + EP.configPath + ' のみ。**直列区間の例外として、バッチ検証の最小修正に限り担当領域外のファイル — ui 層含む — も編集してよい**。**機能の削除・呼び出しの除去・無効化による回避は最小修正ではない** — コンパイル整合を保ったまま意図を維持し、やむを得ず挙動を変えた場合は fixedNotes に明記せよ。修正原因がエンジン/テストランナー起因の一般則（環境の落とし穴）だった場合は、tech-stack 文書の「既知の落とし穴」節へ即時追記せよ（無ければ新設 — gates.md QA-PLAY）。）\n' +
     '4) 修正した場合は state/reviews/batch-verify.md に「phase / 原因 story / 修正内容 / ISO8601 日時」を追記し（日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う — 推測記入禁止）、コミット規律のパス指定形で git commit（メッセージ: "batch-verify fix (' + phaseName + ')"）。state/active.md の現在地を「' + phaseName + ' バッチ検証完了」に更新（直列区間 — レーン規律の対象外）。' + CODE_COMMIT_RULE + '\n' +
+    IDEMPOTENT_RULE + '\n' +
     '構造化返却: ok（最終合格で true。到達できなければ false を正直に）/ fixedNotes / unresolved。',
     { label: 'batch-verify-' + phaseName.toLowerCase(), phase: phaseName, agentType: 'gameplay-engineer', schema: BATCH_VERIFY_SCHEMA, effort: 'high' }
   );
@@ -480,7 +481,8 @@ async function implementStoryWithReview(story, phaseName) {
     await agentR(
       'state/stories.yaml の ' + story.id + ' の status を確認し、done でなければ done に更新して\n' +
       '「# note: CR-CODE unresolved — state/reviews/' + sid + '.md 参照」の注記を acceptance 行の下にコメントで追加せよ\n' +
-      '（MAX_ITER 到達エスカレーション。既に done かつ注記済みなら何もしない）。' + CODE_COMMIT_RULE + '\n' + LANE_RULE,
+      '（MAX_ITER 到達エスカレーション。既に done かつ注記済みなら何もしない）。' + CODE_COMMIT_RULE + '\n' +
+      IDEMPOTENT_RULE + '\n' + LANE_RULE,
       { label: 'bookkeep-' + sid, phase: phaseName, agentType: assignee, effort: 'low' }
     );
   }
@@ -650,12 +652,19 @@ const codeStories = replan.stories.filter(function (s) { return ENGINEERS.indexO
 // 付けさせる資産種別タグ（contract §8 の ID 種別 — テストが contract との同期を機械検証: TODOS W-3）。
 // タグ欠落時のみ title/acceptance の語彙推定に fallback する
 const artStories = replan.stories.filter(function (s) { return s.assignee === 'art-director'; });
-const ASSET_TAG = /^\s*\[(MDL|ANM|IMG|SFX|BGM)\]/;
-// 語彙 fallback は大文字小文字を無視し英語トークン（fbx/glb/rig/mesh/model）も拾う（タグ欠落時の下位判定）
-const MODEL_WORDS = /MDL-|ANM-|3D|モデル|リグ|メッシュ|\b(?:fbx|glb|rig|rigging|mesh|model)\b/i;
+// 大文字小文字・全角括弧（［］）は正規化して受ける — LLM 由来のタグ表記ゆれで第一判定を素通りさせない
+const ASSET_TAG = /^\s*[\[［](MDL|ANM|IMG|SFX|BGM)[\]］]/i;
+const assetTagOf = function (s) {
+  const m = ASSET_TAG.exec(s.title || '');
+  return m ? m[1].toUpperCase() : null;
+};
+// 語彙 fallback は大文字小文字を無視し英語トークン（fbx/glb/rig/mesh/model）も拾う（タグ欠落時の下位判定）。
+// fbx/glb は接尾辞許容（GLBs/FBXes — 旧 substring 判定と同等）、rig/mesh/model は屈折形を明示列挙
+// （\b 単独だと rigged/meshes/models を取りこぼす。裸の接頭辞一致は right 等の偽陽性を生むため不可）
+const MODEL_WORDS = /MDL-|ANM-|3D|モデル|リグ|メッシュ|\b(?:fbx|glb)\w*|\b(?:rig|rigged|rigging|mesh|meshes|model|models)\b/i;
 const modelStories = artStories.filter(function (s) {
-  const tag = ASSET_TAG.exec(s.title || '');
-  if (tag) return tag[1] === 'MDL' || tag[1] === 'ANM';
+  const tag = assetTagOf(s);
+  if (tag) return tag === 'MDL' || tag === 'ANM';
   // 2D エンジンでは語彙 fallback を適用しない — 「3D風ロゴ」等の偽陽性が images から資産を奪い
   // 偽 [BLOCKER] を積むだけで益が無い。タグ明示（[MDL]/[ANM]）のみを 3D 扱いにする
   if (!EP.assets3d) return false;
@@ -670,12 +679,26 @@ if (!EP.assets3d && modelStories.length > 0) {
 // タグと assignee のクロス検証: バッチ振り分けの第一鍵は assignee（audio は audio-designer 固定）のため、
 // 不整合タグ（[SFX] の art-director / [MDL] の audio-designer 等）は黙って誤バッチへ流れる — 記録して人間へ
 for (const s of artStories.concat(audioStories)) {
-  const t = ASSET_TAG.exec(s.title || '');
+  const t = assetTagOf(s);
   if (!t) continue;
-  const wantAudio = t[1] === 'SFX' || t[1] === 'BGM';
+  const wantAudio = t === 'SFX' || t === 'BGM';
   const isAudio = s.assignee === 'audio-designer';
   if (wantAudio !== isAudio) {
-    unresolvedFindings.push('Replan: 資産 story ' + s.id + ' のタグ [' + t[1] + '] と assignee ' + s.assignee + ' が不整合（assignee 側のバッチで生成される — タグ/担当の再確認が必要）');
+    unresolvedFindings.push('Replan: 資産 story ' + s.id + ' のタグ [' + t + '] と assignee ' + s.assignee + ' が不整合（assignee 側のバッチで生成される — タグ/担当の再確認が必要）');
+  }
+}
+// レーン網羅の残穴（クロス検証は art/audio しか見ない）: (a) 資産タグ付き story が engineer に
+// 割当てられるとコードレーンで「実装」され生成バッチに載らない、(b) どのレーンにも該当しない
+// assignee（綴り誤り・非レーン agent）は codeStories/artStories/audioStories の全 filter を素通りして
+// 完全に脱落する — どちらも黙って流さず記録する
+for (const s of replan.stories) {
+  const t = assetTagOf(s);
+  const isEngineer = ENGINEERS.indexOf(s.assignee) >= 0;
+  const isAssetLane = s.assignee === 'art-director' || s.assignee === 'audio-designer';
+  if (!isEngineer && !isAssetLane) {
+    unresolvedFindings.push('[BLOCKER] Replan: story ' + s.id + ' の assignee「' + s.assignee + '」はどの実装/生成レーンにも該当せず全レーンから脱落（実装も生成もされない — assignee の修正が必要）');
+  } else if (t && isEngineer) {
+    unresolvedFindings.push('Replan: 資産タグ [' + t + '] 付き story ' + s.id + ' が engineer（' + s.assignee + '）に割当てられコードレーンへ（生成バッチに載らない — assignee/タグの再確認が必要）');
   }
 }
 log('Replan完了: build story ' + replan.stories.length + '件（うちコード ' + codeStories.length + '件 / 画像 ' + imageStories.length + '件 / 3D ' + modelStories.length + '件 / 音声 ' + audioStories.length + '件）');
@@ -847,8 +870,10 @@ const polishAll = (polishPlan && Array.isArray(polishPlan.stories) ? polishPlan.
 const polishStories = polishAll.filter(function (s) { return ENGINEERS.indexOf(s.assignee) >= 0; });
 const polishDropped = polishAll.filter(function (s) { return ENGINEERS.indexOf(s.assignee) < 0; });
 if (polishDropped.length > 0) {
-  // 資産系 assignee の polish story はこのフェーズの実装対象外 — 黙って捨てず記録（Replan の同型ガードと対称）
-  unresolvedFindings.push('Polish: 資産系 assignee の story ' + polishDropped.map(function (s) { return s.id; }).join(', ') + ' は Polish フェーズの実装対象外（資産の再生成は design/assets.md の状態変更（must-replace/rejected）→ Replan 経由が正 — 未反映なら人間確認が必要）');
+  // engineer 以外の assignee（資産系・非レーン agent・綴り誤り）の polish story はこのフェーズの
+  // 実装対象外 — 黙って捨てず、実際の assignee を明示して記録（「資産系」と断定すると
+  // 綴り誤りのコード story を資産経路の復旧へ誤誘導する）
+  unresolvedFindings.push('Polish: story ' + polishDropped.map(function (s) { return s.id + '（assignee: ' + s.assignee + '）'; }).join(', ') + ' は Polish フェーズの実装対象外（資産系 assignee なら design/assets.md の状態変更（must-replace/rejected）→ Replan 経由が正・engineer の綴り誤り等なら assignee 修正が必要 — 人間確認）');
 }
 if (polishPlan === null) {
   unresolvedFindings.push('Polish: game-designer が計画を返さなかった（polish未実施）');
@@ -1002,7 +1027,8 @@ await parallel([
           '不合格acceptance(story ID): ' + JSON.stringify(myAcceptance) + '（自分の担当分のみ対応。担当外は触らない）\n' +
           '参照: qa/report.md（再現手順・証跡）、state/stories.yaml（該当acceptance）、' + EP.techStackDoc + '（規約: チューニングは ' + EP.configPath + ' のみで）。\n' +
           '修正後 ' + EP.verifyCmd + ' を exit 0 にし、修正内容を qa/report.md の該当バグに追記せよ。修正原因がエンジン/テストランナー起因の一般則（環境の落とし穴）だった場合は、tech-stack 文書の「既知の落とし穴」節へ即時追記せよ（無ければ新設 — gates.md QA-PLAY）。\n' +
-          'git commit -m "QA-PLAY round ' + round + ' fix (' + eng + ')" すること。' + CODE_COMMIT_RULE,
+          'git commit -m "QA-PLAY round ' + round + ' fix (' + eng + ')" すること。' + CODE_COMMIT_RULE + '\n' +
+          IDEMPOTENT_RULE,
           { label: 'qa-fix-' + round + '-' + eng, phase: 'FullQA', agentType: eng, effort: 'high' }
         );
         if (qaFix === null) {
@@ -1013,7 +1039,11 @@ await parallel([
     }
     if (qaVerdict !== 'APPROVE') {
       unresolvedFindings.push(
-        'FullQA: QA-PLAY が上限（review 2回）到達でも非APPROVE（' + (qaVerdict || '判定なし') + '）。' +
+        // qaVerdict === null は qa-lead 失敗による中断（break 済み）— 「2回到達」と書くと
+        // 実施していない round を実施済みと誤読させるため文言を分ける
+        (qaVerdict === null
+          ? 'FullQA: QA-PLAY が判定未取得のまま中断（qa-lead 失敗 — 上限2回は未消化）。'
+          : 'FullQA: QA-PLAY が上限（review 2回）到達でも非APPROVE（' + qaVerdict + '）。') +
         (qaSummary ? ' 理由: ' + qaSummary + '。' : '') +
         (qaFailedAcceptance.length ? ' 不合格acceptance: ' + qaFailedAcceptance.join(', ') + '。' : '') +
         ' 残バグ: ' + (qaBugs.length ? qaBugs.map(function (b) { return '[' + b.severity + '] ' + b.summary; }).join(' / ') : 'qa/report.md 参照')
@@ -1060,7 +1090,8 @@ for (let attempt = 1; attempt <= 2; attempt++) {
   const cdFix = await agentR(
     'CD-CHECKPOINT が REJECT。人間に見せる前に以下を修正せよ（review-loops.md: 修正後1回だけ再判定される）。mustFix(JSON):\n' + JSON.stringify(cd.mustFix || []) + '\n' +
     '提示物（要約・qa/report.md・成果物の整合）を直し、コード修正が必要なら該当engineerの規約（' + EP.techStackDoc + '）に従って最小限で行い typecheck/build 相当（' + EP.verifyCmd + '）を通せ。\n' +
-    '変更した場合は git commit すること。' + CODE_COMMIT_RULE,
+    '変更した場合は git commit すること。' + CODE_COMMIT_RULE + '\n' +
+    IDEMPOTENT_RULE,
     { label: 'cd-fix', phase: 'Final', agentType: 'tech-director', effort: 'high' }
   );
   if (cdFix === null) {
