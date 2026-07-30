@@ -12,7 +12,7 @@ paths: ["game/assets/**", "game/_generated/**"]
 - **Do**: ファイル名は kebab-case + 種別プレフィクス。`sprite-`（キャラ/オブジェクト画像）/ `tile-`（タイル/背景）/ `ui-`（UI画像）/ `sfx-`（効果音）/ `bgm-`（音楽）/ `model-`（3Dモデル）/ `anim-`（スケルタルアニメーション）
   - 例: `sprite-hero-idle.png` `tile-forest-ground.png` `ui-button-start.png` `sfx-jump.ogg` `bgm-stage-1.ogg` `model-hero.fbx` `anim-hero-run.fbx`
 - **Don't**: `Hero.png` `enemy_01.png` `jump sound.ogg` のような camelCase・snake_case・空白・プレフィクス無しの名前を使わない
-- **Do**: 資産の追加・差し替え・リタッチのたびに MANIFEST（当該エンジンの正本パス — contract §6）へ1行追記する。必須フィールド: `file` `provider` `model` `prompt` `seed` `style_codes` `cost_usd` `plan_tier` `sha256` `license` `generated_at`。プレースホルダは加えて `"must_replace": true`
+- **Do**: 資産の追加・差し替え・リタッチのたびに MANIFEST（当該エンジンの正本パス — contract §6）へ1行追記する。必須フィールド: `file` `provider` `model` `prompt` `seed` `style_codes` `cost_usd` `plan_tier` `sha256` `license` `generated_at`。プロバイダ固有の表記条項がある場合（Ideogram 表記条項 / Hunyuan3D Territory / ElevenLabs Studio Games 等）は `license_note` も必須（assets-config.md「Provenance」）。プレースホルダは加えて `"must_replace": true`
 - **Don't**: MANIFEST 追記なしの資産配置禁止（予算強制・Steam AI 開示・著作権防御が全部これに依存する）。既存行の書き換え・削除も禁止（追記のみ）
 - **Don't**: `"must_replace": true` の資産を残したまま出荷（Checkpoint C / stage=done）しない。ビルド前に MANIFEST を走査し、残っていれば差し替えてから進む
 - **Don't**: 白背景（不透明背景）PNG のスプライト/UI 画像を配置しない。全画像はアルファチャンネル必須で、配置前に機械検証する

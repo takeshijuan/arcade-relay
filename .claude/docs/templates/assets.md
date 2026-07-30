@@ -23,7 +23,11 @@
 ## 画像
 
 <!-- スプライト/UI/背景/タイルセット。各行のガイド:
-     - ファイル名: game/assets/ 配下の相対パス。テクスチャキーは src/config.ts の ASSET_KEYS で管理
+     - ファイル名: エンジン別 raw 置き場（contract §6: phaser=game/assets/ / unity・unreal=game/_generated/）配下の
+       相対パス。kebab-case+種別プレフィクス必須（rules/assets.md）: sprite-（キャラ/オブジェクト）/
+       tile-（タイル/背景）/ ui-（UI）。例: sprite-hero-idle.png / tile-forest-ground.png / ui-button-start.png
+       （E2 でテンプレ例由来の img- 系命名が全画像に波及した再発防止 — retro-e2 指摘8）。
+       テクスチャキーはエンジン別 config 正本の ASSET_KEYS で管理
      - サイズ: 生成解像度で書く（art-bible.md の解像度方針と一致）。
        スプライトシートは「フレームサイズ x フレーム数」（例: 512x512 x4）
      - P-xx: この資産が支えるピラー。1つも書けない資産は作らない
@@ -36,6 +40,7 @@
 ## SFX
 
 <!-- 効果音。各行のガイド:
+     - ファイル名は sfx- プレフィクス必須（rules/assets.md。例: sfx-jump.ogg）
      - サイズ列には長さ（秒）を書く。ElevenLabs SFX v2 は duration_seconds 明示（0.5〜30s）
      - プロンプト草案は「音の質感＋トリガーとなるゲーム内事象」（例: 「短い上昇チャイム、コイン取得」）
      - ループ素材（環境音など）は草案末尾に loop:true と明記
@@ -48,6 +53,7 @@
 ## BGM
 
 <!-- 楽曲。基本8列に加えループ要件・長さ・BPM/キーの指定欄を持つ。ガイド:
+     - ファイル名は bgm- プレフィクス必須（rules/assets.md。例: bgm-stage-1.ogg）
      - ループ要件: seamless（小節境界で完全ループ・生成後にループ検証必須）/ oneshot
      - 長さ: 秒数。ループ曲は1ループの長さ（BPM と小節数から割り切れる値にする）
      - BPM/キー: 全曲で固定方針（assets-config.md「音楽はジャンル/BPM/キー固定」）。
@@ -75,11 +81,12 @@
 ## スケルタルアニメーション（engine=unity/unreal のみ。phaser では節ごと削除）
 
 <!-- 対象 MDL に付けるアニメクリップ。ルート primary = Meshy アニメプリセット（action_id）。
+     ファイル名は anim- プレフィクス必須（rules/assets.md。例: anim-hero-run.fbx）。
      ローカル縮退はコードモーション（must-replace）。 -->
 
-| id | 対象 MDL | クリップ名 | 内容（例: walk / run / idle） | P-xx | ルート | 状態 |
-|---|---|---|---|---|---|---|
-| ANM-01 | MDL-01 | | | | primary | planned |
+| id | 対象 MDL | ファイル名 | クリップ名 | 内容（例: walk / run / idle） | P-xx | ルート | 状態 |
+|---|---|---|---|---|---|---|---|
+| ANM-01 | MDL-01 | | | | | primary | planned |
 
 ## 集計と予算
 
