@@ -7,6 +7,56 @@ artifact contracts stabilize.
 
 ## [Unreleased]
 
+## [0.4.1.0] - 2026-07-30
+
+### Fixed
+
+- Parallel-lane failures can no longer vanish silently: every lane/track thunk
+  in the three workflow scripts is wrapped in an exception guard (`laneSafe`)
+  that records a `[BLOCKER]` unresolved finding — covering the Build/Polish
+  assignee lanes, all AssetGen tracks, and the FullQA asset-audit and QA-PLAY
+  tracks — instead of being swallowed by `parallel()`'s null-potting.
+- Seven previously unrecorded agent-failure paths now reach the human
+  checkpoint: story close after CR-CODE APPROVE, CR-CODE fix, Replan GDD
+  revision, QA fixes, CD reject-fix (full-build), CD re-judgment (prototype),
+  and per-instruction CD fixes (concept-design). Batch style-drift verdicts
+  with an empty failure list also stop being dropped without a trace.
+- Replan asset stories are routed to generation batches tag-first
+  (`[MDL]/[ANM]/[IMG]/[SFX]/[BGM]` title tags) with a case-insensitive
+  vocabulary fallback that now also matches English tokens (fbx/glb/rig/mesh).
+  2D engines no longer silently lose tagged 3D stories, vocabulary
+  false-positives can no longer steal image stories on 2D engines, mismatched
+  tag/assignee combinations are recorded, and Polish plans that emit asset
+  stories are flagged instead of dropped.
+- Resume safety: an idempotency guard on the impl/fix/close/bookkeep/integrate
+  prompts prevents duplicate commits and config entries when a workflow is
+  resumed — scoped so a past iteration's commit never excuses skipping newly
+  requested work — and QA fix labels are unique per bug, so a cached fix can
+  no longer shadow a second same-round bug.
+- Judgment-prompt hardening: unresolved findings are newline-flattened before
+  injection into the Checkpoint B judgment prompt, closing a line-injection
+  path from external asset-API error text; a missing story id can no longer
+  crash an entire implementation lane.
+
+### Added
+
+- QA-PLAY now verifies that settings are effective — volume changes must be
+  wired to actual audio output and persist across restart (display-only
+  settings UIs fail the gate) — and machine-checks UI text readability
+  (SUSPECT_LOW_CONTRAST crop + stddev screen before eyeballing), closing two
+  escapes observed in the E2/E3 runs.
+- Provenance: provider-specific disclosure obligations (Ideogram's in-app AI
+  notice, Hunyuan3D territory limits, ElevenLabs "Studio Games" clause) must
+  be transcribed into a `license_note` MANIFEST field, wired through the
+  generation prompts and the FullQA asset audit.
+- The asset-manifest template now states the canonical filename prefixes
+  (sprite-/tile-/ui-/sfx-/bgm-/anim-) per section and gains a filename column
+  for animation entries, preventing naming drift at authoring time.
+- Workflow DSL stub tests grew from 31 to 57 cases, including two new suites:
+  contract-sync (machine-verifies contract §8 asset kinds and state
+  vocabulary, the readability threshold, and the `license_note` wiring against
+  the script prompts) and concept-design coverage.
+
 ## [0.4.0.0] - 2026-07-24
 
 ### Added
