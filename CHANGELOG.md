@@ -12,10 +12,12 @@ artifact contracts stabilize.
 ### Fixed
 
 - Parallel-lane failures can no longer vanish silently: every lane/track thunk
-  in the three workflow scripts is wrapped in an exception guard (`laneSafe`)
-  that records a `[BLOCKER]` unresolved finding — covering the Build/Polish
-  assignee lanes, all AssetGen tracks, and the FullQA asset-audit and QA-PLAY
-  tracks — instead of being swallowed by `parallel()`'s null-potting.
+  in the prototype and full-build workflows is wrapped in an exception guard
+  (`laneSafe`) that records a `[BLOCKER]` unresolved finding — covering the
+  Build/Polish assignee lanes, all AssetGen tracks, and the FullQA asset-audit
+  and QA-PLAY tracks — instead of being swallowed by `parallel()`'s
+  null-potting (concept-design has no parallel lanes; its failed CD fixes are
+  recorded via null-result bookkeeping).
 - Seven previously unrecorded agent-failure paths now reach the human
   checkpoint: story close after CR-CODE APPROVE, CR-CODE fix, Replan GDD
   revision, QA fixes, CD reject-fix (full-build), CD re-judgment (prototype),
