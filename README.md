@@ -60,7 +60,10 @@ by evaluation runs are archived separately.
 ## Requirements
 
 - Claude Code with local skill and workflow support.
-- Node.js only when running or validating a generated phaser `game/` project.
+- Node.js when running the workflow DSL stub tests (see Verification below) and
+  when running or validating a generated phaser `game/` project.
+- ImageMagick (`magick` CLI) during harness runs for QA-PLAY visual-evidence
+  checks (blank-frame and UI-text low-contrast screening).
 - Unity 6 LTS (installed via Unity Hub) only for unity runs; Unreal Engine 5.x
   only for unreal runs. The brainstorm preflight resolves and pins the editor
   path in `state/engine-info.json`.
@@ -123,12 +126,14 @@ Review intensity is controlled by `state/review-mode.txt`:
 ## Asset and License Notes
 
 ArcadeRelay source code and documentation are licensed under MIT. Generated games
-and generated assets may have additional provider-specific terms. Every accepted
-asset should be recorded in the engine's manifest — `game/assets/MANIFEST.jsonl`
-for phaser, `game/_generated/MANIFEST.jsonl` for unity/unreal — with provenance,
-provider, model, prompt, cost, hash, and license fields, plus a `license_note`
-field transcribing provider-specific disclosure obligations where they apply
-(for example Ideogram's in-app AI notice).
+and generated assets may have additional provider-specific terms. Every generated
+asset — on every addition, replacement, or retouch, including placeholders —
+must be recorded in the engine's manifest: `game/assets/MANIFEST.jsonl` for
+phaser, `game/_generated/MANIFEST.jsonl` for unity/unreal. Each entry carries
+provenance fields (provider, model, prompt, seed, cost, plan tier, hash,
+license, generation timestamp), plus a `license_note` field transcribing
+provider-specific disclosure obligations where they apply (for example
+Ideogram's in-app AI notice).
 
 Do not commit `.env` or API keys. The repository only includes `.env.example`.
 
