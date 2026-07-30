@@ -126,7 +126,9 @@ ArcadeRelay source code and documentation are licensed under MIT. Generated game
 and generated assets may have additional provider-specific terms. Every accepted
 asset should be recorded in the engine's manifest — `game/assets/MANIFEST.jsonl`
 for phaser, `game/_generated/MANIFEST.jsonl` for unity/unreal — with provenance,
-provider, model, prompt, cost, hash, and license fields.
+provider, model, prompt, cost, hash, and license fields, plus a `license_note`
+field transcribing provider-specific disclosure obligations where they apply
+(for example Ideogram's in-app AI notice).
 
 Do not commit `.env` or API keys. The repository only includes `.env.example`.
 
