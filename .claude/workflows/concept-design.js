@@ -479,6 +479,12 @@ if (!cd) {
       }));
       const doneCount = fixResults.filter(Boolean).length;
       log('CD-CHECKPOINT 修正: ' + doneCount + '/' + fixes.length + ' 件完了');
+      // 失敗した個別 fix 指示を無記録にしない（doneCount の log だけでは人間に届かない — 監査指摘）
+      fixResults.forEach(function (r, idx) {
+        if (r === null || r === undefined) {
+          unresolved.push('CD-CHECKPOINT: 修正指示「[' + fixes[idx].assignee + '] ' + fixes[idx].artifact + ' — ' + fixes[idx].instruction + '」の fix agent が失敗（未対応の可能性）');
+        }
+      });
 
       const fixRecord = await agentR(
         [
