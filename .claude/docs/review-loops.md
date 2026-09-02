@@ -18,6 +18,7 @@ if MAX_ITER到達かつ非APPROVE:
 
 - レビュー履歴は必ず `state/reviews/<artifact>.md` に**追記**する（iteration番号・verdict・指摘要約・日時）
 - reviser は指摘への対応/非対応を明記する（黙殺禁止）
+- **段階エスカレーション（model-routing.md §2）**: MAX_ITER 内の最終 revise（直前の revise が実行済みの場合）は judge 階層（opus）で行う。上の「エスカレーション」（MAX_ITER 到達後の人間提示）とは別概念。最終 revise は再レビューされないため、Checkpoint に載る残指摘は revise 前の指摘 — QA-PLAY / バッチ検証が機能面の backstop
 
 ## 対応表
 

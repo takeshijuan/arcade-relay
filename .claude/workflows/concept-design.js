@@ -103,6 +103,9 @@ const TIER = { judge: 'opus', producer: 'sonnet', mechanical: 'haiku' };
 function withTier(opts, cond, tier) {
   return cond ? Object.assign({}, opts, { model: tier }) : opts;
 }
+// 段階エスカレーション（judge 階層）の revise プロンプト注記。review-loops.md の「エスカレーション」（MAX_ITER 到達後の
+// 人間提示）とは別概念のため「段階エスカレーション」と呼び分ける（model-routing.md §2）
+const JUDGE_ESCALATION_NOTE = '【段階エスカレーション（judge 階層）: 前回の修正で解消しなかった指摘 — 対症療法ではなく根本原因から直せ。見送る場合は理由を state/reviews に明記せよ】';
 
 // ---------------------------------------------------------------------------
 // transient エラー（safety classifier 一時失敗等）への1回だけの自動リトライ（retro-e3 指摘5）。
@@ -183,13 +186,13 @@ async function reviewLoop(opts) {
     // 非APPROVE は最終 iteration でも revise を1回実行してからエスカレーション（review-loops.md の共通形）
     const revised = await agentR(
       [
-        (i === maxIter ? '【エスカレーション（judge 階層）: 最終 iteration。前回の修正で解消しなかった指摘 — 対症療法ではなく根本原因から直せ。見送る場合は理由を state/reviews に明記せよ】' : ''),
+        (i === maxIter ? JUDGE_ESCALATION_NOTE : ''), // reviewLoop は review 失敗で break するため i>1 なら前回 revise は実行済み
         'Gate ' + gateId + ' の判定が ' + review.verdict + ' だった。成果物を revise せよ。',
         '1. ' + reviewFile + ' を読み、最新の「## ' + gateId + ' iteration ' + i + '」の指摘を確認せよ。',
         '2. 対象: ' + artifactPaths.join(' / ') + ' を修正せよ。参照コンテキスト: ' + producerContextPaths.join(' / ') + '。',
         '3. 各指摘への対応/見送り＋理由を ' + reviewFile + ' の該当 iteration の「対応:」欄に追記せよ（黙殺禁止）。'
       ].filter(Boolean).join('\n'),
-      // 最終 iteration の revise は judge 階層へエスカレーション（model-routing.md §2）
+      // 最終 iteration の revise は judge 階層へ段階エスカレーション（model-routing.md §2）
       withTier({ agentType: producerType, label: gateId + ' revise #' + i, phase: phaseTitle, effort: 'high' }, i === maxIter, TIER.judge)
     );
 
@@ -249,13 +252,18 @@ log('concept-design 開始: brief=' + briefPath + ' / engine=' + engine + ' / re
 
 const unresolved = [];
 const verdictHistory = [];
-// トークン計測（model-routing.md §5）: phase 境界で budget.spent()（この turn の出力トークン累計 — メインループと
-// 全 workflow の共有カウンタ。/forge 系スキルは workflow を直列に1本ずつ起動するため差分≒この workflow の phase 消費）を
-// 記録し戻り値 tokenUsage に含める。スキルが Checkpoint 提示に phase 別消費として添える
+// トークン計測（model-routing.md §5）: phase 境界と終端（tokenEnd）で budget.spent() を記録し戻り値 tokenUsage に含める。
+// budget.spent() は「この turn の出力トークン累計」— メインループと全 workflow の共有カウンタで、入力トークン・モデル単価は
+// 含まない。/forge 系スキルは workflow を直列に1本ずつ起動するため隣接記録の差分≒その phase の出力トークン。
+// resume（キャッシュ replay）時は再生分の消費が 0 として記録される — スキルは再開ランの値を run 間比較に使わない
 const tokenUsage = [];
 function phaseT(title) {
   tokenUsage.push({ phase: title, outputTokensBefore: budget.spent() });
   phase(title);
+}
+function tokenEnd() {
+  tokenUsage.push({ phase: 'end', outputTokensBefore: budget.spent() });
+  return tokenUsage;
 }
 
 // ---- Phase 1: Concept -------------------------------------------------
@@ -574,6 +582,6 @@ return {
   keyImageCandidates: keyImageCandidates,
   unresolvedFindings: unresolved,
   verdictHistory: verdictHistory,
-  tokenUsage: tokenUsage,
+  tokenUsage: tokenEnd(),
   verdict: verdict
 };

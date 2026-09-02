@@ -12,16 +12,14 @@ allowed-tools: Read, Glob, Grep, Write, Edit, Bash, Task, Workflow, AskUserQuest
 
 ## オーケストレータ規約（`.claude/docs/model-routing.md` §3）
 
-このスキルを実行するメインセッションは**オーケストレータ**（最高価格帯モデル）である。自分で行うのは「判断と人間接点」だけ: 再開位置の決定・矛盾検出の裁定・AskUserQuestion・`state/stage.txt` 書込・PushNotification・提示文の最終確認。
-以下は **Task ツール（`subagent_type: general-purpose`）のサブエージェントに委譲**し、返ってきた構造化サマリだけを読む（生の curl 出力・MANIFEST 全行をオーケストレータの文脈に入れない）。指示には該当 Phase の手順本文（コマンド・スキーマ・判定規則）をそのまま含める。AskUserQuestion・stage 書込・通知はサブエージェントに行わせない:
+このスキルを実行するメインセッションは**オーケストレータ**である。自分で行うのは「判断と人間接点」と「改竄不能であるべき観測」: 再開位置の決定・矛盾検出の裁定・AskUserQuestion・`state/stage.txt` 書込・PushNotification・提示文の最終確認・単発コマンドの実行（エンジン実体パスの解決、`jq` 1 行のコスト集計 — Task を起こすより安く、幻覚の余地が無い）。
+**Task ツール（`subagent_type: general-purpose`）に委譲する**のは preflight（Phase 1 手順 1〜4）のみ。返ってきた構造化サマリだけを読み（生の curl 出力をオーケストレータの文脈に入れない）、指示には該当手順の本文（コマンド・スキーマ・判定規則）をそのまま含める:
 
-| 作業 | model | 返させるもの |
+| 作業 | model | 返させるもの・制約 |
 |---|---|---|
-| Phase 1 手順 1〜4（キー ping・プラン判定・`state/asset-routing.json` 生成） | `sonnet` | 書き出した JSON の `checks` / `routes` / `shippable` / `notes` の要約と、手順 5 の AskUserQuestion が必要な欠落（FAL 系全滅 / ElevenLabs 無し・Free）の有無 |
-| Phase 2.5 手順 1〜2（Unity Hub CLI / RunUAT.sh 解決・`state/engine-info.json` 書出） | `haiku` | 解決結果（version / binary）または「無し」と AskUserQuestion 要否 |
-| Phase 6 手順 1〜2（コスト集計・ライセンスフラグ抽出） | `haiku` | 合計 USD / 予算 / フラグ一覧 / must_replace 一覧 |
+| Phase 1 手順 1〜4（キー ping・プラン判定・`state/asset-routing.json` 生成） | `sonnet` | 書き出した JSON の `checks` / `routes` / `shippable` / `notes` の要約と、手順 5 の AskUserQuestion が必要な欠落（FAL 系全滅 / ElevenLabs 無し・Free）の有無。**キー値を返却・`notes`・JSON に一切書かない**（contract §10 — `.env` の内容を要約に含めない）。**AskUserQuestion を使わない**（判断はオーケストレータ） |
 
-サブスキル（forge-concept / forge-prototype / forge-build）も同じ規約を持つ。ワークフロー内の agent 階層はスクリプト側で固定済み。
+サブスキル（forge-concept / forge-prototype / forge-build）は Checkpoint 提示文の下書きだけを読み取り専用の Task に委譲する。ワークフロー内の agent 階層はスクリプト側で固定済み。
 
 ## Phase 0: 前提確認・再開位置決定（冪等）
 
@@ -41,7 +39,7 @@ allowed-tools: Read, Glob, Grep, Write, Edit, Bash, Task, Workflow, AskUserQuest
 
 ## Phase 1: preflight（キー検証・ルーティング決定・状態初期化）
 
-**実行主体**: スキップ判定（次段落）はオーケストレータ。手順 1〜4 は Task（general-purpose, `model: sonnet`）へ委譲し、手順 5（AskUserQuestion）と手順 6 はオーケストレータが行う（オーケストレータ規約）。
+**実行主体**: スキップ判定（次段落）はオーケストレータ。手順 1〜4 は Task（general-purpose, `model: sonnet`。キー値を返させない・AskUserQuestion 禁止 — オーケストレータ規約）へ委譲し、手順 5（AskUserQuestion）と手順 6 はオーケストレータが行う。
 
 `state/asset-routing.json` が既に存在すれば**このPhaseをスキップ**する（生成中のルート再判定禁止 — contract.md §10）。**ただし既存ファイルに `shippable` キーが無い（旧スキーマ）場合はスキップせず再生成する**（旧形式のまま生成レーンが参照すると全ルートが事実上出荷可扱いになるため）。
 
@@ -141,6 +139,7 @@ curl -s -H "xi-api-key: $ELEVENLABS_API_KEY" \
 6. 状態初期化（既存ファイルは上書きしない＝冪等）:
 
 ```bash
+set -a; source .env 2>/dev/null; set +a   # ASSET_BUDGET_USD を読む（Bash 呼び出しごとにシェルは新規 — 手順 2 の source は引き継がれない。キー値は echo しない）
 mkdir -p state
 [ -s state/budget.txt ]      || echo "${ASSET_BUDGET_USD:-20}" > state/budget.txt
 [ -s state/review-mode.txt ] || echo "lean" > state/review-mode.txt
@@ -152,8 +151,6 @@ mkdir -p state
 2. 完了検証: `design/brief.md` が存在し、`state/stage.txt` が `brief`、`state/engine.txt` が contract §11 の3値のいずれかになっていること。なっていなければ成果物存在を確認の上 `brief` を書き込み、engine.txt が無ければ brief の実行環境セクションから復元する（自己修復）。**brief からも復元できない場合は phaser に黙って倒さず**、AskUserQuestion でエンジンを確認してから書き込む（エンジンは以降変更禁止の最重要分岐 — contract §11）。
 
 ## Phase 2.5: エンジン preflight（engine=unity/unreal のみ。冪等）
-
-**実行主体**: 手順 1〜2 の解決・書出は Task（general-purpose, `model: haiku`）へ委譲。エディタ/エンジン不在時の AskUserQuestion はオーケストレータが行う。
 
 `state/engine.txt` が `phaser`（または無い）ならスキップ。`state/engine-info.json` が既に存在し binary が実在するならスキップ。
 
@@ -193,8 +190,6 @@ Skill ツールで `forge-build` を起動する。完了条件: フルQA合格�
 
 前提: stage が `done`（forge-build が Checkpoint C 提示・受領確認・`done` 書き込みまで完了済み）。forge-build の Checkpoint C と重複する提示 — `qa/report.md` の SendUserFile・PushNotification・`state/stage.txt` への書き込み — は**再実行しない**。ここでは最終要約の再掲と補足のみを行う。
 
-**実行主体**: 手順 1〜2 は Task（general-purpose, `model: haiku`）へ委譲し、合計 USD・予算・フラグ一覧・must_replace 一覧の構造化サマリを受け取る。手順 3〜4 はオーケストレータ。
-
 1. コスト集計と予算照合（MANIFEST パスはエンジン別 — contract §6。以下 `$MANIFEST` = phaser: `game/assets/MANIFEST.jsonl` / unity・unreal: `game/_generated/MANIFEST.jsonl`）:
 
 ```bash
@@ -215,5 +210,5 @@ jq -c 'select(.license != "commercial-ok" or .must_replace == true)' "$MANIFEST"
    - **コスト**: MANIFEST 合計 vs `state/budget.txt`。
    - **ライセンスフラグ**: 手順2の列挙 + `must_replace` 資産があれば差し替え指示。
    - **未解決事項**: `state/reviews/` で MAX_ITER 到達のまま非APPROVEの指摘一覧。
-   - **トークン消費**: 各フェーズの戻り値 `tokenUsage`（phase 別出力トークン）を `state/active.md` に記録済みなら再掲（model-routing.md §5 — 階層変更の効果を run 間で比較する材料）。
+   - **トークン消費**: 各フェーズの戻り値 `tokenUsage`（phase 別出力トークン・終端 `end` 込み）を `state/active.md` に記録済みなら再掲（model-routing.md §5 — 出力トークンのみ・再開ランは比較に使わない）。
 4. `state/active.md` を「受け渡し完了」で更新する（forge-build が更新済みなら差分のみ追記。`state/stage.txt` は forge-build が書き込み済みのため触れない）。

@@ -82,6 +82,7 @@ Question→Options→Decision→Draft→Approval の順で進めるが、**自�
 - `.claude/docs/contract.md` — 命名・ID・パス・stories.yaml スキーマの正本
 - `.claude/docs/tech-stack.md` / `tech-stack-unity.md` / `tech-stack-unreal.md` — 7規約・ディレクトリ構造・検証コマンドの正本（`state/engine.txt` に対応する1本を読む。unity/unreal は `rules/unity-code.md` / `rules/unreal-code.md` も併読）
 - `.claude/docs/review-loops.md` — CR-CODE ループ（MAX_ITER 2）と state/reviews/ 追記形式
+- `.claude/docs/gates.md` — CR-CODE の silent-failure パターン・QA-PLAY 観点（設定の実効性・永続化・視覚証跡）と「既知の落とし穴」即時追記の規約（CLAUDE.md からは自動 import されない — 必ずパスで読む）
 
 ゲームごとに読む:
 

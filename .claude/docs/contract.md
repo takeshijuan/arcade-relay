@@ -195,12 +195,6 @@ phaser | unity | unreal
 
 ## 12. モデル階層（正本: `.claude/docs/model-routing.md`）
 
-メインセッション（最高価格帯）は**オーケストレータ** — 判断と人間接点（再開位置決定・AskUserQuestion・`state/stage.txt` 書込・通知・Checkpoint 提示）だけを行い、実作業はサブエージェントへ委譲する。
+メインセッションは**オーケストレータ** — 判断と人間接点（再開位置決定・AskUserQuestion・`state/stage.txt` 書込・通知・Checkpoint 提示・検証コマンドの exit code 観測）だけを行い、実作業は 3 階層のサブエージェント（`judge`=opus / `producer`=sonnet / `mechanical`=haiku。agent 別割当は model-routing.md §1）へ委譲する。
 
-| tier | model | 担当（§2 の agent） |
-|---|---|---|
-| `judge` | opus | creative-director / design-reviewer / tech-director（＋段階的エスカレーション先） |
-| `producer` | sonnet | game-designer / art-director / audio-designer / gameplay-engineer / ui-engineer / qa-lead / art-reviewer / 外部 reviewer（`pr-review-toolkit:*` は workflow が `model` を明示） |
-| `mechanical` | haiku | 専用 agent 無し。workflow が呼び出し単位で `model`+`effort: 'low'` を明示（実在確認・突合・status/active.md 更新・抽出） |
-
-規則: (1) workflow の全 `agent()` 呼び出しはセッションモデルを継承しない（`agentType` が §2 の 10 体、または `model` 明示）。(2) 安い階層で失敗した箇所だけ judge へ段階エスカレーション（CR-CODE 最終 fix / QA fix / batch-verify 再試行 / reviewLoop 最終 revise — model-routing.md §2）。(3) スキルは検証コマンド・集計・提示文下書きを Task に委譲し、サマリだけを読む（同 §3）。(4) 各 workflow は戻り値に `tokenUsage`（phase 別出力トークン）を含める（同 §5）。
+規則: (1) workflow の全 `agent()` 呼び出しはセッションモデルを継承しない（`agentType` が §2 の 10 体、または `model` 明示。外部 reviewer は `model` 必須）。(2) 安い階層で失敗した箇所だけ judge へ段階エスカレーション（CR-CODE 最終 fix / QA fix / batch-verify 再試行 / reviewLoop 最終 revise — model-routing.md §2。review-loops.md の「エスカレーション」＝人間提示とは別概念）。(3) スキルは preflight と Checkpoint 下書きのみ Task に委譲し、検証コマンドは自分の Bash で実行する（同 §3）。(4) 各 workflow は戻り値に `tokenUsage`（phase 境界＋終端の出力トークン累計）を含める（同 §5）。

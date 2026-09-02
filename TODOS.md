@@ -2,6 +2,14 @@
 
 ## Harness (ArcadeRelay)
 
+### prototype QA fix の assignee 単位バッチ化 + contract.md の常駐部分分割
+**What:** (1) prototype.js の QA fix を full-build.js と同じ「assignee ごとに bugs JSON を渡す 1 呼び出し」に揃え、opus セッション数とコンテキスト読込・検証コマンド実行を 1/3 にする（label は round+assignee で resume 安全を維持）。(2) contract.md（唯一の自動 import ≈19KB）から §6/§10/§11（セーブ規約・資産ルーティング・エンジン規則）を engineer/qa/art 系だけが読む別文書に分け、全 agent の常駐文脈を半減する。
+**Why:** v0.5.0.0 のレビュー（efficiency / altitude 観点）で残った最大の削減余地。QA fix は judge 階層（opus）で走るため件数削減の効果が大きい。
+**Context:** `.claude/docs/design-2026-09-02-model-routing.md`「見送り・未検証」。(1) は M-8a/b テストの前提変更を伴う。
+**Effort:** M
+**Priority:** P2
+**Depends on:** 次ラン（E4）の tokenUsage 実測
+
 ### 依存グラフ並列（retro-e2 案C — 案A+B の次段）
 **What:** stories.yaml に `depends_on: [S-xx]` を宣言し、独立 story を assignee 跨ぎで最大 N 並列化する（実装済みの assignee 2レーンの一般化）。
 **Why:** 案A+B（assignee レーン並走 + 検証バッチ化）は 2026-07-21 実装済み。さらに縮めるには依存グラフが要る。

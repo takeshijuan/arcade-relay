@@ -12,35 +12,50 @@ artifact contracts stabilize.
 ### Added
 
 - Model-tier routing (`.claude/docs/model-routing.md`, contract §12): the main
-  session is an orchestrator that only makes decisions and talks to the
-  human; subagents run in three tiers — judge (opus: creative-director /
-  design-reviewer / tech-director), producer (sonnet: designers, engineers,
-  qa-lead, art-reviewer, external code reviewers) and mechanical (haiku:
-  evidence checks, story crosscheck, bookkeeping, finalize/extract).
-- Staged escalation: the final CR-CODE fix iteration, every QA-PLAY fix, a
-  failed batch-verify (one retry, `-escalate` label, fixedNotes merged) and the
-  final reviewLoop revise (DR-CONCEPT / DR-GDD / AR-BIBLE) are re-run on the
-  judge tier instead of repeating the same failure on the cheaper tier.
-- Token telemetry: every workflow records `budget.spent()` at each phase
-  boundary and returns `tokenUsage`; the forge skills show it at checkpoints.
-- `model-routing.test.mjs`: tier table ↔ agent frontmatter sync, TIER
-  constants sync, the "no agent() call inherits the session model" invariant
-  for all three workflows, mechanical labels = haiku + effort low, escalation
-  wiring, and the CLAUDE.md auto-import guard.
+  session is an orchestrator that only makes decisions, talks to the human and
+  observes verification exit codes; subagents run in three tiers — judge
+  (opus: creative-director / design-reviewer / tech-director), producer
+  (sonnet: designers, engineers, qa-lead, art-reviewer, external code
+  reviewers) and mechanical (haiku: evidence checks, story crosscheck,
+  finalize-state).
+- Staged escalation to the judge tier: the final CR-CODE fix iteration (only
+  when a previous fix actually ran), every QA-PLAY fix, one batch-verify retry
+  on failure / unresolved / null (fail-closed merge: the first attempt's
+  `unresolved` items survive unless the retry lists them in `resolvedPrior`),
+  and the final reviewLoop revise (DR-CONCEPT / DR-GDD / AR-BIBLE).
+- Token telemetry: workflows record `budget.spent()` at each phase boundary
+  and at the end, return `tokenUsage`, and the forge skills show it at
+  checkpoints (full-build gains a `Build` boundary before the parallel block).
+- Evidence verification requires a raw `ls -l`/`stat` line per file
+  (`rawLine`) that the workflow matches against the path, so a mechanical-tier
+  verifier cannot pass fabricated checks.
+- `model-routing.test.mjs` (22 tests): tier table ↔ agent frontmatter sync,
+  TIER constant sync, the "no agent() call inherits the session model"
+  invariant for phaser and unity runs of all workflows, mechanical labels,
+  escalation wiring incl. fail-closed merge cases, acceptance partitioning,
+  rawLine enforcement, tokenUsage phase list + terminal sample, and the
+  CLAUDE.md auto-import guard.
 
 ### Changed
 
 - Workflow `agent()` calls that used to inherit the session model
   (verify-evidence, setup-crosscheck, `pr-review-toolkit:*` reviewers) now
-  carry an explicit model; bookkeeping-style calls moved to haiku.
-- `/forge`, `/forge-concept`, `/forge-prototype`, `/forge-build` delegate
-  preflight pings, engine resolution, verification commands, cost/license
-  aggregation and checkpoint drafting to Task subagents and read only the
-  structured summary.
+  carry an explicit model; external reviewers are told the paths of
+  `gates.md` / `review-loops.md` since they are no longer auto-imported.
+- full-build QA fixes receive only the failed acceptance items owned by their
+  assignee instead of the whole list.
+- `/forge` delegates only the preflight pings to a Task subagent (key values
+  must not be echoed); `/forge-concept`, `/forge-prototype`, `/forge-build`
+  delegate only the checkpoint draft to a read-only Explore subagent and
+  reconcile it against the workflow's returned findings. Verification
+  commands, cost aggregation and engine-path resolution stay in the
+  orchestrator's own Bash.
 - `CLAUDE.md` auto-imports only `contract.md`; review-loops / tech-stack /
   assets-config / pipeline / gates are path references read by the agents
-  that need them (they no longer sit in every agent's and every turn's
-  context).
+  that need them. gameplay-engineer / ui-engineer reference lists now include
+  `gates.md`.
+- review-loops.md documents the judge-tier final revise as a distinct concept
+  from the human-facing escalation.
 
 ## [0.4.1.0] - 2026-07-30
 

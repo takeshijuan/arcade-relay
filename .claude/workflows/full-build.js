@@ -21,6 +21,7 @@ export const meta = {
 
 const DOCS = '.claude/docs';
 const ENGINEERS = ['gameplay-engineer', 'ui-engineer'];
+const CR_CODE_MAX_ITER = 2; // review-loops.md: CR-CODE MAX_ITER 2（最終 iteration の fix は段階エスカレーションで judge 階層 — model-routing.md §2）
 
 // ---------- コミット規律（D-05: story毎commit + パス限定add + index.lockリトライ） ----------
 // CODE_COMMIT_RULE / ASSET_COMMIT_RULE はエンジン別パスを含むため、
@@ -40,6 +41,10 @@ const TIER = { judge: 'opus', producer: 'sonnet', mechanical: 'haiku' };
 function withTier(opts, cond, tier) {
   return cond ? Object.assign({}, opts, { model: tier }) : opts;
 }
+// 段階エスカレーション（judge 階層）の fix プロンプト注記。review-loops.md の「エスカレーション」（MAX_ITER 到達後の
+// 人間提示）とは別概念のため「段階エスカレーション」と呼び分ける（model-routing.md §2）
+const JUDGE_ESCALATION_NOTE = '【段階エスカレーション（judge 階層）: 前回の修正で解消しなかった指摘 — 対症療法ではなく根本原因から直せ。見送る場合は理由を state/reviews に明記せよ】';
+const QA_FIX_NOTE = '【judge 階層で実施 — QA fix は人間エスカレーション前の唯一の修正機会。根本原因から直せ】';
 
 // ---------- agentR: agent() null の1回自動リトライ ----------
 // transient エラー（safety classifier 一時失敗等）への1回だけの自動リトライ（retro-e3 指摘5）。
@@ -183,12 +188,13 @@ const EVIDENCE_CHECK_SCHEMA = {
       type: 'array',
       items: {
         type: 'object',
-        required: ['path', 'exists', 'nonEmpty'],
+        required: ['path', 'exists', 'nonEmpty', 'rawLine'],
         properties: {
           path: { type: 'string' },
           exists: { type: 'boolean' },
           nonEmpty: { type: 'boolean' },
-          bytes: { type: 'number' }
+          bytes: { type: 'number' },
+          rawLine: { type: 'string', description: '`ls -l <path>`（または stat）の実行出力行をそのまま。workflow がパス名の一致を突合する（自己申告の擬装防止）' }
         }
       }
     },
@@ -229,13 +235,18 @@ const reviewMode = ARGS.reviewMode ? String(ARGS.reviewMode) : 'lean';
 const feedbackPath = ARGS.checkpointBFeedbackPath ? String(ARGS.checkpointBFeedbackPath) : 'state/checkpoint-b-feedback.md';
 const unresolvedFindings = [];
 const verdictHistory = []; // 全ゲート verdict の蓄積（review-mode=full: スキルが完了後に全件を人間へ提示する素材）
-// トークン計測（model-routing.md §5）: phase 境界で budget.spent()（この turn の出力トークン累計 — メインループと
-// 全 workflow の共有カウンタ。/forge 系スキルは workflow を直列に1本ずつ起動するため差分≒この workflow の phase 消費）を
-// 記録し戻り値 tokenUsage に含める。スキルが Checkpoint 提示に phase 別消費として添える
+// トークン計測（model-routing.md §5）: phase 境界と終端（tokenEnd）で budget.spent() を記録し戻り値 tokenUsage に含める。
+// budget.spent() は「この turn の出力トークン累計」— メインループと全 workflow の共有カウンタで、入力トークン・モデル単価は
+// 含まない。/forge 系スキルは workflow を直列に1本ずつ起動するため隣接記録の差分≒その phase の出力トークン。
+// resume（キャッシュ replay）時は再生分の消費が 0 として記録される — スキルは再開ランの値を run 間比較に使わない
 const tokenUsage = [];
 function phaseT(title) {
   tokenUsage.push({ phase: title, outputTokensBefore: budget.spent() });
   phase(title);
+}
+function tokenEnd() {
+  tokenUsage.push({ phase: 'end', outputTokensBefore: budget.spent() });
+  return tokenUsage;
 }
 
 // レーン/トラック粒度の例外ガード: parallel() は thunk の例外を null に潰すため、そのままでは
@@ -344,6 +355,15 @@ const BATCH_VERIFY_SCHEMA = {
   }
 };
 
+// 段階エスカレーション再試行の返却: 前回 unresolved のうち解消した項目を原文で列挙させる（fail closed マージの根拠）
+const BATCH_VERIFY_ESCALATE_SCHEMA = {
+  type: 'object',
+  required: ['ok', 'fixedNotes', 'unresolved', 'resolvedPrior'],
+  properties: Object.assign({}, BATCH_VERIFY_SCHEMA.properties, {
+    resolvedPrior: { type: 'array', items: { type: 'string' }, description: '前回の未解決項目のうち今回解消したもの（原文のまま）。無ければ空配列' }
+  })
+};
+
 async function batchVerify(phaseName, contextNote) {
   const prompt =
     'バッチ検証（直列区間 — 並走レーンは合流済み。エンジン検証をここで一括実行する。engine=' + engine + '）。\n' +
@@ -357,19 +377,24 @@ async function batchVerify(phaseName, contextNote) {
     '構造化返却: ok（最終合格で true。到達できなければ false を正直に）/ fixedNotes / unresolved。';
   const baseLabel = 'batch-verify-' + phaseName.toLowerCase();
   let bv = await agentR(prompt, { label: baseLabel, phase: phaseName, agentType: 'gameplay-engineer', schema: BATCH_VERIFY_SCHEMA, effort: 'high' });
-  // 段階的エスカレーション（model-routing.md §2）: producer 階層で不合格（または agentR リトライ後も null）なら
-  // judge 階層で1回だけ再試行する。直列区間の唯一のビルド健全性ゲートのため、同じ階層で同じ失敗を繰り返さず上位へ上げる。
-  // 両試行の fixedNotes は合算して人間可視チャネルへ載せる（1回目の修正を隠さない）
-  if (bv === null || bv.ok !== true) {
-    log('batch-verify(' + phaseName + '): producer 階層で' + (bv === null ? '応答なし' : '不合格') + ' → judge 階層（' + TIER.judge + '）で再試行');
-    const bv2 = await agentR(
-      '【エスカレーション再試行（judge 階層）】直前の producer 階層の試行が' + (bv === null ? '結果を返さずに終わった' : '不合格に終わった') + '。state/reviews/batch-verify.md の診断と直前試行のコミット（git log）を先に読み、根本原因から最小修正せよ。前回の未解決(JSON): ' + JSON.stringify((bv && bv.unresolved) || []) + '\n\n' + prompt,
-      { label: baseLabel + '-escalate', phase: phaseName, agentType: 'gameplay-engineer', schema: BATCH_VERIFY_SCHEMA, effort: 'high', model: TIER.judge }
+  // 段階エスカレーション（model-routing.md §2）: producer 階層が不合格（ok:false / unresolved 残存 / agentR リトライ後も null）なら
+  // judge 階層で1回だけ再試行する。生の agent() を使い agentR の null 再試行を重ねない（リポジトリ変更を伴う試行は最大2回）。
+  // 初回の unresolved は、再試行が resolvedPrior に原文で列挙した項目だけを解消扱いにし、残りは引き継ぐ（fail closed —
+  // 再試行の返却が不完全でも初回の診断を人間可視チャネルから落とさない）。fixedNotes は両試行を合算する
+  const priorUnresolved = (bv && Array.isArray(bv.unresolved)) ? bv.unresolved : [];
+  if (bv === null || bv.ok !== true || priorUnresolved.length > 0) {
+    log('batch-verify(' + phaseName + '): producer 階層で' + (bv === null ? '応答なし' : '不合格') + ' → judge 階層（' + TIER.judge + '）で1回再試行');
+    const bv2 = await agent(
+      '【段階エスカレーション再試行（judge 階層）】直前の producer 階層の試行が' + (bv === null ? '結果を返さずに終わった' : '不合格に終わった') + '。' + 'state/reviews/batch-verify.md' + ' の診断と直前試行のコミット（git log）を先に読み、根本原因から最小修正せよ。前回の未解決(JSON): ' + JSON.stringify(priorUnresolved) + ' — このうち解消したものは resolvedPrior に**原文のまま**列挙せよ（列挙されない項目は未解決として引き継がれる）。\n\n' + prompt,
+      { label: baseLabel + '-escalate', phase: phaseName, agentType: 'gameplay-engineer', schema: BATCH_VERIFY_ESCALATE_SCHEMA, effort: 'high', model: TIER.judge }
     );
     if (bv2 !== null) {
-      bv = { ok: bv2.ok, fixedNotes: ((bv && bv.fixedNotes) || []).concat(bv2.fixedNotes || []), unresolved: bv2.unresolved || [] };
+      const resolved = Array.isArray(bv2.resolvedPrior) ? bv2.resolvedPrior : [];
+      const carried = priorUnresolved.filter(function (u) { return resolved.indexOf(u) < 0; });
+      const fresh = (bv2.unresolved || []).filter(function (u) { return carried.indexOf(u) < 0; });
+      bv = { ok: bv2.ok, fixedNotes: ((bv && bv.fixedNotes) || []).concat(bv2.fixedNotes || []), unresolved: carried.concat(fresh) };
     } else if (bv !== null) {
-      unresolvedFindings.push('[BLOCKER] ' + phaseName + ': バッチ検証のエスカレーション再試行 agent が結果を返さなかった（producer 階層の不合格結果で続行）');
+      unresolvedFindings.push(phaseName + ': バッチ検証の段階エスカレーション再試行 agent（judge 階層）が結果を返さなかった（producer 階層の結果で続行）');
     } // bv も null なら直下の null 経路が [BLOCKER] を記録する（二重記録しない）
   }
   if (bv === null) {
@@ -423,13 +448,14 @@ async function implementStoryWithReview(story, phaseName) {
   let commitHash = impl.commitHash ? String(impl.commitHash) : null;
 
   let approved = false;
-  for (let iter = 1; iter <= 2; iter++) {
+  let fixAttempts = 0; // 実行済み fix 回数（レビューペア両方失敗で continue した iteration は数えない）
+  for (let iter = 1; iter <= CR_CODE_MAX_ITER; iter++) {
     const reviewPrompt =
       'CR-CODE レビュー（story ' + story.id + '、iteration ' + iter + '）。\n' +
       (commitHash
         ? '対象: `git show ' + commitHash + '` の diff **のみ**（並走する資産生成トラックの変更や他storyの差分はレビュー対象外）。\n'
         : '対象: game/ 配下の story ' + story.id + ' に対応する直近の実装変更（コミットhash不明のため state/reviews/' + sid + '.md と実装ファイルから対象を特定）。\n') +
-      '観点は ' + DOCS + '/gates.md の CR-CODE 節に従う。加えて ' + EP.techStackDoc + ' の' + EP.reviewRulesLine + 'を確認。\n' +
+      '観点は ' + DOCS + '/gates.md の CR-CODE 節に従う（外部 reviewer には自動 import されない — ' + DOCS + '/gates.md と ' + DOCS + '/review-loops.md を必ず読んでから判定・追記せよ）。加えて ' + EP.techStackDoc + ' の' + EP.reviewRulesLine + 'を確認。\n' +
       'acceptance「' + story.acceptance + '」がコード上で満たされるかも確認。\n' +
       '前提（並走レーン設計）: 他レーンの story が提供予定の API への参照は、docs/architecture.md の設計に合致していれば「実体未実装」だけを理由に blocker としない（コンパイル整合はレーン合流後のバッチ検証が保証する。設計との不一致・誤用は通常どおり指摘してよい）。**このレビューは読み取り専用 — エンジン起動・ビルド/テストコマンドの実行禁止**（並走レーン中の単一インスタンスロック/dist 競合）。\n' +
       'findings は severity（blocker=設計欠陥 / major / minor）付きで返せ。0件なら空配列。';
@@ -471,7 +497,7 @@ async function implementStoryWithReview(story, phaseName) {
         '3) ' + CODE_COMMIT_RULE + '\n' +
         IDEMPOTENT_RULE + '\n' +
         LANE_RULE,
-        { label: 'close-' + sid, phase: phaseName, agentType: assignee, effort: 'low', model: TIER.mechanical }
+        { label: 'close-' + sid, phase: phaseName, agentType: assignee, effort: 'low' } // 並走レーン中の git/stories.yaml 更新 — producer 階層のまま（model-routing.md §1）
       );
       if (closed === null) {
         // prototype.js の bookkeep 失敗記録と同型（状態ファイル＝真実の原則: 更新未確認を黙って流さない）
@@ -480,9 +506,11 @@ async function implementStoryWithReview(story, phaseName) {
       break;
     }
 
-    const isLast = iter === 2;
+    const isLast = iter === CR_CODE_MAX_ITER;
+    // 段階エスカレーション: 最終 iteration かつ前回の fix が実際に走った場合のみ judge 階層へ（model-routing.md §2）
+    const escalate = isLast && fixAttempts > 0;
     const fix = await agentR(
-      (isLast ? '【エスカレーション（judge 階層）: 最終 iteration。前回の修正で解消しなかった指摘 — 対症療法ではなく根本原因から直せ。見送る場合は理由を state/reviews に明記せよ】' + '\n' : '') +
+      (escalate ? JUDGE_ESCALATION_NOTE + '\n' : '') +
       'story ' + story.id + ' の CR-CODE iteration ' + iter + ' 判定: ' + verdict + '。findings(JSON):\n' + JSON.stringify(findings) + '\n' +
       '対応せよ:\n' +
       '1) 各finding に修正で対応するか、見送るなら理由を明記（黙殺禁止）\n' +
@@ -494,8 +522,9 @@ async function implementStoryWithReview(story, phaseName) {
       (isLast
         ? '5) MAX_ITER到達のため state/stories.yaml の ' + story.id + ' を status: done に更新し、未対応findingがあれば注記に残す（エスカレーションはCheckpointで人間に提示される）'
         : '5) state/stories.yaml の status は review のまま（次iterationで再レビュー）'),
-      withTier({ label: 'fix-' + sid + '-' + iter, phase: phaseName, agentType: assignee, schema: IMPL_SCHEMA, effort: 'high' }, isLast, TIER.judge)
+      withTier({ label: 'fix-' + sid + '-' + iter, phase: phaseName, agentType: assignee, schema: IMPL_SCHEMA, effort: 'high' }, escalate, TIER.judge)
     );
+    fixAttempts++;
     if (fix && fix.commitHash) commitHash = String(fix.commitHash);
     if (fix === null) {
       // prototype.js の reviewLoop（revise 失敗を loopFailures に記録）と同型: fix 失敗を無記録で流さない
@@ -521,7 +550,7 @@ async function implementStoryWithReview(story, phaseName) {
       '「# note: CR-CODE unresolved — state/reviews/' + sid + '.md 参照」の注記を acceptance 行の下にコメントで追加せよ\n' +
       '（MAX_ITER 到達エスカレーション。既に done かつ注記済みなら何もしない）。' + CODE_COMMIT_RULE + '\n' +
       IDEMPOTENT_RULE + '\n' + LANE_RULE,
-      { label: 'bookkeep-' + sid, phase: phaseName, agentType: assignee, effort: 'low', model: TIER.mechanical }
+      { label: 'bookkeep-' + sid, phase: phaseName, agentType: assignee, effort: 'low' }
     );
   }
   return approved;
@@ -678,7 +707,7 @@ if (!replan || !Array.isArray(replan.stories)) {
   log('Replan: tech-director の構造化返却が得られず。stories.yaml から再抽出する');
   replan = await agentR(
     'state/stories.yaml を読み、phase: build かつ status が done 以外の全storyを実装すべき順で返せ。ファイルの変更はするな。',
-    { label: 'replan-extract', phase: 'Replan', agentType: 'tech-director', schema: STORY_LIST_SCHEMA, effort: 'low', model: TIER.mechanical }
+    { label: 'replan-extract', phase: 'Replan', agentType: 'tech-director', schema: STORY_LIST_SCHEMA, effort: 'low' } // 実装順の判断を含むため judge 階層（tech-director の frontmatter）のまま
   );
 }
 if (!replan || !Array.isArray(replan.stories)) {
@@ -772,6 +801,9 @@ if (EP.assets3d) {
     modelStories // Replan由来の3D資産story（ASSET_TAG 第一・MODEL_WORDS fallback 判定）+ design/assets.md の状態変更が対象選定の真実
   )));
 }
+// Build ∥ AssetGen 並走区間の代表 phase を開始前に1回だけ宣言する（thunk 内での phase() は非決定的になるため禁止 —
+// prototype.js と同じ規約。tokenUsage の Build 境界にもなる: これが無いと Build+AssetGen の消費が Replan に帰属する）
+phaseT('Build');
 // assignee レーン分割（retro-e2 案A）: gameplay と ui を並走、レーン内は依存順（Replan の返却順）を維持。
 // assignee 不明/不正は implementStoryWithReview 側の既定（gameplay-engineer）と一致させて gameplay レーンへ
 const gameplayStories = codeStories.filter(function (s) { return s.assignee !== 'ui-engineer'; });
@@ -1024,6 +1056,8 @@ await parallel([
             const c = byPath[p];
             if (!c) missing.push(p + '（検証結果に現れず — 未検証）');
             else if (!c.exists || !c.nonEmpty) missing.push(p + '（' + (!c.exists ? '不存在' : '0バイト') + '）');
+            // 自己申告の擬装防止: ls/stat の生出力行にパス名（basename）が現れることを要求（prototype.js と同型）
+            else if (typeof c.rawLine !== 'string' || c.rawLine.indexOf(String(p).split('/').pop()) < 0) missing.push(p + '（rawLine に実行出力なし — 検証 agent がコマンドを実行した証拠が無い）');
           }
         }
         if ((qa.evidencePaths || []).length === 0) missing.push('evidencePaths が空（証跡なしの判定は無効 — qa-lead.md）');
@@ -1054,12 +1088,18 @@ await parallel([
       if (round === 2) break; // review 2回上限到達 → エスカレーション
 
       // 修正はコード規律に合わせて順次（同一ファイル競合を避ける）
+      // acceptance 未通過 story を assignee で分配する（全件を両レーンに渡すと担当外の judge fix が重複起動し、同一ファイルへ
+      // 重複コミットし得る）。story ID が既知でない項目は gameplay-engineer の既定に倒す（implementStoryWithReview と同じ既定）
+      const assigneeOf = {};
+      for (const s of codeStories.concat(polishStories)) assigneeOf[String(s.id)] = s.assignee;
+      const acceptanceOwner = function (item) { return assigneeOf[String(item).trim().split(/[\s:：（(]/)[0]] || 'gameplay-engineer'; };
       const order = ['gameplay-engineer', 'ui-engineer'];
       for (const eng of order) {
         const mine = qaBugs.filter(function (b) { return (b.assignee || 'gameplay-engineer') === eng; });
-        const myAcceptance = qaFailedAcceptance;
+        const myAcceptance = qaFailedAcceptance.filter(function (id) { return acceptanceOwner(id) === eng; });
         if (mine.length === 0 && myAcceptance.length === 0) continue;
         const qaFix = await agentR(
+          QA_FIX_NOTE + '\n' +
           'QA-PLAY round ' + round + ' で検出された問題を修正せよ（QA-PLAY は review 2回上限。修正後 round ' + (round + 1) + ' で再判定される）。\n' +
           'bugs(JSON):\n' + JSON.stringify(mine) + '\n' +
           '不合格acceptance(story ID): ' + JSON.stringify(myAcceptance) + '（自分の担当分のみ対応。担当外は触らない）\n' +
@@ -1161,6 +1201,6 @@ return {
   licenseFlags: audit && Array.isArray(audit.licenseFlags) ? audit.licenseFlags : [],
   unresolvedFindings: unresolvedFindings,
   verdictHistory: verdictHistory,
-  tokenUsage: tokenUsage,
+  tokenUsage: tokenEnd(),
   verdict: cd && cd.verdict ? cd.verdict : 'CONCERNS'
 };
