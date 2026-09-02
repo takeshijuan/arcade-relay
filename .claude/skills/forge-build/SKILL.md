@@ -9,6 +9,10 @@ allowed-tools: Read, Glob, Grep, Write, Edit, Bash, Workflow, Task, AskUserQuest
 
 Checkpoint B のフィードバックを消化して全ストーリーを実装し、アセット本生成・フル QA を経て完成品を受け渡す。
 
+## オーケストレータ規約（`.claude/docs/model-routing.md` §3）
+
+このスキルを実行するメインセッションは**オーケストレータ**（最高価格帯モデル）。判断・AskUserQuestion・`state/stage.txt` 書込・PushNotification・提示文の最終確認（隠された未達が無いか）だけを自分で行い、検証コマンドの実行・集計・提示文の下書きは **Task（`subagent_type: general-purpose`、model は下記各 Phase の指定）** に委譲して構造化サマリだけを読む（`qa/report.md` 全文や MANIFEST 全行を自分の文脈に入れない）。ワークフロー内の agent 階層（judge / producer / mechanical）はスクリプト側で固定済み — スキルからは指定しない。
+
 ## Phase 0: 前提チェック
 
 | 前提 | 確認 | 無い場合の対応 |
@@ -46,9 +50,11 @@ Workflow ツールで起動する:
 完了通知の戻り値を読む。**失敗終了**: エラーと `/workflows` のログ参照を報告し、stage は変更せず停止。
 
 成功時、必須成果物を実在確認する: `qa/report.md`（更新済み）と MANIFEST.jsonl（エンジン別正本パス — contract §6: phaser=`game/assets/MANIFEST.jsonl` / unity・unreal=`game/_generated/MANIFEST.jsonl`。以下 `$MANIFEST`）。
-さらに Bash で engine の tech-stack 文書「検証コマンド」の build 相当が exit 0 であることを確認する（phaser: `cd game && npm run build` / unity: `ForgeBuild.BuildMac` batchmode / unreal: BuildCookRun フル）。欠落・失敗はワークフロー失敗として停止。
+さらに engine の tech-stack 文書「検証コマンド」の build 相当が exit 0 であることを確認する — **実行は Task（general-purpose, `model: haiku`）に委譲**し（phaser: `cd game && npm run build` / unity: `ForgeBuild.BuildMac` batchmode / unreal: BuildCookRun フル）、コマンドは `<cmd>; echo EXIT=$?` の形で実行させ、実行出力の末尾 20 行（`EXIT=` 行を含む生出力）を返させる。オーケストレータは `EXIT=0` 行の実在で判定する（サブエージェントの要約文だけで合格にしない）。欠落・失敗はワークフロー失敗として停止。
 
 ## Phase 3: Checkpoint C 提示（完成品受け渡し）
+
+**下書きは Task（general-purpose, `model: sonnet`）に委譲**する: 戻り値（summary / playInstructions / qaReportPath / totalAssetCost / licenseFlags / unresolvedFindings / verdictHistory / tokenUsage）と手順 3〜4 の集計サマリ・`state/reviews/*.md` から以下 1〜7 を Markdown で下書きさせ、オーケストレータは下書きを確認（未解決事項・must_replace が省かれていないか）して提示する。`qa/report.md` 全文と MANIFEST 全行をオーケストレータが読まない。
 
 以下を整形して提示する:
 
@@ -58,7 +64,7 @@ Workflow ツールで起動する:
    - unreal: `open game/Build/Mac/ForgeGame.app`（パッケージ済み）
    操作方法（design/gdd.md 準拠）を要約して添える
 2. **QA 結果**: `qa/report.md` を **SendUserFile** で送付し、QA-PLAY 最終判定と `qa/evidence/` の代表スクリーンショット 2〜3 枚を表示する
-3. **コスト合計**: Bash で `$MANIFEST` の全行の `cost_usd` を合算する（例: `jq -s 'map(.cost_usd) | add' "$MANIFEST"`。jq 不可なら Read して集計）。`合計 $X.XX / 予算 $<state/budget.txt>` の形で提示
+3. **コスト合計**: Task（general-purpose, `model: haiku`）に `$MANIFEST` の全行の `cost_usd` 合算と手順 4 のフラグ集計を委譲する（例: `jq -s 'map(.cost_usd) | add' "$MANIFEST"`。jq 不可なら Read して集計）。`合計 $X.XX / 予算 $<state/budget.txt>` の形で提示
 4. **ライセンスフラグ一覧**: MANIFEST の `license` / `must_replace` を集計し、以下を提示する:
    - `must_replace: true` の資産（placeholder-nc 等・出荷前要差し替え）の件数とファイル一覧
    - ElevenLabs 使用時: 「Studio Games」条項（商用×マルチプラットフォーム出荷は Enterprise 相談要）
@@ -68,6 +74,7 @@ Workflow ツールで起動する:
    - 共通: 米国では純 AI 出力の著作権が不確定（MANIFEST の人間関与記録が防御材料）
 5. **未解決事項**: 各レビューループの持ち越し指摘・妥協点・CD-CHECKPOINT が列挙した既知の課題を隠さず全件
 6. **レビュー履歴（reviewMode=`full` のみ）**: 戻り値の verdictHistory（gate / artifact / iteration / verdict / findings 要約）を全件提示する
+7. **トークン消費**: 戻り値 `tokenUsage` の phase 別 `outputTokensBefore` の差分を 1 行で（model-routing.md §5）。`state/active.md` にも記録する
 
 提示と同時に **PushNotification** を送る（例: 「ArcadeRelay: Checkpoint C — ゲームが完成しました」）。
 提示が完了したら `state/stage.txt` に `build` の1語のみを Write する。

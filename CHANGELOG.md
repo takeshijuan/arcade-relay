@@ -7,6 +7,41 @@ artifact contracts stabilize.
 
 ## [Unreleased]
 
+## [0.5.0.0] - 2026-09-02
+
+### Added
+
+- Model-tier routing (`.claude/docs/model-routing.md`, contract §12): the main
+  session is an orchestrator that only makes decisions and talks to the
+  human; subagents run in three tiers — judge (opus: creative-director /
+  design-reviewer / tech-director), producer (sonnet: designers, engineers,
+  qa-lead, art-reviewer, external code reviewers) and mechanical (haiku:
+  evidence checks, story crosscheck, bookkeeping, finalize/extract).
+- Staged escalation: the final CR-CODE fix iteration, every QA-PLAY fix, a
+  failed batch-verify (one retry, `-escalate` label, fixedNotes merged) and the
+  final reviewLoop revise (DR-CONCEPT / DR-GDD / AR-BIBLE) are re-run on the
+  judge tier instead of repeating the same failure on the cheaper tier.
+- Token telemetry: every workflow records `budget.spent()` at each phase
+  boundary and returns `tokenUsage`; the forge skills show it at checkpoints.
+- `model-routing.test.mjs`: tier table ↔ agent frontmatter sync, TIER
+  constants sync, the "no agent() call inherits the session model" invariant
+  for all three workflows, mechanical labels = haiku + effort low, escalation
+  wiring, and the CLAUDE.md auto-import guard.
+
+### Changed
+
+- Workflow `agent()` calls that used to inherit the session model
+  (verify-evidence, setup-crosscheck, `pr-review-toolkit:*` reviewers) now
+  carry an explicit model; bookkeeping-style calls moved to haiku.
+- `/forge`, `/forge-concept`, `/forge-prototype`, `/forge-build` delegate
+  preflight pings, engine resolution, verification commands, cost/license
+  aggregation and checkpoint drafting to Task subagents and read only the
+  structured summary.
+- `CLAUDE.md` auto-imports only `contract.md`; review-loops / tech-stack /
+  assets-config / pipeline / gates are path references read by the agents
+  that need them (they no longer sit in every agent's and every turn's
+  context).
+
 ## [0.4.1.0] - 2026-07-30
 
 ### Fixed

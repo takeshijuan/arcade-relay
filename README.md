@@ -35,6 +35,12 @@ across specialized agents:
   playtests (headless browser for phaser, batchmode PlayMode tests for Unity,
   Automation Tests for Unreal).
 
+Cost is controlled by model-tier routing (`.claude/docs/model-routing.md`):
+the main session is only an orchestrator (decisions and human checkpoints),
+subagents run on a judge (opus) / producer (sonnet) / mechanical (haiku)
+tier, and only the work that failed on a cheaper tier is escalated to the
+judge tier (final CR-CODE fix, QA fixes, batch-verify retry, final revise).
+
 The pipeline is intentionally checkpointed:
 
 ```text
@@ -115,6 +121,7 @@ Review intensity is controlled by `state/review-mode.txt`:
 | `.claude/workflows/` | Autonomous phase orchestration scripts |
 | `.claude/tests/workflows/` | Workflow DSL stub tests (run with `node --test`) |
 | `.claude/docs/contract.md` | Naming, IDs, paths, engines, and command contract |
+| `.claude/docs/model-routing.md` | Orchestrator rules, model tiers, staged escalation, token telemetry |
 | `.claude/docs/tech-stack*.md` | Per-engine stack rules (phaser / unity / unreal) |
 | `.claude/docs/pipeline.yaml` | Pipeline stages consumed by status and hooks |
 | `design/` | Generated brief, concept, GDD, art bible, and asset plan |

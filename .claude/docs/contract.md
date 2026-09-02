@@ -192,3 +192,15 @@ phaser | unity | unreal
 - **必須シーン集合（全エンジン共通・全ゲーム必須）**: `Boot / Title / Menu / Game / Result` の5状態。phaser=`BootScene/TitleScene/MenuScene/GameScene/ResultScene`、unity=`Assets/Scenes/` の5シーン、unreal=`Content/Maps/` のレベル分割または状態遷移（どちらでも可。ただし5状態すべての実在と遷移を Automation テストで検証可能にすること — 「単一レベルだから Title/Menu 省略」は不可）。正準フロー: `Boot → Title → Menu → Game → Result → { Game（リスタート） | Menu }`。Menu の必須要素はプレイ開始・アウトゲーム表示（アンロック/実績/統計）・設定（音量・操作表示）・終了導線（ui-engineer の責務）。**Title と Menu のストーリーが `assignee: ui-engineer` で state/stories.yaml に存在しない分解は不合格**（workflow の Setup が機械検証し tech-director に差し戻す）。
 - **prototype 縦串の必須スコープに「環境の最低限ビジュアル」を含める**（`assignee: gameplay-engineer` の story として発行する。地面/背景の可視化・ライト・カメラ構図の確定 — engine=phaser（2D）は背景の可視化+画面レイアウト確定で可。engine=unity/unreal はプレースホルダ地形でも可視の地面必須）— Checkpoint B の体感評価を成立させるため。対応 story が state/stories.yaml に存在しない分解は不合格（workflow の Setup が機械検証）。
 - **メタ進行（アウトゲーム）必須**: design/gdd.md に「メタ進行（アウトゲーム）」節が必須（templates/gdd.md。ハイスコア/ベストタイム+統計=全ゲーム必須、通貨/アンロック/実績/ラン間アップグレードから2つ以上選択。DR-GDD 観点6 が判定）。ロジックはエンジン非依存コア層のサブフォルダ（phaser: `game/src/systems/meta/` / unity: `game/Assets/Scripts/Systems/Meta/` / unreal: `game/Source/ForgeGame/Systems/Meta/`）に、永続化 I/O は**永続化層**（phaser: `game/src/persistence/` / unity: `game/Assets/Scripts/Persistence/` / unreal: `game/Source/ForgeGame/Persistence/` — UObject/MonoBehaviour/ブラウザ API を許す唯一の I/O 層）に閉じる。セーブ規約は §6。
+
+## 12. モデル階層（正本: `.claude/docs/model-routing.md`）
+
+メインセッション（最高価格帯）は**オーケストレータ** — 判断と人間接点（再開位置決定・AskUserQuestion・`state/stage.txt` 書込・通知・Checkpoint 提示）だけを行い、実作業はサブエージェントへ委譲する。
+
+| tier | model | 担当（§2 の agent） |
+|---|---|---|
+| `judge` | opus | creative-director / design-reviewer / tech-director（＋段階的エスカレーション先） |
+| `producer` | sonnet | game-designer / art-director / audio-designer / gameplay-engineer / ui-engineer / qa-lead / art-reviewer / 外部 reviewer（`pr-review-toolkit:*` は workflow が `model` を明示） |
+| `mechanical` | haiku | 専用 agent 無し。workflow が呼び出し単位で `model`+`effort: 'low'` を明示（実在確認・突合・status/active.md 更新・抽出） |
+
+規則: (1) workflow の全 `agent()` 呼び出しはセッションモデルを継承しない（`agentType` が §2 の 10 体、または `model` 明示）。(2) 安い階層で失敗した箇所だけ judge へ段階エスカレーション（CR-CODE 最終 fix / QA fix / batch-verify 再試行 / reviewLoop 最終 revise — model-routing.md §2）。(3) スキルは検証コマンド・集計・提示文下書きを Task に委譲し、サマリだけを読む（同 §3）。(4) 各 workflow は戻り値に `tokenUsage`（phase 別出力トークン）を含める（同 §5）。

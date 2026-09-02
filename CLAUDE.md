@@ -13,15 +13,18 @@ ArcadeRelay のコマンド名前空間は互換性のため `/forge` のまま�
 ## 絶対規約
 
 1. **命名・ID・パスは contract に従う** — 発明禁止。 @.claude/docs/contract.md
-2. **全成果物は produce→review→revise ループを通す** — 合格基準は @.claude/docs/review-loops.md
-3. **ゲーム実装はエンジン別 tech-stack 規約に従う** — phaser: @.claude/docs/tech-stack.md / unity: `.claude/docs/tech-stack-unity.md` / unreal: `.claude/docs/tech-stack-unreal.md`（engine は `state/engine.txt`。無ければ phaser）
-4. **資産生成はルーティング表に従う** — @.claude/docs/assets-config.md
+2. **全成果物は produce→review→revise ループを通す** — 合格基準は `.claude/docs/review-loops.md`
+3. **ゲーム実装はエンジン別 tech-stack 規約に従う** — phaser: `.claude/docs/tech-stack.md` / unity: `.claude/docs/tech-stack-unity.md` / unreal: `.claude/docs/tech-stack-unreal.md`（engine は `state/engine.txt`。無ければ phaser）
+4. **資産生成はルーティング表に従う** — `.claude/docs/assets-config.md`
 5. **状態はファイルが真実** — 会話ではなく `state/` を読む。作業後は `state/active.md` を更新
 6. **ピラー（P-xx）が北極星** — 全ての設計・実装・QA判断は `design/concept.md` のピラーに照らす
+7. **メインセッションはオーケストレータ・実作業はモデル階層のサブエージェント** — 判断と人間接点だけを自分で行い、実作業は `.claude/docs/model-routing.md` の階層（judge=opus / producer=sonnet / mechanical=haiku）へ委譲する。workflow の agent() はセッションモデルを継承しない（テストが機械検証）
 
 ## パイプライン全体像
 
-@.claude/docs/pipeline.yaml がフェーズ定義。ゲート判定プロンプトは @.claude/docs/gates.md 。
+`.claude/docs/pipeline.yaml` がフェーズ定義。ゲート判定プロンプトは `.claude/docs/gates.md`。
+
+上記 2〜4 と pipeline / gates は自動 import しない（全 agent・全ターンの文脈に常駐させない — model-routing.md §4）。各 agent 定義の「参照ドキュメント」節に従い、必要な agent が自分で読む。
 
 ## このリポジトリの構造
 

@@ -10,6 +10,19 @@ allowed-tools: Read, Glob, Grep, Write, Edit, Bash, Task, Workflow, AskUserQuest
 命名・ID・パスは `.claude/docs/contract.md` が単一情報源。ここに書かれていない名前を発明しない。
 状態はファイルが真実（`state/`）。各Phase完了時に `state/active.md`（現在地/次アクション/未解決事項）を更新する。
 
+## オーケストレータ規約（`.claude/docs/model-routing.md` §3）
+
+このスキルを実行するメインセッションは**オーケストレータ**（最高価格帯モデル）である。自分で行うのは「判断と人間接点」だけ: 再開位置の決定・矛盾検出の裁定・AskUserQuestion・`state/stage.txt` 書込・PushNotification・提示文の最終確認。
+以下は **Task ツール（`subagent_type: general-purpose`）のサブエージェントに委譲**し、返ってきた構造化サマリだけを読む（生の curl 出力・MANIFEST 全行をオーケストレータの文脈に入れない）。指示には該当 Phase の手順本文（コマンド・スキーマ・判定規則）をそのまま含める。AskUserQuestion・stage 書込・通知はサブエージェントに行わせない:
+
+| 作業 | model | 返させるもの |
+|---|---|---|
+| Phase 1 手順 1〜4（キー ping・プラン判定・`state/asset-routing.json` 生成） | `sonnet` | 書き出した JSON の `checks` / `routes` / `shippable` / `notes` の要約と、手順 5 の AskUserQuestion が必要な欠落（FAL 系全滅 / ElevenLabs 無し・Free）の有無 |
+| Phase 2.5 手順 1〜2（Unity Hub CLI / RunUAT.sh 解決・`state/engine-info.json` 書出） | `haiku` | 解決結果（version / binary）または「無し」と AskUserQuestion 要否 |
+| Phase 6 手順 1〜2（コスト集計・ライセンスフラグ抽出） | `haiku` | 合計 USD / 予算 / フラグ一覧 / must_replace 一覧 |
+
+サブスキル（forge-concept / forge-prototype / forge-build）も同じ規約を持つ。ワークフロー内の agent 階層はスクリプト側で固定済み。
+
 ## Phase 0: 前提確認・再開位置決定（冪等）
 
 1. `state/stage.txt` を読む（無ければ「未着手」）。`state/active.md` があれば読み、前回の未解決事項を把握する。
@@ -27,6 +40,8 @@ allowed-tools: Read, Glob, Grep, Write, Edit, Bash, Task, Workflow, AskUserQuest
 3. 矛盾検出: stage値に対応する成果物（`.claude/docs/pipeline.yaml` の `artifacts.required`）が欠落していたら、その成果物を生むフェーズまで巻き戻して再実行する（例: stage=`concept` なのに `design/gdd.md` が無い → Phase 3 から）。stage.txt は書き換えず、フェーズ完了時に正しい値で上書きされるに任せる。
 
 ## Phase 1: preflight（キー検証・ルーティング決定・状態初期化）
+
+**実行主体**: スキップ判定（次段落）はオーケストレータ。手順 1〜4 は Task（general-purpose, `model: sonnet`）へ委譲し、手順 5（AskUserQuestion）と手順 6 はオーケストレータが行う（オーケストレータ規約）。
 
 `state/asset-routing.json` が既に存在すれば**このPhaseをスキップ**する（生成中のルート再判定禁止 — contract.md §10）。**ただし既存ファイルに `shippable` キーが無い（旧スキーマ）場合はスキップせず再生成する**（旧形式のまま生成レーンが参照すると全ルートが事実上出荷可扱いになるため）。
 
@@ -138,6 +153,8 @@ mkdir -p state
 
 ## Phase 2.5: エンジン preflight（engine=unity/unreal のみ。冪等）
 
+**実行主体**: 手順 1〜2 の解決・書出は Task（general-purpose, `model: haiku`）へ委譲。エディタ/エンジン不在時の AskUserQuestion はオーケストレータが行う。
+
 `state/engine.txt` が `phaser`（または無い）ならスキップ。`state/engine-info.json` が既に存在し binary が実在するならスキップ。
 
 1. **unity**: Unity Hub CLI でインストール済みエディタを解決する:
@@ -176,6 +193,8 @@ Skill ツールで `forge-build` を起動する。完了条件: フルQA合格�
 
 前提: stage が `done`（forge-build が Checkpoint C 提示・受領確認・`done` 書き込みまで完了済み）。forge-build の Checkpoint C と重複する提示 — `qa/report.md` の SendUserFile・PushNotification・`state/stage.txt` への書き込み — は**再実行しない**。ここでは最終要約の再掲と補足のみを行う。
 
+**実行主体**: 手順 1〜2 は Task（general-purpose, `model: haiku`）へ委譲し、合計 USD・予算・フラグ一覧・must_replace 一覧の構造化サマリを受け取る。手順 3〜4 はオーケストレータ。
+
 1. コスト集計と予算照合（MANIFEST パスはエンジン別 — contract §6。以下 `$MANIFEST` = phaser: `game/assets/MANIFEST.jsonl` / unity・unreal: `game/_generated/MANIFEST.jsonl`）:
 
 ```bash
@@ -196,4 +215,5 @@ jq -c 'select(.license != "commercial-ok" or .must_replace == true)' "$MANIFEST"
    - **コスト**: MANIFEST 合計 vs `state/budget.txt`。
    - **ライセンスフラグ**: 手順2の列挙 + `must_replace` 資産があれば差し替え指示。
    - **未解決事項**: `state/reviews/` で MAX_ITER 到達のまま非APPROVEの指摘一覧。
+   - **トークン消費**: 各フェーズの戻り値 `tokenUsage`（phase 別出力トークン）を `state/active.md` に記録済みなら再掲（model-routing.md §5 — 階層変更の効果を run 間で比較する材料）。
 4. `state/active.md` を「受け渡し完了」で更新する（forge-build が更新済みなら差分のみ追記。`state/stage.txt` は forge-build が書き込み済みのため触れない）。

@@ -28,6 +28,19 @@ const ENGINEERS = ['gameplay-engineer', 'ui-engineer'];
 
 const GIT_RETRY_NOTE = 'git commit が index.lock で失敗したら1〜2秒待って1回だけリトライせよ。';
 
+// ---------------------------------------------------------------------------
+// モデル階層（正本: .claude/docs/model-routing.md §1。テストが表との同期を機械検証する）
+// judge=opus（設計判断・エスカレーション先）/ producer=sonnet（起草・実装・検収）/ mechanical=haiku（実在確認・突合・状態更新）
+// 不変条件: 全 agent() 呼び出しはセッションモデル（オーケストレータ）を継承しない —
+// agentType が harness agent（frontmatter に model あり）か、model を明示する
+// ---------------------------------------------------------------------------
+const TIER = { judge: 'opus', producer: 'sonnet', mechanical: 'haiku' };
+// 段階的エスカレーション（model-routing.md §2）: 条件成立時のみ model を上書きし、不成立時は
+// agentType の frontmatter model（producer 階層）に任せる（`model: undefined` を渡さない）
+function withTier(opts, cond, tier) {
+  return cond ? Object.assign({}, opts, { model: tier }) : opts;
+}
+
 // ---------- agentR: agent() null の1回自動リトライ ----------
 // transient エラー（safety classifier 一時失敗等）への1回だけの自動リトライ（retro-e3 指摘5）。
 // label に -retry を付けて opts を変える = キャッシュキーが変わり、失敗結果の replay を避ける。
@@ -216,6 +229,14 @@ const reviewMode = ARGS.reviewMode ? String(ARGS.reviewMode) : 'lean';
 const feedbackPath = ARGS.checkpointBFeedbackPath ? String(ARGS.checkpointBFeedbackPath) : 'state/checkpoint-b-feedback.md';
 const unresolvedFindings = [];
 const verdictHistory = []; // 全ゲート verdict の蓄積（review-mode=full: スキルが完了後に全件を人間へ提示する素材）
+// トークン計測（model-routing.md §5）: phase 境界で budget.spent()（この turn の出力トークン累計 — メインループと
+// 全 workflow の共有カウンタ。/forge 系スキルは workflow を直列に1本ずつ起動するため差分≒この workflow の phase 消費）を
+// 記録し戻り値 tokenUsage に含める。スキルが Checkpoint 提示に phase 別消費として添える
+const tokenUsage = [];
+function phaseT(title) {
+  tokenUsage.push({ phase: title, outputTokensBefore: budget.spent() });
+  phase(title);
+}
 
 // レーン/トラック粒度の例外ガード: parallel() は thunk の例外を null に潰すため、そのままでは
 // レーン丸ごとの中断（残 story 未実装）が unresolvedFindings のどこにも載らない。
@@ -324,7 +345,7 @@ const BATCH_VERIFY_SCHEMA = {
 };
 
 async function batchVerify(phaseName, contextNote) {
-  const bv = await agentR(
+  const prompt =
     'バッチ検証（直列区間 — 並走レーンは合流済み。エンジン検証をここで一括実行する。engine=' + engine + '）。\n' +
     contextNote + '\n' +
     '手順:\n' +
@@ -333,9 +354,24 @@ async function batchVerify(phaseName, contextNote) {
     '3) 最小修正で合格に到達させる（他 story の設計を作り替えない。チューニング値の変更は ' + EP.configPath + ' のみ。**直列区間の例外として、バッチ検証の最小修正に限り担当領域外のファイル — ui 層含む — も編集してよい**。**機能の削除・呼び出しの除去・無効化による回避は最小修正ではない** — コンパイル整合を保ったまま意図を維持し、やむを得ず挙動を変えた場合は fixedNotes に明記せよ。修正原因がエンジン/テストランナー起因の一般則（環境の落とし穴）だった場合は、tech-stack 文書の「既知の落とし穴」節へ即時追記せよ（無ければ新設 — gates.md QA-PLAY）。）\n' +
     '4) 修正した場合は state/reviews/batch-verify.md に「phase / 原因 story / 修正内容 / ISO8601 日時」を追記し（日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う — 推測記入禁止）、コミット規律のパス指定形で git commit（メッセージ: "batch-verify fix (' + phaseName + ')"）。state/active.md の現在地を「' + phaseName + ' バッチ検証完了」に更新（直列区間 — レーン規律の対象外）。' + CODE_COMMIT_RULE + '\n' +
     IDEMPOTENT_RULE + '\n' +
-    '構造化返却: ok（最終合格で true。到達できなければ false を正直に）/ fixedNotes / unresolved。',
-    { label: 'batch-verify-' + phaseName.toLowerCase(), phase: phaseName, agentType: 'gameplay-engineer', schema: BATCH_VERIFY_SCHEMA, effort: 'high' }
-  );
+    '構造化返却: ok（最終合格で true。到達できなければ false を正直に）/ fixedNotes / unresolved。';
+  const baseLabel = 'batch-verify-' + phaseName.toLowerCase();
+  let bv = await agentR(prompt, { label: baseLabel, phase: phaseName, agentType: 'gameplay-engineer', schema: BATCH_VERIFY_SCHEMA, effort: 'high' });
+  // 段階的エスカレーション（model-routing.md §2）: producer 階層で不合格（または agentR リトライ後も null）なら
+  // judge 階層で1回だけ再試行する。直列区間の唯一のビルド健全性ゲートのため、同じ階層で同じ失敗を繰り返さず上位へ上げる。
+  // 両試行の fixedNotes は合算して人間可視チャネルへ載せる（1回目の修正を隠さない）
+  if (bv === null || bv.ok !== true) {
+    log('batch-verify(' + phaseName + '): producer 階層で' + (bv === null ? '応答なし' : '不合格') + ' → judge 階層（' + TIER.judge + '）で再試行');
+    const bv2 = await agentR(
+      '【エスカレーション再試行（judge 階層）】直前の producer 階層の試行が' + (bv === null ? '結果を返さずに終わった' : '不合格に終わった') + '。state/reviews/batch-verify.md の診断と直前試行のコミット（git log）を先に読み、根本原因から最小修正せよ。前回の未解決(JSON): ' + JSON.stringify((bv && bv.unresolved) || []) + '\n\n' + prompt,
+      { label: baseLabel + '-escalate', phase: phaseName, agentType: 'gameplay-engineer', schema: BATCH_VERIFY_SCHEMA, effort: 'high', model: TIER.judge }
+    );
+    if (bv2 !== null) {
+      bv = { ok: bv2.ok, fixedNotes: ((bv && bv.fixedNotes) || []).concat(bv2.fixedNotes || []), unresolved: bv2.unresolved || [] };
+    } else if (bv !== null) {
+      unresolvedFindings.push('[BLOCKER] ' + phaseName + ': バッチ検証のエスカレーション再試行 agent が結果を返さなかった（producer 階層の不合格結果で続行）');
+    } // bv も null なら直下の null 経路が [BLOCKER] を記録する（二重記録しない）
+  }
   if (bv === null) {
     unresolvedFindings.push('[BLOCKER] ' + phaseName + ': バッチ検証 agent が結果を返さなかった（ビルド健全性未確認のまま続行 — 後段 QA が検出する）');
     return false;
@@ -398,9 +434,10 @@ async function implementStoryWithReview(story, phaseName) {
       '前提（並走レーン設計）: 他レーンの story が提供予定の API への参照は、docs/architecture.md の設計に合致していれば「実体未実装」だけを理由に blocker としない（コンパイル整合はレーン合流後のバッチ検証が保証する。設計との不一致・誤用は通常どおり指摘してよい）。**このレビューは読み取り専用 — エンジン起動・ビルド/テストコマンドの実行禁止**（並走レーン中の単一インスタンスロック/dist 競合）。\n' +
       'findings は severity（blocker=設計欠陥 / major / minor）付きで返せ。0件なら空配列。';
     const reviews = await parallel([
-      () => agentR(reviewPrompt, { label: 'cr-' + sid + '-' + iter, phase: phaseName, agentType: 'pr-review-toolkit:code-reviewer', schema: CODE_REVIEW_SCHEMA }),
+      // 外部 reviewer は frontmatter に model 無し — セッションモデル継承を防ぐため producer 階層を明示（model-routing.md §1）
+      () => agentR(reviewPrompt, { label: 'cr-' + sid + '-' + iter, phase: phaseName, agentType: 'pr-review-toolkit:code-reviewer', model: TIER.producer, schema: CODE_REVIEW_SCHEMA }),
       () => agentR(reviewPrompt + '\n特に黙殺されたエラー・握り潰された失敗パス・catchして無視している箇所を重点的に洗え。',
-        { label: 'sfh-' + sid + '-' + iter, phase: phaseName, agentType: 'pr-review-toolkit:silent-failure-hunter', schema: CODE_REVIEW_SCHEMA })
+        { label: 'sfh-' + sid + '-' + iter, phase: phaseName, agentType: 'pr-review-toolkit:silent-failure-hunter', model: TIER.producer, schema: CODE_REVIEW_SCHEMA })
     ]);
     const validReviews = reviews.filter(Boolean);
     if (validReviews.length === 0) {
@@ -434,7 +471,7 @@ async function implementStoryWithReview(story, phaseName) {
         '3) ' + CODE_COMMIT_RULE + '\n' +
         IDEMPOTENT_RULE + '\n' +
         LANE_RULE,
-        { label: 'close-' + sid, phase: phaseName, agentType: assignee, effort: 'low' }
+        { label: 'close-' + sid, phase: phaseName, agentType: assignee, effort: 'low', model: TIER.mechanical }
       );
       if (closed === null) {
         // prototype.js の bookkeep 失敗記録と同型（状態ファイル＝真実の原則: 更新未確認を黙って流さない）
@@ -445,6 +482,7 @@ async function implementStoryWithReview(story, phaseName) {
 
     const isLast = iter === 2;
     const fix = await agentR(
+      (isLast ? '【エスカレーション（judge 階層）: 最終 iteration。前回の修正で解消しなかった指摘 — 対症療法ではなく根本原因から直せ。見送る場合は理由を state/reviews に明記せよ】' + '\n' : '') +
       'story ' + story.id + ' の CR-CODE iteration ' + iter + ' 判定: ' + verdict + '。findings(JSON):\n' + JSON.stringify(findings) + '\n' +
       '対応せよ:\n' +
       '1) 各finding に修正で対応するか、見送るなら理由を明記（黙殺禁止）\n' +
@@ -456,7 +494,7 @@ async function implementStoryWithReview(story, phaseName) {
       (isLast
         ? '5) MAX_ITER到達のため state/stories.yaml の ' + story.id + ' を status: done に更新し、未対応findingがあれば注記に残す（エスカレーションはCheckpointで人間に提示される）'
         : '5) state/stories.yaml の status は review のまま（次iterationで再レビュー）'),
-      { label: 'fix-' + sid + '-' + iter, phase: phaseName, agentType: assignee, schema: IMPL_SCHEMA, effort: 'high' }
+      withTier({ label: 'fix-' + sid + '-' + iter, phase: phaseName, agentType: assignee, schema: IMPL_SCHEMA, effort: 'high' }, isLast, TIER.judge)
     );
     if (fix && fix.commitHash) commitHash = String(fix.commitHash);
     if (fix === null) {
@@ -483,7 +521,7 @@ async function implementStoryWithReview(story, phaseName) {
       '「# note: CR-CODE unresolved — state/reviews/' + sid + '.md 参照」の注記を acceptance 行の下にコメントで追加せよ\n' +
       '（MAX_ITER 到達エスカレーション。既に done かつ注記済みなら何もしない）。' + CODE_COMMIT_RULE + '\n' +
       IDEMPOTENT_RULE + '\n' + LANE_RULE,
-      { label: 'bookkeep-' + sid, phase: phaseName, agentType: assignee, effort: 'low' }
+      { label: 'bookkeep-' + sid, phase: phaseName, agentType: assignee, effort: 'low', model: TIER.mechanical }
     );
   }
   return approved;
@@ -606,7 +644,7 @@ async function assetBatchLoop(kind, producerAgent, producerBrief, replanStories)
 }
 
 // ===== Phase: Replan =====
-phase('Replan');
+phaseT('Replan');
 log('full-build 開始 / review-mode: ' + reviewMode + ' / feedback: ' + feedbackPath +
   '（全 verdict は verdictHistory に蓄積して返す。full ではスキルが完了後に全件を人間へ提示する）');
 
@@ -640,7 +678,7 @@ if (!replan || !Array.isArray(replan.stories)) {
   log('Replan: tech-director の構造化返却が得られず。stories.yaml から再抽出する');
   replan = await agentR(
     'state/stories.yaml を読み、phase: build かつ status が done 以外の全storyを実装すべき順で返せ。ファイルの変更はするな。',
-    { label: 'replan-extract', phase: 'Replan', agentType: 'tech-director', schema: STORY_LIST_SCHEMA, effort: 'low' }
+    { label: 'replan-extract', phase: 'Replan', agentType: 'tech-director', schema: STORY_LIST_SCHEMA, effort: 'low', model: TIER.mechanical }
   );
 }
 if (!replan || !Array.isArray(replan.stories)) {
@@ -853,7 +891,7 @@ if (EP.assets3d) {
 }
 
 // ===== Phase: Polish =====
-phase('Polish');
+phaseT('Polish');
 const polishPlan = await agentR(
   BUILD_VERIFY_WARN +
   'Phase 3 Polish 計画（game-designer）。\n' +
@@ -907,7 +945,7 @@ const QA_VERIFY_WARN = (buildVerifyOk && polishVerifyOk) ? '' :
   '【警告: バッチ検証（' + (!buildVerifyOk ? 'Build' : '') + (!buildVerifyOk && !polishVerifyOk ? '・' : '') + (!polishVerifyOk ? 'Polish' : '') + '）が不合格のまま — state/reviews/batch-verify.md の診断を先に読んでから QA せよ】\n';
 
 // ===== Phase: FullQA =====
-phase('FullQA');
+phaseT('FullQA');
 let audit = null;
 let qaVerdict = null;
 let qaBugs = [];
@@ -972,7 +1010,7 @@ await parallel([
             '証跡パス(JSON): ' + JSON.stringify(qa.evidencePaths || []),
             '加えて qa/evidence/ 直下の実ファイル一覧を ls で確認し extraFilesInEvidenceDir に返せ。',
           ].join('\n'),
-          { label: 'verify-evidence-' + round, phase: 'FullQA', effort: 'low', schema: EVIDENCE_CHECK_SCHEMA }
+          { label: 'verify-evidence-' + round, phase: 'FullQA', effort: 'low', model: TIER.mechanical, schema: EVIDENCE_CHECK_SCHEMA }
         );
         const missing = [];
         if (!evCheck) {
@@ -1029,7 +1067,8 @@ await parallel([
           '修正後 ' + EP.verifyCmd + ' を exit 0 にし、修正内容を qa/report.md の該当バグに追記せよ。修正原因がエンジン/テストランナー起因の一般則（環境の落とし穴）だった場合は、tech-stack 文書の「既知の落とし穴」節へ即時追記せよ（無ければ新設 — gates.md QA-PLAY）。\n' +
           'git commit -m "QA-PLAY round ' + round + ' fix (' + eng + ')" すること。' + CODE_COMMIT_RULE + '\n' +
           IDEMPOTENT_RULE,
-          { label: 'qa-fix-' + round + '-' + eng, phase: 'FullQA', agentType: eng, effort: 'high' }
+          // QA fix は人間エスカレーション前の唯一の修正機会 — judge 階層で行う（model-routing.md §2）
+          { label: 'qa-fix-' + round + '-' + eng, phase: 'FullQA', agentType: eng, effort: 'high', model: TIER.judge }
         );
         if (qaFix === null) {
           // prototype.js の QA fix 失敗記録と同型（監査指摘5: 修正失敗を無記録で再QAに流さない）
@@ -1053,7 +1092,7 @@ await parallel([
 ]);
 
 // ===== Phase: Final =====
-phase('Final');
+phaseT('Final');
 let cd = null;
 for (let attempt = 1; attempt <= 2; attempt++) {
   cd = await agentR(
@@ -1106,7 +1145,7 @@ await agentR(
   'state/active.md を更新: 現在地=Checkpoint C 提示待ち / 次アクション=人間の受領判断（review-mode: ' + reviewMode + '）/ 未解決事項(JSON): ' + JSON.stringify(unresolvedFindings) + '\n' +
   '日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う（推測記入禁止）。\n' +
   '注意: state/stage.txt は更新しない（stage 遷移は /forge-build スキルが行う）。',
-  { label: 'finalize-state', phase: 'Final', agentType: 'tech-director', effort: 'low' }
+  { label: 'finalize-state', phase: 'Final', agentType: 'tech-director', effort: 'low', model: TIER.mechanical }
 );
 
 // ---- 戻り値（Checkpoint C 素材。人間提示はスキル側の責務）----------------
@@ -1122,5 +1161,6 @@ return {
   licenseFlags: audit && Array.isArray(audit.licenseFlags) ? audit.licenseFlags : [],
   unresolvedFindings: unresolvedFindings,
   verdictHistory: verdictHistory,
+  tokenUsage: tokenUsage,
   verdict: cd && cd.verdict ? cd.verdict : 'CONCERNS'
 };
