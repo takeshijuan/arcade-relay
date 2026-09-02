@@ -1270,7 +1270,7 @@ for (let round = 1; round <= QA_MAX; round++) {
   {
     const evCheck = await agentR(
       [
-        '読み取り専用の検証タスク。以下の証跡パス一覧について、各ファイルの実在と非0サイズを Bash（`test -s`・`stat`）で機械検証せよ。ファイルの作成・変更・削除は禁止。',
+        '読み取り専用の検証タスク。以下の証跡パス一覧について、各ファイルの実在と非0サイズを Bash（`test -s`・`ls -l <path>`）で機械検証し、`ls -l <path>` の出力行をそのまま rawLine に入れよ（パスは一覧の文字列どおりに指定する）。ファイルの作成・変更・削除は禁止。',
         '証跡パス(JSON): ' + JSON.stringify(qaResult.evidencePaths || []),
         '加えて ' + ART.qaEvidence + ' 直下の実ファイル一覧を ls で確認し extraFilesInEvidenceDir に返せ。',
       ].join('\n'),
@@ -1288,9 +1288,10 @@ for (let round = 1; round <= QA_MAX; round++) {
         const c = byPath[p];
         if (!c) missing.push(p + '（検証結果に現れず — 未検証）');
         else if (!c.exists || !c.nonEmpty) missing.push(p + '（' + (!c.exists ? '不存在' : '0バイト') + '）');
-        // 自己申告の擬装防止: ls/stat の生出力行にパス名（basename）が現れることを要求（mechanical 階層の検証 agent が
-        // コマンドを走らせずに schema を埋めた場合を落とす）
-        else if (typeof c.rawLine !== 'string' || c.rawLine.indexOf(String(p).split('/').pop()) < 0) missing.push(p + '（rawLine に実行出力なし — 検証 agent がコマンドを実行した証拠が無い）');
+        // 自己申告の抑止: `ls -l <path>` の生出力行に**フルパス**が現れることを要求（basename 一致では別ディレクトリの実在
+        // ファイルの行を流用できる）。同一 agent の申告なので証明にはならない（workflow はファイルを読めない） —
+        // 信頼境界での実在確認はスキル Phase 2 のオーケストレータ Bash が行う（model-routing.md §1 / §3）
+        else if (typeof c.rawLine !== 'string' || c.rawLine.indexOf(String(p)) < 0) missing.push(p + '（rawLine に当該パスの実行出力なし — 検証 agent がコマンドを実行した証拠が無い）');
       }
     }
     if ((qaResult.evidencePaths || []).length === 0) missing.push('evidencePaths が空（証跡なしの判定は無効 — qa-lead.md）');

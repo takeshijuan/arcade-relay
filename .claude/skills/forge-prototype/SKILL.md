@@ -52,6 +52,7 @@ Workflow ツールで起動する:
 成功時、pipeline.yaml の必須成果物を実在確認する（engine フィールド付きの成果物は該当 engine のもののみ）:
 `docs/architecture.md` `docs/conventions.md` `state/stories.yaml` `qa/report.md` ＋ エンジンのプロジェクトマーカー（contract §11: phaser=`game/package.json` / unity=`game/ProjectSettings/ProjectVersion.txt` / unreal=`game/ForgeGame.uproject`）
 さらに engine の tech-stack 文書「検証コマンド」の typecheck 相当が exit 0 であることを**オーケストレータ自身の Bash で**再確認する（Task に委譲しない — model-routing.md §3）。出力は `tail -20` で切り詰め、exit code は `PIPESTATUS` で観測する。例: phaser: `cd game && npm run typecheck 2>&1 | tail -20; echo EXIT=${PIPESTATUS[0]}`（依存未インストールなら `npm install` を先に実行）/ unity: EditMode テスト — exit 0 に加え結果 XML の failed 0（tech-stack-unity.md「検証コマンド」の合格条件そのまま）/ unreal: BuildCookRun -build — `BUILD SUCCESSFUL` 行の実在。欠落・失敗はワークフロー失敗として停止。
+加えて QA 証跡の**信頼境界での実在確認**: 戻り値の evidencePaths を自分の Bash で `for p in <paths>; do test -s "$p" && echo "OK $p" || echo "MISSING $p"; done` のように確認する（workflow 内の証跡検証は agent の申告に依存する — model-routing.md §1）。MISSING があれば QA-PLAY の判定を未検証として扱い、既知の課題の冒頭に `[BLOCKER]` で記載する（stage は前進させてよいが隠さない）。
 
 ## Phase 3: Checkpoint B 提示
 

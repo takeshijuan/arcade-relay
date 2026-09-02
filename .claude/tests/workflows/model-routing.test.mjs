@@ -329,10 +329,14 @@ test('batch-verify(full-build): Build/Polish とも escalate=opus・fixedNotes �
 test('verify-evidence: rawLine にパス名を含む実行出力が無い check は不合格扱い（APPROVE が CONCERNS に降格）', async () => {
   const fake = { checks: [{ path: EV_PATH, exists: true, nonEmpty: true, rawLine: 'ok' }], extraFilesInEvidenceDir: [] };
   const p = await runWorkflow(WF('prototype.js'), { args: PROTO_ARGS, routes: protoRoutes([], BATCH_OK, PROTO_QA_OK, fake) });
-  assert.ok(p.result.unresolvedFindings.some((f) => f.includes('rawLine に実行出力なし')), JSON.stringify(p.result.unresolvedFindings));
+  assert.ok(p.result.unresolvedFindings.some((f) => f.includes('rawLine に当該パスの実行出力なし')), JSON.stringify(p.result.unresolvedFindings));
   assert.ok(p.result.verdictHistory.some((v) => v.gate === 'QA-PLAY' && v.verdict === 'CONCERNS'), '擬装 rawLine で APPROVE が通った');
   const f = await runWorkflow(WF('full-build.js'), { args: FB_ARGS, routes: [R(/^verify-evidence-/, fake)].concat(fbRoutes()) });
-  assert.ok(f.result.unresolvedFindings.some((x) => x.includes('rawLine に実行出力なし')));
+  assert.ok(f.result.unresolvedFindings.some((x) => x.includes('rawLine に当該パスの実行出力なし')));
+  // basename 一致では別ディレクトリの実在ファイルの行を流用できる（Codex P2）— フルパス一致を要求
+  const collide = { checks: [{ path: EV_PATH, exists: true, nonEmpty: true, rawLine: '-rw-r--r-- 1 u g 1234 Sep 2 03:00 qa/evidence/old/e.png' }], extraFilesInEvidenceDir: [] };
+  const c = await runWorkflow(WF('prototype.js'), { args: PROTO_ARGS, routes: protoRoutes([], BATCH_OK, PROTO_QA_OK, collide) });
+  assert.ok(c.result.unresolvedFindings.some((x) => x.includes('rawLine に当該パスの実行出力なし')), 'basename 衝突の rawLine が通った');
 });
 
 // ---- 文脈節減 ----

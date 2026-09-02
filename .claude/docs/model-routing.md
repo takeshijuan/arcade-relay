@@ -33,7 +33,7 @@ harness 外の agent（`pr-review-toolkit:code-reviewer` / `pr-review-toolkit:si
 `mechanical` 階層に専用 agent は無い。workflow が呼び出し単位で `model: TIER.mechanical, effort: 'low'` を明示する。対象ラベル: `verify-evidence-*`（証跡の実在確認。`agentType` 無し）/ `setup-crosscheck-stories`（stories.yaml 突合。`agentType` 無し）/ `finalize-state`（直列区間の active.md 更新。`agentType: tech-director` は役割宣言として据え置き）。
 **mechanical にしないもの**: `bookkeep-*` / `close-*`（並走レーン中の stories.yaml ピンポイント Edit とパス限定 commit — 全面書き直しや `git add -A` を1回でもやると他レーンの更新を消すため producer 階層のまま）/ `replan-extract`（実装順の判断を含む — tech-director の judge 階層のまま）。
 
-mechanical 階層の検証 agent は自己申告を擬装し得る（コマンドを走らせずに schema を埋める）ため、`verify-evidence-*` は `ls -l`/`stat` の生出力行 `rawLine` を必須にし、workflow がパス名の一致を突合する。
+mechanical 階層の検証 agent は自己申告を擬装し得る（コマンドを走らせずに schema を埋める）ため、`verify-evidence-*` は `ls -l <path>` の生出力行 `rawLine` を必須にし、workflow がフルパスの一致を突合する。これは**抑止であって証明ではない**（rawLine も同じ agent の申告。workflow はファイルを読めない）— 信頼境界での実在確認は §3 のとおりスキル Phase 2 でオーケストレータ自身の Bash が戻り値の `evidencePaths` を `test -s` する。
 
 **不変条件**: workflow の全 `agent()` 呼び出しは**セッションモデルを継承しない** — `agentType` が上表の harness 10 体のいずれか、または `model` を明示する。テストが機械検証する。
 
@@ -56,7 +56,7 @@ mechanical 階層の検証 agent は自己申告を擬装し得る（コマン�
 
 ## 3. オーケストレータ委譲規約（/forge 系スキル）
 
-オーケストレータ（スキルを実行するメインセッション）が**自分で行う**もの: 再開位置の決定・矛盾検出の裁定・AskUserQuestion・`state/stage.txt` 書込・PushNotification・Checkpoint 提示文の最終確認・**検証コマンドの実行**（exit code は自分の Bash で観測する — サブエージェント経由の文字列は偽装可能で exit code の代わりにならない）・単発の集計コマンド（`jq` 1 行等 — Task を起こすより Bash の方が安い）・エンジン実体パスの解決（`state/engine-info.json` に永続化され以後再解決されない値を、幻覚し得るモデルに書かせない）。
+オーケストレータ（スキルを実行するメインセッション）が**自分で行う**もの: 再開位置の決定・矛盾検出の裁定・AskUserQuestion・`state/stage.txt` 書込・PushNotification・Checkpoint 提示文の最終確認・**QA 証跡の実在確認**（戻り値 `evidencePaths` を自分の Bash で `test -s` — workflow 内の検証は agent の申告に依存する）・**検証コマンドの実行**（exit code は自分の Bash で観測する — サブエージェント経由の文字列は偽装可能で exit code の代わりにならない）・単発の集計コマンド（`jq` 1 行等 — Task を起こすより Bash の方が安い）・エンジン実体パスの解決（`state/engine-info.json` に永続化され以後再解決されない値を、幻覚し得るモデルに書かせない）。
 
 **委譲する**もの — Task ツールで起動し、構造化サマリだけを読む:
 
