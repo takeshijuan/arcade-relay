@@ -237,6 +237,14 @@ test('段階エスカレーション(full-build): QA fix は judge(opus)・accep
   assert.ok(uiFix.prompt.startsWith('【judge 階層で実施'));
   assert.ok(uiFix.prompt.includes('"S-02"'));
   assert.equal(callsBy(calls, /^qa-fix-1-gameplay-engineer$/).length, 0, '担当外レーンに acceptance 修正が重複起動した');
+  // 所有者不明（Replan/Polish 一覧に無い prototype story や完了済み build story）は両レーンへ — 片方の既定に倒すと
+  // UI 担当の回帰が UI レーンに届かない（Codex P1）
+  const qaUnknown = Object.assign({}, qa, { failedAcceptance: ['S-77: prototype 由来の回帰'] });
+  const u = await runWorkflow(WF('full-build.js'), { args: FB_ARGS, routes: fbRoutes([], BATCH_OK, qaUnknown) });
+  for (const eng of ['gameplay-engineer', 'ui-engineer']) {
+    const fx = callsBy(u.calls, new RegExp('^qa-fix-1-' + eng + '$'))[0];
+    assert.ok(fx && fx.prompt.includes('"S-77'), eng + ' レーンに所有者不明の acceptance が渡らない');
+  }
 });
 
 // ---- 段階エスカレーション: batch-verify（fail closed マージ） ----

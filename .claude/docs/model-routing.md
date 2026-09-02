@@ -44,7 +44,7 @@ mechanical 階層の検証 agent は自己申告を擬装し得る（コマン�
 | 箇所 | 初回 | 段階エスカレーション |
 |---|---|---|
 | CR-CODE fix | producer（assignee の frontmatter model） | **最終 iteration（MAX_ITER=2）かつ直前の fix が実行済み**なら judge — プロンプト冒頭に「根本原因から直せ」注記（レビューペア失敗で最終 iteration が初回 fix になった場合は producer のまま） |
-| QA-PLAY fix（round 1 後の修正） | — | **常に judge**（人間エスカレーション前の唯一の修正機会。full-build は acceptance 未通過を担当 assignee のレーンにだけ分配して重複起動を防ぐ） |
+| QA-PLAY fix（round 1 後の修正） | — | **常に judge**（人間エスカレーション前の唯一の修正機会。full-build は acceptance 未通過のうち所有者が分かる story（Replan/Polish 一覧）を担当 assignee のレーンにだけ分配し、所有者不明（prototype 由来・完了済み story）は従来どおり両レーンへ渡す） |
 | batch-verify（レーン合流後の直列検証） | producer（gameplay-engineer） | `ok:false` / `unresolved` 残存 / agentR リトライ後も null なら **judge で 1 回だけ再試行**（label `batch-verify-<phase>-escalate`。生の `agent()` — null 再試行を重ねない）。**fail closed マージ**: 初回の `unresolved` は再試行が `resolvedPrior` に原文で列挙した項目だけ解消扱い、残りは引き継ぐ。`fixedNotes` は両試行を合算。再試行が null なら初回結果で続行し記録 |
 | DR-CONCEPT / DR-GDD / AR-BIBLE の revise | producer | **最終 iteration（MAX_ITER）の revise は judge** |
 

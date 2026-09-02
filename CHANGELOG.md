@@ -43,7 +43,8 @@ artifact contracts stabilize.
   carry an explicit model; external reviewers are told the paths of
   `gates.md` / `review-loops.md` since they are no longer auto-imported.
 - full-build QA fixes receive only the failed acceptance items owned by their
-  assignee instead of the whole list.
+  assignee when the owner is known (Replan/Polish story lists); items for
+  prototype-phase or already-completed stories still go to both lanes.
 - `/forge` delegates only the preflight pings to a Task subagent (key values
   must not be echoed); `/forge-concept`, `/forge-prototype`, `/forge-build`
   delegate only the checkpoint draft to a read-only Explore subagent and

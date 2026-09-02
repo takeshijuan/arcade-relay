@@ -20,7 +20,7 @@
 - **階層と不変条件** → model-routing.md §1。mechanical（haiku）は読み取り専用の実在確認・突合と直列区間の状態確定に限定した。当初 bookkeep/close/replan-extract も haiku にしたが、レビュー（Claude 対抗・removed-behavior 監査）で「並走レーン中の git/stories.yaml 更新は 1 回の全面書き直しで他レーンの更新を消す」「replan-extract は実装順の判断を含む」と指摘され producer/judge に戻した。
 - **verify-evidence の自己申告擬装** → `rawLine`（`ls -l`/`stat` の生出力行）を必須化し workflow がパス名を突合。
 - **段階エスカレーション** → §2。batch-verify の再試行は当初「初回の unresolved を再試行の値で置換」していたが、Codex・Claude 対抗レビューが「schema-valid な再試行応答で確定済み BLOCKER が消える」ことを再現 → `resolvedPrior` に原文列挙された項目だけを解消扱いにする fail closed マージへ変更。再試行は生の `agent()`（agentR の null 再試行を重ねてリポジトリ変更を 4 回走らせない）。CR-CODE の最終 fix は「直前の fix が実行済み」を条件に加えた（レビューペア失敗で最終 iteration が初回 fix になる経路で注記が偽になる）。
-- **QA fix は常に judge** — QA-PLAY MAX 2 のため fix は 1 回しかなく、失敗＝人間エスカレーション。full-build の acceptance 未通過は担当 assignee のレーンにだけ分配（両レーンに全件渡すと担当外の opus fix が重複起動）。
+- **QA fix は常に judge** — QA-PLAY MAX 2 のため fix は 1 回しかなく、失敗＝人間エスカレーション。full-build の acceptance 未通過は所有者が分かる story だけ担当 assignee のレーンに分配し、所有者不明（prototype 由来・完了済み story — Replan 一覧に無い）は両レーンへ（Codex P1: 片方の既定に倒すと UI 担当の回帰が届かない）。
 - **検証コマンドは委譲しない** → §3。当初 haiku Task に typecheck/build を委譲し `EXIT=0` 行で判定する案だったが、Codex（P0）・Claude 対抗（confidence 8）とも「サブエージェントが返す文字列は要約と同じ信頼境界にあり、`echo EXIT=$?` は失敗後にも印字できる」と指摘。exit code はオーケストレータの Bash で `PIPESTATUS` から観測し、unity の XML failed 0 / unreal の `BUILD SUCCESSFUL` 条件を維持する。単発の `jq` 集計・エンジンパス解決も同様に委譲しない（Task を起こす方が高く、永続化されるパスを幻覚し得る）。
 - **Checkpoint 下書き** → 読み取り専用 `Explore` に委譲し、オーケストレータは戻り値の未解決一覧との突合で検収（「全文を読まないが省略が無いか確認する」は構造的に不可能 — Claude 対抗 #2）。
 - **文脈節減** → §4。外部 reviewer と engineer の到達経路として gates.md / review-loops.md を**パス**で指す（agents の参照ドキュメント節にも gates.md を追加）。

@@ -1089,14 +1089,16 @@ await parallel([
 
       // 修正はコード規律に合わせて順次（同一ファイル競合を避ける）
       // acceptance 未通過 story を assignee で分配する（全件を両レーンに渡すと担当外の judge fix が重複起動し、同一ファイルへ
-      // 重複コミットし得る）。story ID が既知でない項目は gameplay-engineer の既定に倒す（implementStoryWithReview と同じ既定）
+      // 重複コミットし得る）。所有者が分かるのは Replan/Polish が返した未完了 build story だけ — FullQA は phase:prototype と
+      // 完了済み build story も回帰するため、一覧に無い ID は所有者不明として**両レーンに渡す**（片方の既定に倒すと UI 担当の
+      // 回帰が UI レーンに届かず、唯一の修正機会を失う — Codex P1）。各レーンのプロンプトは「担当外は触らない」を維持する
       const assigneeOf = {};
       for (const s of codeStories.concat(polishStories)) assigneeOf[String(s.id)] = s.assignee;
-      const acceptanceOwner = function (item) { return assigneeOf[String(item).trim().split(/[\s:：（(]/)[0]] || 'gameplay-engineer'; };
+      const acceptanceOwner = function (item) { return assigneeOf[String(item).trim().split(/[\s:：（(]/)[0]] || null; };
       const order = ['gameplay-engineer', 'ui-engineer'];
       for (const eng of order) {
         const mine = qaBugs.filter(function (b) { return (b.assignee || 'gameplay-engineer') === eng; });
-        const myAcceptance = qaFailedAcceptance.filter(function (id) { return acceptanceOwner(id) === eng; });
+        const myAcceptance = qaFailedAcceptance.filter(function (id) { const owner = acceptanceOwner(id); return owner === null || owner === eng; });
         if (mine.length === 0 && myAcceptance.length === 0) continue;
         const qaFix = await agentR(
           QA_FIX_NOTE + '\n' +
