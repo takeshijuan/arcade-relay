@@ -112,14 +112,20 @@ const JUDGE_ESCALATION_NOTE = '【段階エスカレーション（judge 階層�
 // label に -retry を付けて opts を変える = キャッシュキーが変わり、失敗結果の replay を避ける。
 // リトライ後も null なら従来どおり呼び出し側がエスカレーションする
 // ---------------------------------------------------------------------------
-async function agentR(prompt, opts) {
+// retries 既定 1（従来どおり -retry）。Workflow 実行系は timer/Node API を持たず script 内バックオフは不可で、
+// agent() 自体が内部リトライ後に null を返す仕様のため、増やせるのは回数のみ — 人間提示直前の判定
+// （CD-CHECKPOINT）だけ 2 回にし、待機を伴う回復はスキル側（オーケストレータ Bash `sleep`）に置く（retro-e4: E4 CD 529）。
+// label は -retry / -retry2（テスト route は接頭辞一致なので既存 fixture はそのまま当たる）
+async function agentR(prompt, opts, retries) {
+  const max = typeof retries === 'number' ? retries : 1;
+  const base = (opts && opts.label) || 'agent';
   let r = await agent(prompt, opts);
-  if (r === null) {
-    log('agent null（transient の可能性）→ 1回リトライ: ' + ((opts && opts.label) || ''));
+  for (let n = 1; r === null && n <= max; n++) {
+    log('agent null（transient の可能性）→ リトライ ' + n + '/' + max + ': ' + base);
     // 盲目再実行の禁止: 初回呼び出しが「作業完了後に構造化応答だけ喪失」した可能性があるため、
     // 完了済み作業（コミット・資産生成・課金 API 呼び出し）の重複実行を防ぐ resume ガードを前置する
     const guarded = '【リトライ実行】直前の同一タスク呼び出しが構造化応答を失って中断した可能性がある。作業開始前に既存の成果（git log の直近コミット・生成済みファイル・MANIFEST 追記）を確認し、完了済みの操作（コミット・資産生成・課金 API 呼び出し）は繰り返すな。未完了分のみ実行し、全て完了済みなら再実行せず結果の構造化返却のみを行え。\n\n' + prompt;
-    r = await agent(guarded, Object.assign({}, opts, { label: (((opts && opts.label) || 'agent') + '-retry') }));
+    r = await agent(guarded, Object.assign({}, opts, { label: base + (n === 1 ? '-retry' : '-retry' + n) }));
   }
   return r;
 }
@@ -472,7 +478,7 @@ let cd = await agentR(cdPromptLines.join('\n'), {
   phase: 'Final',
   schema: CD_SCHEMA,
   effort: 'high'
-});
+}, 2); // 人間提示直前の最終判定 — API 過負荷（529）は 1 回の即時再試行で回復しないことがある（retro-e4）
 
 if (!cd) {
   log('CD-CHECKPOINT: creative-director が応答せず。判定不能のまま Checkpoint A へ');

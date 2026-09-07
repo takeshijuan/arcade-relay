@@ -395,3 +395,22 @@ test('冪等ガード: bookkeep（MAX_ITER 到達）と qa-fix のプロンプ�
   assert.ok(qaFix, 'QA CONCERNS で qa-fix が走らない');
   assert.ok(qaFix.includes('冪等ガード'), 'qa-fix プロンプトに冪等ガードが前置されない');
 });
+
+// ---- retro-e4 追随: agentR retries（人間提示直前の判定は 2 回・他は従来どおり 1 回） ----
+test('agentR retries: cd-checkpoint / finalize-state は -retry → -retry2 の 2 回まで再試行し回復する / batch-verify は従来どおり -retry 1 回のみ', async () => {
+  const routes = [
+    // route は先勝ち: 特殊な -retry2 を接頭辞 route より先に置く
+    R(/^cd-checkpoint-1-retry2$/, { verdict: 'APPROVE', summary: 'ok(retry2)', playInstructions: 'p' }),
+    R(/^cd-checkpoint-1/, null),
+    R(/^finalize-state/, null),
+    R(/^batch-verify-/, (call) => (call.label.endsWith('-retry') ? { ok: true, fixedNotes: [], unresolved: [] } : null)),
+  ].concat(baseRoutes({ ok: true, fixedNotes: [], unresolved: [] }));
+  const { result, calls } = await runWorkflow(WF, { args: ARGS, routes });
+  assert.deepEqual(callsBy(calls, /^cd-checkpoint-1/).map((c) => c.label), ['cd-checkpoint-1', 'cd-checkpoint-1-retry', 'cd-checkpoint-1-retry2']);
+  assert.equal(result.verdict, 'APPROVE');
+  assert.equal(result.summary, 'ok(retry2)');
+  assert.ok(callsBy(calls, /^cd-checkpoint-1-retry2$/)[0].prompt.startsWith('【リトライ実行】'), '2 回目のリトライにも resume ガードが前置される');
+  assert.deepEqual(callsBy(calls, /^finalize-state/).map((c) => c.label), ['finalize-state', 'finalize-state-retry', 'finalize-state-retry2']);
+  assert.equal(callsBy(calls, /^batch-verify-build-retry$/).length, 1);
+  assert.equal(callsBy(calls, /^batch-verify-build-retry2$/).length, 0, '既定 retries=1 の呼び出しに -retry2 が発行された');
+});

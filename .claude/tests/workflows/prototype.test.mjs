@@ -365,3 +365,20 @@ test('レーン例外: AssetGen(images) トラックの laneSafe も実発火す
     JSON.stringify(result.unresolvedFindings)
   );
 });
+
+// ---- retro-e4 追随: agentR retries（CD-CHECKPOINT は 2 回） ----
+test('agentR retries: cd-checkpoint-b は -retry → -retry2 の 2 回まで再試行し回復する（3 回 null なら従来どおり CD 未取得の戻り値）', async () => {
+  const cdOk = { verdict: 'APPROVE', summary: 'ok(retry2)', playInstructions: 'p', evidencePaths: [], knownIssues: [] };
+  const routes = [
+    R(/^cd-checkpoint-b-retry2$/, cdOk),
+    R(/^cd-checkpoint-b/, null),
+  ].concat(baseRoutes(BATCH_OK));
+  const { result, calls } = await runWorkflow(WF, { args: ARGS, routes });
+  assert.deepEqual(callsBy(calls, /^cd-checkpoint-b/).map((c) => c.label), ['cd-checkpoint-b', 'cd-checkpoint-b-retry', 'cd-checkpoint-b-retry2']);
+  assert.equal(result.summary, 'ok(retry2)');
+  assert.equal(result.verdict, 'APPROVE');
+  const dead = await runWorkflow(WF, { args: ARGS, routes: [R(/^cd-checkpoint-b/, null)].concat(baseRoutes(BATCH_OK)) });
+  assert.equal(callsBy(dead.calls, /^cd-checkpoint-b/).length, 3, '3 回で打ち切らない');
+  assert.ok(dead.result.knownIssues.includes('CD-CHECKPOINT 判定が取得できなかった'));
+  assert.equal(dead.result.verdict, 'CONCERNS');
+});

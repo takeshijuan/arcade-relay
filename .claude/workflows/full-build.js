@@ -46,18 +46,24 @@ function withTier(opts, cond, tier) {
 const JUDGE_ESCALATION_NOTE = '【段階エスカレーション（judge 階層）: 前回の修正で解消しなかった指摘 — 対症療法ではなく根本原因から直せ。見送る場合は理由を state/reviews に明記せよ】';
 const QA_FIX_NOTE = '【judge 階層で実施 — QA fix は人間エスカレーション前の唯一の修正機会。根本原因から直せ】';
 
-// ---------- agentR: agent() null の1回自動リトライ ----------
+// ---------- agentR: agent() null の自動リトライ（既定 1 回・第 3 引数 retries で回数指定） ----------
 // transient エラー（safety classifier 一時失敗等）への1回だけの自動リトライ（retro-e3 指摘5）。
 // label に -retry を付けて opts を変える = キャッシュキーが変わり、失敗結果の replay を避ける。
 // リトライ後も null なら従来どおり呼び出し側がエスカレーションする
-async function agentR(prompt, opts) {
+// retries 既定 1（従来どおり -retry）。Workflow 実行系は timer/Node API を持たず script 内バックオフは不可で、
+// agent() 自体が内部リトライ後に null を返す仕様のため、増やせるのは回数のみ — 人間提示直前の判定
+// （CD-CHECKPOINT / finalize）だけ 2 回にし、待機を伴う回復はスキル側（オーケストレータ Bash `sleep`）に置く（retro-e4: E4 CD 529）。
+// label は -retry / -retry2（テスト route は接頭辞一致なので既存 fixture はそのまま当たる）
+async function agentR(prompt, opts, retries) {
+  const max = typeof retries === 'number' ? retries : 1;
+  const base = (opts && opts.label) || 'agent';
   let r = await agent(prompt, opts);
-  if (r === null) {
-    log('agent null（transient の可能性）→ 1回リトライ: ' + ((opts && opts.label) || ''));
+  for (let n = 1; r === null && n <= max; n++) {
+    log('agent null（transient の可能性）→ リトライ ' + n + '/' + max + ': ' + base);
     // 盲目再実行の禁止: 初回呼び出しが「作業完了後に構造化応答だけ喪失」した可能性があるため、
     // 完了済み作業（コミット・資産生成・課金 API 呼び出し）の重複実行を防ぐ resume ガードを前置する
     const guarded = '【リトライ実行】直前の同一タスク呼び出しが構造化応答を失って中断した可能性がある。作業開始前に既存の成果（git log の直近コミット・生成済みファイル・MANIFEST 追記）を確認し、完了済みの操作（コミット・資産生成・課金 API 呼び出し）は繰り返すな。未完了分のみ実行し、全て完了済みなら再実行せず結果の構造化返却のみを行え。\n\n' + prompt;
-    r = await agent(guarded, Object.assign({}, opts, { label: (((opts && opts.label) || 'agent') + '-retry') }));
+    r = await agent(guarded, Object.assign({}, opts, { label: base + (n === 1 ? '-retry' : '-retry' + n) }));
   }
   return r;
 }
@@ -1151,7 +1157,8 @@ for (let attempt = 1; attempt <= 2; attempt++) {
     '- playInstructions: 起動手順（' + EP.playInstructions + '）と操作方法・見どころ\n' +
     '応答の1行目は「CD-CHECKPOINT: APPROVE|CONCERNS|REJECT」とし、構造化返却の verdict にも同じ判定を入れよ。\n' +
     '判定を state/reviews/checkpoint-c.md に ' + DOCS + '/review-loops.md の形式で追記せよ（追記は判定者たるあなたの責務。日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う — 推測記入禁止）。',
-    { label: 'cd-checkpoint-' + attempt, phase: 'Final', agentType: 'creative-director', schema: CD_SCHEMA, effort: 'high' }
+    { label: 'cd-checkpoint-' + attempt, phase: 'Final', agentType: 'creative-director', schema: CD_SCHEMA, effort: 'high' },
+    2 // 人間提示直前の最終判定 — API 過負荷（529）は 1 回の即時再試行で回復しないことがある（retro-e4）
   );
   if (cd === null) {
     unresolvedFindings.push('Final: creative-director が CD-CHECKPOINT 判定を返さなかった');
@@ -1189,7 +1196,8 @@ await agentR(
   'state/active.md を更新: 現在地=Checkpoint C 提示待ち / 次アクション=人間の受領判断（review-mode: ' + reviewMode + '）/ 未解決事項(JSON): ' + JSON.stringify(unresolvedFindings) + '\n' +
   '日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う（推測記入禁止）。\n' +
   '注意: state/stage.txt は更新しない（stage 遷移は /forge-build スキルが行う）。',
-  { label: 'finalize-state', phase: 'Final', agentType: 'tech-director', effort: 'low', model: TIER.mechanical }
+  { label: 'finalize-state', phase: 'Final', agentType: 'tech-director', effort: 'low', model: TIER.mechanical },
+  2 // 人間提示直前の状態確定 — null なら active.md が古いまま Checkpoint に進む（retro-e4: リトライ 2 回）
 );
 
 // ---- 戻り値（Checkpoint C 素材。人間提示はスキル側の責務）----------------
