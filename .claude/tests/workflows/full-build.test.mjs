@@ -13,10 +13,18 @@ const R = (match, reply) => ({ match, reply });
 const QA_OK = { verdict: 'APPROVE', bugs: [], failedAcceptance: [], evidencePaths: ['qa/evidence/e.png'], screenshotsVisuallyConfirmed: true };
 const EV_OK = { checks: [{ path: 'qa/evidence/e.png', exists: true, nonEmpty: true, rawLine: 'qa/evidence/e.png 1234' }], extraFilesInEvidenceDir: [] }; // rawLine = stat "%N %z" の行（retro-e4）
 
+// retro-e4: 実装は changedFiles（コード対象パス）を、reviewer は observedCodeFiles（対象証明）を返すのが正常系。
+// どちらも無い既定応答（fromSchema の空配列）は「対象未証明」として再特定 → BLOCKER に流れる（意図した挙動 — 別テストで固定）
+// 3 engine のコード対象パス（contract §11）を全て含め、engine 切替テストでも対象証明が成立する fixture にする
+const CODE_FILES = ['game/src/systems/x.ts', 'game/Assets/Scripts/Systems/X.cs', 'game/Source/ForgeGame/Systems/X.cpp'];
+const IMPL_OK = { commitHash: 'abc1234', changedFiles: CODE_FILES };
+const CR_OK = { findings: [], observedCodeFiles: CODE_FILES };
 function baseRoutes(batchReply) {
   return [
     R(/^replan-stories$/, { stories: [gp('S-01'), ui('S-02'), gp('S-03')] }),
     R(/^polish-plan$/, { stories: [gp('S-10'), ui('S-11')] }),
+    R(/^impl-/, IMPL_OK),
+    R(/^(cr|sfh)-/, CR_OK),
     R(/^qa-play-/, QA_OK),
     R(/^verify-evidence-/, EV_OK),
     R(/^batch-verify-/, batchReply),
@@ -90,6 +98,8 @@ test('polish story 0 件なら Polish batch-verify は走らない', async () =>
   const routes = [
     R(/^replan-stories$/, { stories: [gp('S-01')] }),
     R(/^polish-plan$/, { stories: [] }),
+    R(/^impl-/, IMPL_OK),
+    R(/^(cr|sfh)-/, CR_OK),
     R(/^qa-play-/, QA_OK),
     R(/^verify-evidence-/, EV_OK),
     R(/^batch-verify-/, { ok: true, fixedNotes: [], unresolved: [] }),
@@ -249,6 +259,8 @@ test('W-3: 資産 story はタグ第一・タグ無しは語彙 fallback で振�
       { id: 'S-23', title: 'タイトルロゴ差し替え', assignee: 'art-director', pillar: 'P-01', acceptance: 'a' }, // タグ無し + 語彙なし = images
     ] }),
     R(/^polish-plan$/, { stories: [] }),
+    R(/^impl-/, IMPL_OK),
+    R(/^(cr|sfh)-/, CR_OK),
     R(/^qa-play-/, QA_OK),
     R(/^verify-evidence-/, EV_OK),
     R(/^batch-verify-/, BATCH_OK),
@@ -403,7 +415,9 @@ test('agentR retries: cd-checkpoint / finalize-state は -retry → -retry2 の 
     R(/^cd-checkpoint-1-retry2$/, { verdict: 'APPROVE', summary: 'ok(retry2)', playInstructions: 'p' }),
     R(/^cd-checkpoint-1/, null),
     R(/^finalize-state/, null),
-    R(/^batch-verify-/, (call) => (call.label.endsWith('-retry') ? { ok: true, fixedNotes: [], unresolved: [] } : null)),
+    // 全て null（-retry も）にする — 既定 retries=1 なら -retry の後に -retry2 が発行されないことを検証できる
+    // （-retry で回復させると retries の既定値に関係なく 1 回で抜けるため主張が空振りする — adversarial A-8。既定を 3 にする mutation で失敗する）
+    R(/^batch-verify-/, null),
   ].concat(baseRoutes({ ok: true, fixedNotes: [], unresolved: [] }));
   const { result, calls } = await runWorkflow(WF, { args: ARGS, routes });
   assert.deepEqual(callsBy(calls, /^cd-checkpoint-1/).map((c) => c.label), ['cd-checkpoint-1', 'cd-checkpoint-1-retry', 'cd-checkpoint-1-retry2']);

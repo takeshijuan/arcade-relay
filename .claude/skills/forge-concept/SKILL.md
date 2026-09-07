@@ -44,7 +44,7 @@ Workflow ツールで起動する:
 `design/concept.md` `design/gdd.md` `design/art-bible.md` `design/art-bible.json` `design/assets.md`
 欠けがあればワークフロー失敗として扱い停止する。
 
-**CD-CHECKPOINT 未取得の回復**（retro-e4）: 戻り値の unresolvedFindings に「CD-CHECKPOINT: 判定が実行されず（creative-director skip/error）」があれば API 過負荷の可能性が高い。自分の Bash で `sleep 120` してから、Task（`subagent_type: creative-director`, `model: opus`, effort high）を **1 回だけ**起動して CD-CHECKPOINT を単発で取り直す。プロンプトは concept-design.js の `cdPromptLines` と同じ構成にする（gates.md CD-CHECKPOINT 節に従う / 対象: brief・concept・gdd・art-bible(.md/.json)・assets.md・state/reviews/ / 判定を `state/reviews/checkpoint-a.md` に追記し state/active.md を更新させる）。受け取った verdict / findings で戻り値の verdict と unresolvedFindings を置換し、Checkpoint 提示に「CD 判定は workflow 外で単発取得（理由: workflow 内 3 回 null）」と 1 行明記する。それでも得られなければ判定未取得のまま人間へ提示し、未解決事項の冒頭に `[BLOCKER] CD-CHECKPOINT 判定未取得` を置く（隠さない）。
+**CD-CHECKPOINT 未取得の回復**（retro-e4）: 戻り値の unresolvedFindings に「CD-CHECKPOINT: 判定が実行されず（creative-director skip/error）」があれば API 過負荷の可能性が高い。自分の Bash で `sleep 120` してから、Task（`subagent_type: creative-director`, `model: opus`, effort high）を **1 回だけ**起動して CD-CHECKPOINT を単発で取り直す。プロンプトは concept-design.js の `cdPromptLines` と同じ構成にする（gates.md CD-CHECKPOINT 節に従う / 対象: brief・concept・gdd・art-bible(.md/.json)・assets.md・state/reviews/ / 判定を `state/reviews/checkpoint-a.md` に追記し state/active.md を更新させる）。受け取った verdict で戻り値の verdict を置換し、findings は既存の unresolvedFindings に**追記**する（既存項目の削除・置換は禁止 — workflow が蓄積した劣化記録を単発 CD の応答で上書きしない）。Checkpoint 提示に「CD 判定は workflow 外で単発取得（理由: workflow 内 3 回 null）」と 1 行明記する。それでも得られなければ判定未取得のまま人間へ提示し、未解決事項の冒頭に `[BLOCKER] CD-CHECKPOINT 判定未取得` を置く（隠さない）。
 
 ## Phase 3: Checkpoint A 提示
 

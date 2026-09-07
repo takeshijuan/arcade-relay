@@ -233,7 +233,7 @@ const QA_FIX_NOTE = '【judge 階層で実施 — QA fix は人間エスカレ�
 // （CD-CHECKPOINT）だけ 2 回にし、待機を伴う回復はスキル側（オーケストレータ Bash `sleep`）に置く（retro-e4: E4 CD 529）。
 // label は -retry / -retry2（テスト route は接頭辞一致なので既存 fixture はそのまま当たる）
 async function agentR(prompt, opts, retries) {
-  const max = typeof retries === 'number' ? retries : 1;
+  const max = (Number.isInteger(retries) && retries >= 0) ? retries : 1; // NaN/負数は既定 1（無言で 0 回に縮退させない）
   const base = (opts && opts.label) || 'agent';
   let r = await agent(prompt, opts);
   for (let n = 1; r === null && n <= max; n++) {
@@ -287,7 +287,7 @@ async function reviewLoop(cfg) {
     const result = await cfg.review(i);
     if (!result || !result.verdict) {
       log('[' + cfg.gateId + '] iteration ' + i + ': review 失敗（結果なし）');
-      loopFailures.push('[' + cfg.gateId + '] ' + cfg.artifactName + ': iteration ' + i + ' の review が結果を返さなかった');
+      loopFailures.push('[' + cfg.gateId + '] ' + cfg.artifactName + ': iteration ' + i + ' の review が判定を返さなかった（結果なし、または対象コミット不成立で未実施）');
       continue;
     }
     log('[' + cfg.gateId + '] ' + cfg.artifactName + ' iteration ' + i + ': ' + result.verdict);
@@ -318,12 +318,13 @@ async function reviewLoop(cfg) {
 // verdict + findings の共通レビュースキーマ
 const VERDICT_SCHEMA = {
   type: 'object',
-  required: ['verdict', 'findings'],
+  required: ['verdict', 'findings', 'observedCodeFiles'],
   properties: {
     verdict: { type: 'string', enum: ['APPROVE', 'CONCERNS', 'REJECT'] },
     findings: { type: 'array', items: { type: 'string' } },
-    // CR-CODE のみ使用（retro-e4）: 対象コミットにコード対象パス（contract §11）のファイルが 1 つも無く、レビューを実施しなかった場合 true
+    // CR-CODE（retro-e4）: 対象コミットにコード対象パス（contract §11）のファイルが 1 つも無く、レビューを実施しなかった場合 true
     targetMismatch: { type: 'boolean' },
+    // 必須: `git show --stat --format= <hash>` の一覧のうちコード対象パスに一致するもの。空 = 対象未証明 → findings 0 件でも APPROVE にならない
     observedCodeFiles: { type: 'array', items: { type: 'string' } },
   },
 };
@@ -350,6 +351,26 @@ const LOCATE_COMMIT_SCHEMA = {
     reason: { type: 'string' },
   },
 };
+
+// ---------- locateImplCommit: CR-CODE 対象コミットの再特定（story ごとに 1 回。full-build.js と同形・自己完結） ----------
+// 戻り値 { hash: string|null, note: string }。hash は hex 形式を検証する（再特定 agent の推測/ゴミ文字列で `git show` が失敗した
+// まま findings:[] が APPROVE になる経路を塞ぐ）。null（agent 失敗）と found:false（探したが無い）は文言を分ける（retro-e4）
+async function locateImplCommit(sid, story, label, priorHash) {
+  const loc = await agentR(
+    [
+      'story ' + sid + '「' + story.title + '」の実装コミットを特定せよ（読み取り専用・ファイル変更禁止）。',
+      '`git log --format="%H %s" -40 -- ' + EP.codePathspec + '` から story ID または title に一致する最新コミットを選び、`git show --stat --format= <hash>` に ' + EP.codePathHint + ' のファイルが含まれることを確認して commitHash に返せ。該当が無ければ found:false と reason を返す（推測の hash を返さない）。',
+      priorHash
+        ? '参考: 直前にレビュー対象として渡された ' + priorHash + ' にはコード対象パスの変更が確認できなかった（同じ hash に含まれることを確認できたならその hash を返してよい）。'
+        : '参考: 実装 agent はコミット hash を返さなかった。',
+    ].join('\n'),
+    { label: label, phase: 'Build', agentType: story.assignee, schema: LOCATE_COMMIT_SCHEMA, effort: 'low' }
+  );
+  if (loc === null) return { hash: null, note: '再特定 agent が結果を返さなかった（探索自体が未実施）' };
+  if (loc.found && /^[0-9a-f]{7,40}$/i.test(String(loc.commitHash || ''))) return { hash: String(loc.commitHash), note: '' };
+  if (loc.found) return { hash: null, note: '再特定 agent が不正な hash「' + String(loc.commitHash || '') + '」を返した' };
+  return { hash: null, note: '再特定の結果 found:false — 理由: ' + (loc.reason || '（未記載）') };
+}
 
 // =========================================================================
 // Phase: Setup — tech-director がスキャフォールド + 設計docs + stories.yaml
@@ -707,11 +728,23 @@ async function buildStoryLane(laneStories) {
           { label: 'implement-' + sid, phase: 'Build', agentType: story.assignee, effort: 'high', schema: COMMIT_RESULT_SCHEMA }
         );
         if (r && r.commitHash) {
-          lastCommitHash = r.commitHash;
-          // 申告 changedFiles にコード対象パスが無ければ対象コミットを疑う（自己申告なので即断せず reviewer の対象確認に委ねる — retro-e4）
+          lastCommitHash = String(r.commitHash);
+          // 申告 changedFiles（`git show --stat` の一覧）にコード対象パスが無ければ、reviewer の任意申告を待たず workflow が実装コミットを
+          // 再特定する（retro-e4: E4 で state/reviews のみのコミットがレビューされた。決定的な根拠なので人間可視チャネルにも載せる）
           const declared = Array.isArray(r.changedFiles) ? r.changedFiles.map(String) : [];
-          if (declared.length > 0 && !declared.some(function (f) { return EP.codePathRe.test(f); })) {
-            log('[CR-CODE] ' + sid + ': 申告 changedFiles にコード対象パス（' + EP.codePathHint + '）が無い — レビュー対象コミット ' + lastCommitHash + ' を疑う');
+          if (!declared.some(function (f) { return EP.codePathRe.test(f); })) {
+            knownIssues.push('[CR-CODE][' + sid + '] 実装 agent の申告 changedFiles にコード対象パス（' + EP.codePathHint + '）が無い（対象コミット ' + lastCommitHash + ' が実装コミットでない疑い — 再特定を試行）');
+            relocated = true;
+            const loc = await locateImplCommit(sid, story, 'locate-commit-' + sid + '-pre', lastCommitHash);
+            if (loc.hash) {
+              log('[CR-CODE] ' + sid + ': 対象コミットを ' + lastCommitHash + ' → ' + loc.hash + ' に再特定（実装申告時点）');
+              lastCommitHash = loc.hash;
+              relSuffix = '-relocated';
+            } else {
+              targetUnresolvable = true;
+              unresolvedFindings.push('[BLOCKER] [CR-CODE][' + sid + '] レビュー対象コミットを固定できない（' + loc.note + '）— レビュー未成立・自動 APPROVE しない');
+              recordVerdict('CR-CODE', sid, 0, 'CONCERNS', ['対象コミット不成立（実装申告時点）: ' + loc.note]);
+            }
           }
           return r;
         }
@@ -769,27 +802,34 @@ async function buildStoryLane(laneStories) {
           },
         ]);
         const valid = (pair || []).filter(function (r) { return r && r.verdict; });
-        if (valid.some(function (r) { return r.targetMismatch === true; })) {
-          // 対象コミットに実装が無い（レビュー未成立）— 1 回だけ実装コミットを再特定して同 iteration をやり直す（retro-e4）
+        // 対象証明: observedCodeFiles にコード対象パスのファイルがあるか。targetMismatch の明示、または findings 0 件なのに対象未証明は
+        // いずれもレビュー未成立 — 実装 diff を見ていない APPROVE を作らない（retro-e4）
+        const observed = [];
+        for (const r of valid) for (const f of (r.observedCodeFiles || [])) observed.push(String(f));
+        const targetProven = observed.some(function (f) { return EP.codePathRe.test(f); });
+        const flaggedMismatch = valid.some(function (r) { return r.targetMismatch === true; });
+        const zeroFindings = valid.length > 0 && valid.every(function (r) { return (r.findings || []).length === 0; });
+        if (flaggedMismatch || (zeroFindings && !targetProven)) {
+          const why = flaggedMismatch ? 'reviewer が targetMismatch を報告' : 'findings 0 件だが observedCodeFiles にコード対象パスが無い（対象未証明）';
+          let note = '再特定は既に 1 回実施済み';
           if (!relocated) {
+            // 1 回だけ実装コミットを再特定して同 iteration をやり直す
             relocated = true;
-            const loc = await agentR(
-              [
-                'story ' + sid + '「' + story.title + '」の実装コミットを特定せよ（読み取り専用・ファイル変更禁止）。',
-                '`git log --format="%H %s" -40 -- ' + EP.codePathspec + '` から story ID または title に一致する最新コミットを選び、`git show --stat --format= <hash>` に ' + EP.codePathHint + ' のファイルが含まれることを確認して commitHash に返せ。該当が無ければ found:false と reason を返す（推測の hash を返さない）。',
-                '参考: 直前にレビュー対象として渡された ' + lastCommitHash + ' にはコード対象パスの変更が無かった。',
-              ].join('\n'),
-              { label: 'locate-commit-' + sid + '-iter' + iteration, phase: 'Build', agentType: story.assignee, schema: LOCATE_COMMIT_SCHEMA, effort: 'low' }
-            );
-            if (loc && loc.found && loc.commitHash) {
-              log('[CR-CODE] ' + sid + ': 対象コミットを ' + lastCommitHash + ' → ' + loc.commitHash + ' に再特定（iteration ' + iteration + ' をやり直す）');
-              lastCommitHash = loc.commitHash;
+            const loc = await locateImplCommit(sid, story, 'locate-commit-' + sid + '-iter' + iteration, lastCommitHash);
+            if (loc.hash) {
+              log('[CR-CODE] ' + sid + ': 対象コミットを ' + lastCommitHash + ' → ' + loc.hash + ' に再特定（' + why + '。iteration ' + iteration + ' をやり直す）');
+              lastCommitHash = loc.hash;
               relSuffix = '-relocated';
               return reviewOnce(iteration);
             }
+            note = loc.note;
           }
           targetUnresolvable = true;
-          unresolvedFindings.push('[BLOCKER] [CR-CODE][' + sid + '] 対象コミット ' + lastCommitHash + ' にコード対象パス（' + EP.codePathHint + '）の変更が無く、実装コミットも特定できない（レビュー未成立 — 自動 APPROVE しない）');
+          unresolvedFindings.push('[BLOCKER] [CR-CODE][' + sid + '] 対象コミット ' + lastCommitHash + ' — ' + why + '。' + note + '（レビュー未成立 — 自動 APPROVE しない）');
+          // 片方の reviewer が実 findings を返していた場合は捨てずに履歴へ残す。verdictHistory にも CR-CODE の行を残す（full-build と対称）
+          const sideFindings = [];
+          for (const r of valid) for (const f of (r.findings || [])) sideFindings.push(String(f));
+          recordVerdict('CR-CODE', sid, iteration, 'CONCERNS', ['対象コミット不成立（レビュー未成立）: ' + why].concat(sideFindings));
           return null;
         }
         if (valid.length === 0) {
@@ -827,7 +867,7 @@ async function buildStoryLane(laneStories) {
             '4. コミットする。' + GIT_ADD_RULE,
             '   ' + IDEMPOTENT_RULE,
             '   コミットメッセージ: "' + sid + ': fix CR-CODE iter ' + iteration + '"。コミット hash は上記コミット規律の方法（`git log --format="%H %s" -20` の自メッセージ一致・最新行）で取得せよ。',
-            '構造化返却: commitHash（今回のコミット hash。必須）/ summary（対応要約）。',
+            '構造化返却: commitHash（今回のコミット hash。必須）/ changedFiles（`git show --stat --format= <hash>` のファイル一覧。必須）/ summary（対応要約）。',
           ].filter(Boolean).join('\n'),
           withTier({ label: 'fix-' + sid + '-iter' + iteration, phase: 'Build', agentType: story.assignee, effort: 'high', schema: COMMIT_RESULT_SCHEMA },
             escalate, TIER.judge)
@@ -1322,51 +1362,66 @@ const EVIDENCE_CMD_NOTE =
   'basename だけの出力・別ディレクトリからの実行・出力の手書きは不合格。ファイルの作成・変更・削除は禁止。';
 
 async function verifyEvidence(paths, label, phaseName) {
-  const ask = function (lbl, extra) {
+  const ask = function (lbl, targetPaths, extra) {
     return agentR(
       [
         '読み取り専用の検証タスク。以下の証跡パス一覧について、各ファイルの実在と非0サイズを機械検証せよ。',
         EVIDENCE_CMD_NOTE,
         extra,
-        '証跡パス(JSON): ' + JSON.stringify(paths),
+        '証跡パス(JSON): ' + JSON.stringify(targetPaths),
         '加えて ' + ART.qaEvidence + ' 直下の実ファイル一覧を ls で確認し extraFilesInEvidenceDir に返せ。',
       ].filter(Boolean).join('\n'),
       { label: lbl, phase: phaseName, effort: 'low', model: TIER.mechanical, schema: EVIDENCE_CHECK_SCHEMA }
     );
   };
-  const classify = function (evCheck) {
+  // strictAbsence: checks に現れないパスを missing にする（初回 — 網羅性突合。検証 agent が checks:[] や部分回答を返した場合に
+  // 合格擬装させない）。再検証は対象を uncertain 分に絞るため、現れなければ uncertain のまま（不存在とは言えない）
+  const classify = function (evCheck, targetPaths, strictAbsence) {
     const missing = [];
     const uncertain = [];
-    if (!evCheck) return { missing: ['証跡検証 agent が結果を返さなかった'], uncertain: uncertain };
-    // 網羅性突合: evidencePaths の各パスが checks に exists && nonEmpty で現れることを要求
-    // （検証 agent が checks:[] や部分回答を返した場合に合格擬装させない）
     const byPath = {};
-    for (const c of (evCheck.checks || [])) byPath[c.path] = c;
-    for (const p of paths) {
+    for (const c of ((evCheck && evCheck.checks) || [])) byPath[c.path] = c;
+    for (const p of targetPaths) {
       const c = byPath[p];
-      if (!c) missing.push(p + '（検証結果に現れず — 未検証）');
-      else if (!c.exists || !c.nonEmpty) missing.push(p + '（' + (!c.exists ? '不存在' : '0バイト') + '）');
-      // rawLine にフルパスが無い = コマンド実行の証拠が無い（basename 一致では別ディレクトリの行を流用できる — Codex P2）。
-      // ただし不存在の証明でもないため missing ではなく uncertain に分類する
-      else if (typeof c.rawLine !== 'string' || c.rawLine.indexOf(String(p)) < 0) uncertain.push(p);
+      if (!c) {
+        if (strictAbsence) missing.push(p + '（検証結果に現れず — 未検証）'); else uncertain.push(p);
+        continue;
+      }
+      if (!c.exists || !c.nonEmpty) { missing.push(p + '（' + (!c.exists ? '不存在' : '0バイト') + '）'); continue; }
+      // rawLine（`stat "%N %z"` = "<path> <bytes>" / 失敗時 "<path> MISSING"）を一次情報にする。exists/nonEmpty は同じ agent の
+      // 申告なので、rawLine と矛盾したら生出力を採る（"<path> MISSING" はパス文字列を含むため indexOf 突合では合格してしまう）。
+      // フルパス一致を要求する（basename 一致では別ディレクトリの行を流用できる — Codex P2）。一致しない = コマンド実行の証拠が
+      // 無いが不存在の証明でもないので uncertain
+      const m = typeof c.rawLine === 'string' ? c.rawLine.trim().match(/^(.*\S)\s+(\d+|MISSING)$/) : null;
+      if (!m || m[1] !== String(p)) { uncertain.push(p); continue; }
+      if (m[2] === 'MISSING') missing.push(p + '（不存在 — rawLine が MISSING。申告 exists:true と矛盾）');
+      else if (Number(m[2]) === 0) missing.push(p + '（0バイト — rawLine のサイズ 0。申告 nonEmpty:true と矛盾）');
     }
     return { missing: missing, uncertain: uncertain };
   };
-  let r = classify(await ask(label, ''));
-  if (r.uncertain.length > 0) {
-    log(label + ': rawLine 不一致 ' + r.uncertain.length + ' 件 → 是正指示付きで 1 回再検証');
-    r = classify(await ask(label + '-recheck',
-      '【再検証】前回の出力にはパス文字列が含まれていなかった（' + r.uncertain.length + ' 件。例: ' + r.uncertain.slice(0, 3).join(', ') + '）。上記コマンドを**リポジトリルート**で実行し直せ。'));
-  }
-  return r;
+  const ev1 = await ask(label, paths, '');
+  if (!ev1) return { missing: ['証跡検証 agent が結果を返さなかった'], uncertain: [] };
+  const first = classify(ev1, paths, true);
+  if (first.uncertain.length === 0) return first;
+  log(label + ': rawLine 不一致 ' + first.uncertain.length + ' 件 → 是正指示付きで 1 回再検証（対象は不一致分のみ）');
+  const ev2 = await ask(label + '-recheck', first.uncertain,
+    '【再検証】前回の出力にはパス文字列が含まれていなかった（' + first.uncertain.length + ' 件）。上記コマンドを**リポジトリルート**で実行し直せ。対象は下記の一覧のみ。');
+  // fail closed マージ（batch-verify の resolvedPrior と同じ原則）: 初回で確定した missing は再検証で消えない。再検証は不一致分だけを
+  // 対象にし、そこで新たに判明した missing を加える。再検証 agent が null なら不一致分は uncertain のまま
+  const second = ev2 ? classify(ev2, first.uncertain, false) : { missing: [], uncertain: first.uncertain.slice() };
+  const merged = first.missing.slice();
+  for (const m of second.missing) if (merged.indexOf(m) < 0) merged.push(m);
+  return { missing: merged, uncertain: second.uncertain };
 }
 
-let qaResult = null;
+let qaResult = null; // 直近の成立した QA 判定（round 2 の agent 失敗で round 1 の記録を消さない — retro-e4 監査）
+let qaPriorNote = ''; // 前 round が workflow の証跡/目視検証で降格された場合、次 round の qa-lead へ理由を渡す
 const QA_MAX = 2; // review-loops.md: QA-PLAY MAX_ITER 2
 for (let round = 1; round <= QA_MAX; round++) {
-  qaResult = await agentR(
+  const thisRound = await agentR(
     [
       BUILD_VERIFY_WARN + reviewModeNote(reviewMode),
+      qaPriorNote,
       'GATE: QA-PLAY（' + DOCS.gates + ' の QA-PLAY 節の engine=' + engine + ' の実行手段に従う）。iteration ' + round + '/' + QA_MAX + '。',
       '対象: ' + EP.qaTarget,
       (integrate && (integrate.degradations || []).length > 0
@@ -1390,10 +1445,13 @@ for (let round = 1; round <= QA_MAX; round++) {
     { label: 'qa-play-round' + round, phase: 'QA', agentType: 'qa-lead', effort: 'high', schema: qaSchema }
   );
 
-  if (!qaResult) {
-    unresolvedFindings.push('[QA-PLAY] round ' + round + ' の QA agent が失敗');
+  if (!thisRound) {
+    unresolvedFindings.push('[QA-PLAY] round ' + round + ' の QA agent が失敗' + (qaResult ? '（直近の成立判定は round ' + (round - 1) + ' の ' + qaResult.verdict + ' — 再検証されていない）' : ''));
     continue;
   }
+  qaResult = thisRound;
+  qaPriorNote = '';
+  const qaSelfVerdict = qaResult.verdict; // 降格前の自己申告（qa-lead.md 違反の判定に使う — workflow 自身の降格を違反と誤記録しない）
 
   // 証跡実在＋目視宣言の独立機械検証（qa-lead の自己申告を workflow が別 agent で確認 — E1 教訓: 自己申告が唯一の関門にならないこと）
   {
@@ -1413,12 +1471,16 @@ for (let round = 1; round <= QA_MAX; round++) {
         log('[QA-PLAY] round ' + round + ': 証跡/目視の機械検証不合格 → APPROVE を CONCERNS に降格');
       }
       unresolvedFindings.push('[QA-PLAY] round ' + round + ' 証跡/目視の機械検証不合格: ' + missing.join(' / '));
+      qaPriorNote = '【前 round（' + round + '）は workflow の証跡/目視機械検証で不合格 → 降格: ' + missing.join(' / ') + '。今 round は証跡の実在（リポジトリルートからの相対パス・非 0 バイト）と全スクリーンショットの Read 目視を必ず満たせ】';
     }
   }
 
   log('[QA-PLAY] round ' + round + ': ' + qaResult.verdict + '（重大バグ ' + qaResult.criticalBugs.length + ' 件 / acceptance 未通過 ' + (qaResult.failedAcceptance || []).length + ' 件）');
   recordVerdict('QA-PLAY', 'qa', round, qaResult.verdict,
-    qaResult.criticalBugs.map(function (b) { return b.title; }).concat(qaResult.failedAcceptance || []));
+    qaResult.criticalBugs.map(function (b) { return '[critical] ' + b.title; })
+      .concat((qaResult.bugs || []).map(function (b) { return '[' + (b.severity || 'minor') + '] ' + b.title; })) // bugs も履歴に残す（review-mode=full の全件提示から落とさない）
+      .concat(qaResult.failedAcceptance || [])
+      .concat(qaSelfVerdict !== qaResult.verdict ? ['（qa-lead 自己申告 ' + qaSelfVerdict + ' → workflow が証跡/目視検証で ' + qaResult.verdict + ' に降格）'] : []));
   if (qaResult.verdict === 'APPROVE') {
     break; // 合格は verdict === APPROVE のみ（criticalBugs 0 件でのショートカット禁止）
   }
@@ -1427,6 +1489,9 @@ for (let round = 1; round <= QA_MAX; round++) {
     // 重大バグをassigneeが修正（同一コードベースのため順次。コンフリクト回避）
     for (let bi = 0; bi < qaResult.criticalBugs.length; bi++) {
       const bug = qaResult.criticalBugs[bi];
+      // assignee が engineer 以外（schema enum 外の値を LLM は返し得る）なら gameplay-engineer に倒し、未知の agentType で例外にしない
+      const bugEng = ['gameplay-engineer', 'ui-engineer'].indexOf(bug.assignee) >= 0 ? bug.assignee : 'gameplay-engineer';
+      if (bugEng !== bug.assignee) knownIssues.push('[QA-PLAY] round ' + round + ': 重大バグ「' + bug.title + '」の assignee「' + bug.assignee + '」が engineer 以外 — gameplay-engineer に割り当てて修正');
       const fixed = await agentR(
         [
           QA_FIX_NOTE,
@@ -1445,7 +1510,7 @@ for (let round = 1; round <= QA_MAX; round++) {
         // bug index も含める: 同一 round・同一 assignee に複数バグがあると label が衝突し、
         // reviewer が同文バグを2件返した場合に2件目が1件目のキャッシュを replay する（adversarial M-8b）
         // QA fix は人間エスカレーション前の唯一の修正機会 — judge 階層で行う（model-routing.md §2）
-        { label: 'fix-qa-r' + round + '-' + bug.assignee + '-' + bi, phase: 'QA', agentType: bug.assignee, effort: 'high', model: TIER.judge }
+        { label: 'fix-qa-r' + round + '-' + bugEng + '-' + bi, phase: 'QA', agentType: bugEng, effort: 'high', model: TIER.judge }
       );
       if (fixed === null) {
         unresolvedFindings.push('[QA-PLAY] 重大バグ「' + bug.title + '」の修正 agent が失敗');
@@ -1495,14 +1560,26 @@ for (let round = 1; round <= QA_MAX; round++) {
         unresolvedFindings.push('[QA-PLAY] round ' + round + ' の major バグ修正 agent（' + eng + '）が失敗');
       }
     }
+    // どのレーンにも配れなかった major バグを黙って捨てない（assignee が engineer 以外 — retro-e4 監査）
+    for (const b of majors) {
+      if (['gameplay-engineer', 'ui-engineer'].indexOf(b.assignee || 'gameplay-engineer') < 0) {
+        unresolvedFindings.push('[BLOCKER] [QA-PLAY] round ' + round + ': major バグ「' + b.title + '」の assignee「' + b.assignee + '」が engineer レーン外のため修正ディスパッチから脱落（未修正）');
+      }
+    }
     // 非 APPROVE なのに修正対象の配列が全て空 — E4 で中程度バグが qa/report.md にだけ書かれ、修正が一度も走らず
     // HEAD 同一のまま round 2 に到達した（retro-e4）。summary と qa/report.md を起点に 1 回修正を試みる（judge 階層）
-    if (qaResult.criticalBugs.length === 0 && majors.length === 0 && (qaResult.failedAcceptance || []).length === 0) {
-      unresolvedFindings.push('[QA-PLAY] round ' + round + ': qa-lead が非APPROVE（' + qaResult.verdict + '）の理由を criticalBugs/bugs/failedAcceptance に載せなかった（qa-lead.md 違反）— summary 起点で修正を試行');
+    const minorsOnly = (qaResult.bugs || []).length > 0 && majors.length === 0;
+    if (qaSelfVerdict === 'APPROVE' && qaResult.criticalBugs.length === 0 && majors.length === 0 && (qaResult.failedAcceptance || []).length === 0) {
+      // qa-lead は APPROVE、workflow が証跡/目視の機械検証で降格 — コード修正の対象ではない（qa-lead.md 違反でもない）。次 round で証跡を取り直す
+      log('[QA-PLAY] round ' + round + ': workflow 降格のみ（qa-lead 自己申告は APPROVE）— コード修正は起こさず次 round で証跡を取り直す');
+    } else if (qaResult.criticalBugs.length === 0 && majors.length === 0 && (qaResult.failedAcceptance || []).length === 0) {
+      unresolvedFindings.push('[QA-PLAY] round ' + round + ': ' + (minorsOnly
+        ? 'qa-lead が minor バグのみで非APPROVE（' + qaResult.verdict + '）を返した — 判定規則（重大バグ 0・acceptance 全通過 = APPROVE）と不整合で理由不明'
+        : 'qa-lead が非APPROVE（' + qaResult.verdict + '）の理由を criticalBugs/bugs/failedAcceptance に載せなかった（qa-lead.md 違反）') + ' — summary 起点で修正を試行');
       const sfixed = await agentR(
         [
           QA_FIX_NOTE,
-          'あなたは ArcadeRelay の実装 engineer。QA-PLAY round ' + round + ' が ' + qaResult.verdict + ' だが、修正対象の配列（criticalBugs / bugs / failedAcceptance）が全て空で返された。',
+          'あなたは ArcadeRelay の実装 engineer。QA-PLAY round ' + round + ' が ' + qaResult.verdict + ' だが、修正対象（criticalBugs / major bugs / failedAcceptance）が空で返された' + (minorsOnly ? '（minor バグのみ: ' + JSON.stringify(qaResult.bugs) + ' — これも対象に含めて判断せよ）' : '') + '。',
           'summary: ' + (qaResult.summary || '（なし）'),
           ART.qaReport + ' の round ' + round + ' 所見と上記 summary から非APPROVE の原因（中程度以下のバグを含む）を全て特定して修正せよ。修正不能・修正不要と判断した項目は ' + ART.qaReport + ' に理由を追記せよ。',
           '参照: ' + ART.conventions + ' / ' + DOCS.techStack + '。修正後 ' + EP.verifyCmd + ' が exit 0 を確認し、パス限定で add してコミット: `git add game qa state ' + DOCS.techStack + ' && git commit -m "phase2: fix QA — summary"`（`git add -A` 禁止）。',
@@ -1562,6 +1639,7 @@ function cdPrompt(attemptNote) {
     // 改行を潰してから箇条書き化する（findings には外部 API エラー本文由来のテキスト — degradedRoutes/notes/
     // laneSafe の e.message — が入り得る。生の改行は箇条書き構造を破って判定者プロンプトへ行注入できる）
     unresolvedFindings.length > 0 ? unresolvedFindings.map(function (f) { return '- ' + String(f).replace(/\s*\n\s*/g, ' / '); }).join('\n') : '- なし',
+    '（[VERIFY-UNCERTAIN] 項目はオーケストレータが後段で test -s により確定する — summary に「証跡未検証」等の未確定事項として書かず、項目名のまま列挙するに留めよ）',
     '',
     '観点: 1) ビジョン一貫性（brief・P-xx から逸脱していないか） 2) 提示品質（人間が5分で判断できる要約か） 3) 正直さ（未達・妥協点が列挙されているか）。',
     '併せて ' + STATE.active + ' を「Phase 2 完了・Checkpoint B 待ち」に更新せよ（日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う — 推測記入禁止）。',
@@ -1618,6 +1696,11 @@ if (cd && cd.verdict === 'REJECT' && cd.rejectInstructions && cd.rejectInstructi
   } else {
     unresolvedFindings.push('[CD-CHECKPOINT] REJECT 指示への修正 agent が失敗');
   }
+}
+
+if (cd && cd.verdict === 'REJECT' && !(cd.rejectInstructions && cd.rejectInstructions.length > 0)) {
+  // REJECT なのに指示が無い — 修正も再判定もできない状態を沈黙させない（retro-e4 監査）
+  unresolvedFindings.push('[CD-CHECKPOINT] REJECT だが rejectInstructions が空 — 修正・再判定を実行できず REJECT のまま Checkpoint B へ');
 }
 
 if (!cd) {

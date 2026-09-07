@@ -2,7 +2,7 @@
 
 > 2026-09-08。E4 = v0.5.0.0 モデル階層ハーネス（メインセッション＝オーケストレータ / judge=opus・producer=sonnet・mechanical=haiku）の初実走。
 > Phase 1 → Checkpoint A（修正指示 1 回: ちびキャラ・Retro Diffusion ルート・64px 維持）→ Phase 2 → Checkpoint B（無修正）→ Phase 3 ×3 → Checkpoint C（修正依頼 2 回・3 回目で受領）。
-> 一次情報: run ブランチの state/active.md・tokenUsage・qa/report.md・MANIFEST（成果物は private repo `arcade-relay-sample-mineral-town` に退避。本体には harness のみ）。
+> 一次情報: run ブランチの state/active.md・tokenUsage・qa/report.md・MANIFEST（run 成果物は別リポジトリへ退避。本体には harness のみ）。
 > 処方は v0.5.1.0（本 retro と同 PR）で反映済み — 各指摘の末尾に対応コミットの要旨を記す。
 
 ## 実測サマリ
@@ -58,6 +58,18 @@ retro-e3 処方どおり QA fix が `tech-stack.md` に 5 件追記したが、r
 ### 8.【低・観測不能】検証コマンド例の `${PIPESTATUS[0]}` が zsh で空
 スキルの例は bash 構文。macOS 既定の zsh では `EXIT=` が空文字になり、exit code を観測したつもりで観測していない。E4 で `${pipestatus[1]}` に読み替えて回避。
 **処方**: forge-build / forge-prototype の例に zsh 形を併記し、「`EXIT=` が空なら観測失敗として扱い判定を出さない」を明記。
+
+## PR 前レビュー 4 面（code-reviewer / silent-failure-hunter / adversarial+OSS 監査 / Codex）で見つかった穴と追加処方
+
+初版の処方に対する指摘（blocker 1・critical 2・high 4・major 3・P2 4、ほか minor）は 3 つに収束した。いずれも同 PR で反映済み。
+
+- **fail-open の再導入**（処方 1 の recheck）: 再検証結果が初回分類を丸ごと置換し、初回で確定した不存在が消えていた（batch-verify で一度直した fail-open の再来）。→ 再検証は不一致分のみを対象にし、初回の missing は保持（resolvedPrior と同じ fail closed）。加えて rawLine は `<path> <bytes>` として解析し、`<path> MISSING` / サイズ 0 は申告 exists/nonEmpty と矛盾すれば降格（パス文字列を含むだけの行を合格にしない）。
+- **決定的根拠を log にしか使っていない**（処方 2）: 申告 changedFiles にコード対象パスが無い事実を workflow が持ちながら判定に使わず、reviewer の任意フィールド `targetMismatch` に全依存していた。commitHash 空でもガードが外れていた。→ changedFiles / observedCodeFiles を必須化し、コード対象パスが無い・hash 無しは reviewer 起動前に再特定、findings 0 件でも対象未証明なら APPROVE にしない、再特定 hash は hex 検証、agent 失敗と found:false を区別。
+- **workflow 自身の降格を qa-lead 違反と誤記録**（処方 3）: 証跡/目視で降格した APPROVE が summary fix（opus）を空振りさせ、E5 の観測指標（違反 0）を汚す。→ 自己申告 verdict を保持し、降格のみならコード修正を起こさず次 round の qa-lead に降格理由を渡す。minor のみの非 APPROVE は「不整合・理由不明」として別文言で記録し summary fix を試行。
+
+そのほか: 無記録経路の解消（bookkeep / finalize-state / QA round 2 の agent 失敗・REJECT 空指示・engineer 外 assignee・locate の失敗理由）、スキル文面の「置換」→「追記」（劣化記録の消去を許可していた）、`[VERIFY-UNCERTAIN]` は行が名指しするパスを `test -s`、full-build 戻り値に evidencePaths、gen-* の冪等ガード、テストの空振り（-retry2 検証）修正、contract §11 ↔ ENGINE_PROFILES の同期テスト、`.gitignore`（`.gstack/`・`game/.tmp/`）。
+
+既知の限界（未対応・記録のみ）: unity の `Assets/Tests/**`・シーン・`.asmdef` のみ、unreal の `*.Build.cs`・`Config/*.ini` のみのコミットは contract §11 のコード対象パスに当たらず、単独 story なら「対象未証明」→ 再特定 → `[BLOCKER]` になる（実装と同じコミットに含める規約で回避。必要なら contract §11 の対象パスを広げる）。検証 agent が `<path> <bytes>` を捏造する最安の攻撃は workflow 内では検出できない — 信頼境界はオーケストレータの `test -s`（設計どおり）。ラン中のハーネス upgrade + resume は impl 以降のプレフィクスを外し課金再実行になり得るため避ける（gen-* の冪等ガードは緩和）。
 
 ## E5 で観測すること
 

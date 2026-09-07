@@ -29,3 +29,7 @@ game/*.xcworkspace/
 
 # 生成資産の生データ（最終採用分は game/assets/ にコミット）
 design/refs/_candidates/
+
+# ローカルツールの出力・run 中の QA スクラッチ（公開 PR に混入させない — retro-e4 監査）
+.gstack/
+game/.tmp/

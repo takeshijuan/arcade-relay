@@ -23,29 +23,53 @@ recovered by hand by the orchestrator; this release mechanizes the recovery.
   (`verify-evidence-*-recheck`), and if still mismatched records
   `[VERIFY-UNCERTAIN]` instead of failing — the orchestrator's own `test -s`
   (skill Phase 2) replaces it. Missing / empty / unlisted files, an empty
-  `evidencePaths` and a skipped visual check still demote.
+  `evidencePaths` and a skipped visual check still demote. The recheck asks
+  only about the mismatched paths and merges fail-closed — a file the first
+  pass reported missing never disappears — and `rawLine` is parsed as
+  `<path> <bytes>` / `<path> MISSING`, so a line that merely contains the
+  path does not pass and a `MISSING` or `0` line demotes even when the
+  verifier's `exists` / `nonEmpty` booleans claim otherwise.
 - CR-CODE reviews verify their target first. E4 handed reviewers commits that
   touched only `state/reviews` or `stories.yaml` (S-48 / S-50 / S-62) and the
-  empty diff got a verdict. Implementation and fix agents must now return
-  `changedFiles`; the workflow checks them against the engine's code path
-  (contract §11, `ENGINE_PROFILES.codePathRe`); reviewers must return
-  `targetMismatch: true` instead of a verdict when the commit has no code
-  files; the workflow then runs `locate-commit-*` once (read-only, the story's
-  engineer) and repeats the same iteration under a `-relocated` label, or
-  records a `[BLOCKER]` and neither approves nor fixes.
+  empty diff got a verdict. Implementation and fix agents must return
+  `changedFiles` (required); when none matches the engine's code path
+  (contract §11, `ENGINE_PROFILES.codePathRe`) or `commitHash` is missing,
+  the workflow re-locates the implementation commit before any reviewer runs
+  (`locate-commit-<sid>-pre`, the story's engineer, read-only, hash
+  validated) and records the suspicion in `unresolvedFindings`. Reviewers
+  must return `observedCodeFiles` (required) and `targetMismatch: true` when
+  the commit has no code files; a zero-finding review without a code file in
+  `observedCodeFiles` is "target unproven" and never becomes APPROVE. One
+  relocation per story (`-relocated` label, same iteration); otherwise a
+  `[BLOCKER]` with the reason (agent failed / not found / invalid hash) and
+  neither approval nor fix.
 - QA-PLAY non-APPROVE always triggers a fix attempt. In E4 qa-lead reported a
   medium bug only in `qa/report.md` with empty `criticalBugs` /
   `failedAcceptance`, so no fix ran and round 2 re-judged the same HEAD. When
   every fix list is empty the workflow now records a qa-lead protocol
   violation and runs one judge-tier fix from `summary` + `qa/report.md`
   (`qa-fix-<n>-summary` / `fix-qa-r<n>-summary`). The prototype QA schema gains
-  `bugs` (major / minor); majors are fixed in one call per assignee.
-- `agentR(prompt, opts, retries)`: CD-CHECKPOINT (all three workflows) and
-  `finalize-state` retry twice (`-retry`, `-retry2`). The Workflow runtime has
-  no timers, so the wait-based recovery lives in the forge skills: on a missing
-  CD summary the orchestrator sleeps 120s and runs one standalone
-  creative-director Task, then substitutes the result and says so in the
-  checkpoint.
+  `bugs` (major / minor); majors are fixed in one call per assignee. The
+  workflow keeps qa-lead's own verdict apart from its own evidence demotion:
+  a demoted APPROVE triggers neither the summary fix nor a protocol-violation
+  record, and the next round's qa-lead prompt carries the demotion reason.
+  A minor-only non-APPROVE is recorded as an inconsistency (not a violation)
+  and still gets one summary fix; bugs assigned outside the engineer lanes are
+  recorded as undispatched instead of silently dropped.
+- `agentR(prompt, opts, retries)`: CD-CHECKPOINT (all three workflows,
+  re-judges included) and full-build's `finalize-state` retry twice
+  (`-retry`, `-retry2`). The Workflow runtime has no timers, so the
+  wait-based recovery lives in the forge skills: on a missing CD summary the
+  orchestrator sleeps 120s and runs one standalone creative-director Task,
+  then substitutes verdict / summary / playInstructions and says so in the
+  checkpoint — the standalone CD's findings and knownIssues are appended to
+  the workflow's lists, never used to replace them.
+- Silent paths now recorded in `unresolvedFindings`: full-build `bookkeep-*`
+  and `finalize-state` returning null, prototype's round-2 QA agent failure
+  (the round-1 verdict is kept, not overwritten), a CD REJECT with empty
+  instructions, `locate-commit` agent failure vs. not-found, undispatched
+  bugs. Asset `gen-*` prompts carry the idempotency guard so a resumed run
+  does not re-bill generation.
 - Skill verification examples note zsh's `${pipestatus[1]}` — on macOS zsh
   `${PIPESTATUS[0]}` is empty and `EXIT=` printed nothing (an empty value is
   now an observation failure, not a pass).
@@ -64,7 +88,13 @@ recovered by hand by the orchestrator; this release mechanizes the recovery.
   `return_spritesheet` yields a single image (sheets are per-frame + Pillow),
   Japanese glyphs cannot be rendered.
 - `qa-lead.md` / `review-loops.md`: a non-APPROVE verdict must carry its
-  reasons in the structured return; `gates.md` CR-CODE: target check first.
+  reasons in the structured return; `gates.md` CR-CODE: target check first,
+  `observedCodeFiles` required.
+- full-build's return value includes `evidencePaths` (QA's own list) like
+  prototype's; the skills verify exactly the paths a `[VERIFY-UNCERTAIN]` line
+  names before removing it.
+- `.gitignore`: `.gstack/` (local tooling output) and `game/.tmp/` (QA
+  scratch during a run).
 
 ### Added
 
@@ -73,8 +103,11 @@ recovered by hand by the orchestrator; this release mechanizes the recovery.
   to observe in E5.
 - `tech-stack.md` "既知の落とし穴 (engine=phaser)" — five pitfalls promoted
   during E4 that had only landed on the run branch.
-- Tests 81 → 89 (retries, Bash sync, evidence recheck / uncertain / demotion,
-  empty-list QA fix, major batching, CR-CODE relocation and blocker paths).
+- Tests 81 → 97 (retries, Bash sync, evidence recheck / uncertain / demotion,
+  empty-list QA fix, major batching, CR-CODE relocation and blocker paths, and
+  the review-driven cases: fail-closed evidence merge, `rawLine` parsing,
+  pre-review relocation, target proof, qa-lead self-verdict separation,
+  undispatched bugs, silent paths, contract §11 ↔ `ENGINE_PROFILES` sync).
 - TODOS: pixel-art animation sheet route (RD cannot produce sheets).
 
 ## [0.5.0.0] - 2026-09-02

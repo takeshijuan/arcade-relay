@@ -117,7 +117,7 @@ const JUDGE_ESCALATION_NOTE = '【段階エスカレーション（judge 階層�
 // （CD-CHECKPOINT）だけ 2 回にし、待機を伴う回復はスキル側（オーケストレータ Bash `sleep`）に置く（retro-e4: E4 CD 529）。
 // label は -retry / -retry2（テスト route は接頭辞一致なので既存 fixture はそのまま当たる）
 async function agentR(prompt, opts, retries) {
-  const max = typeof retries === 'number' ? retries : 1;
+  const max = (Number.isInteger(retries) && retries >= 0) ? retries : 1; // NaN/負数は既定 1（無言で 0 回に縮退させない）
   const base = (opts && opts.label) || 'agent';
   let r = await agent(prompt, opts);
   for (let n = 1; r === null && n <= max; n++) {
@@ -546,7 +546,7 @@ if (!cd) {
       phase: 'Final',
       schema: CD_SCHEMA,
       effort: 'high'
-    });
+    }, 2); // 人間が Checkpoint A を見る直前の最終判定 — retries 2（retro-e4）
     if (cd2) {
       cd = cd2;
       log('CD-CHECKPOINT 再判定: ' + cd.verdict);

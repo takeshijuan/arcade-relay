@@ -30,11 +30,19 @@ const CROSSCHECK = {
 const QA_OK = { verdict: 'APPROVE', criticalBugs: [], bugs: [], failedAcceptance: [], evidencePaths: ['qa/evidence/e.png'], screenshotsVisuallyConfirmed: true };
 const EV_OK = { checks: [{ path: 'qa/evidence/e.png', exists: true, nonEmpty: true, rawLine: 'qa/evidence/e.png 1234' }], extraFilesInEvidenceDir: [] }; // rawLine = stat "%N %z" の行（retro-e4）
 
+// retro-e4: 実装は changedFiles（コード対象パス）を、reviewer は observedCodeFiles（対象証明）を返すのが正常系。
+// どちらも無い既定応答（fromSchema の空配列）は「対象未証明」として再特定 → BLOCKER に流れる（意図した挙動 — 別テストで固定）
+// 3 engine のコード対象パス（contract §11）を全て含め、engine 切替テストでも対象証明が成立する fixture にする
+const CODE_FILES = ['game/src/systems/x.ts', 'game/Assets/Scripts/Systems/X.cs', 'game/Source/ForgeGame/Systems/X.cpp'];
+const IMPL_OK = { commitHash: 'abc1234', changedFiles: CODE_FILES, summary: 's' };
+const CR_OK = { verdict: 'APPROVE', findings: [], observedCodeFiles: CODE_FILES };
 // route は接頭辞マッチにする（agentR の '-retry' 付き label でも同じ route が当たるように — retro-e3 指摘5）
 function baseRoutes(batchReply, qaReply) {
   return [
     R(/^setup-scaffold-stories/, SETUP),
     R(/^setup-crosscheck-stories/, CROSSCHECK),
+    R(/^implement-/, IMPL_OK),
+    R(/^cr-(code|silent)-/, CR_OK),
     R(/^qa-play-round/, qaReply || QA_OK),
     R(/^verify-evidence-round/, EV_OK),
     R(/^batch-verify-/, batchReply),
@@ -111,6 +119,8 @@ test('agentR リトライ: 初回 null は -retry label + resume ガード前置
       crosscheckCalls++;
       return call.label.endsWith('-retry') ? CROSSCHECK : null;
     }),
+    R(/^implement-/, IMPL_OK),
+    R(/^cr-(code|silent)-/, CR_OK),
     R(/^qa-play-round/, QA_OK),
     R(/^verify-evidence-round/, EV_OK),
     R(/^batch-verify-/, BATCH_OK),
