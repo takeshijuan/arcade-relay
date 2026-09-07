@@ -11,7 +11,7 @@ const ui = (id, title) => ({ id, title: title || id, assignee: 'ui-engineer', pi
 const R = (match, reply) => ({ match, reply });
 
 const QA_OK = { verdict: 'APPROVE', bugs: [], failedAcceptance: [], evidencePaths: ['qa/evidence/e.png'], screenshotsVisuallyConfirmed: true };
-const EV_OK = { checks: [{ path: 'qa/evidence/e.png', exists: true, nonEmpty: true }], extraFilesInEvidenceDir: [] };
+const EV_OK = { checks: [{ path: 'qa/evidence/e.png', exists: true, nonEmpty: true, rawLine: 'qa/evidence/e.png 1234' }], extraFilesInEvidenceDir: [] }; // rawLine = stat "%N %z" の行（retro-e4）
 
 function baseRoutes(batchReply) {
   return [

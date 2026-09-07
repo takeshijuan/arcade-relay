@@ -1238,6 +1238,56 @@ const EVIDENCE_CHECK_SCHEMA = {
   },
 };
 
+// ---------- verifyEvidence: 証跡実在の機械検証（mechanical 階層。full-build.js と同形・自己完結） ----------
+// rawLine 不一致は「未検証」であって「不存在」ではない。E4 で haiku が basename で ls -l を実行し 78/78 件が
+// 擬陽性 → QA-PLAY APPROVE が CONCERNS に誤降格した（retro-e4）。不一致は是正指示付きで 1 回だけ再検証し、
+// それでも不一致なら uncertain として返す。呼出し側は降格せず [VERIFY-UNCERTAIN] で引き渡し、信頼境界の実在確認は
+// スキル Phase 2 のオーケストレータ Bash（test -s）が行う（model-routing.md §1/§3）
+const EVIDENCE_CMD_NOTE =
+  'リポジトリルートで（cd せずに）次の 1 コマンドを実行し、出力行をパスごとに rawLine へそのまま入れよ（行頭が一覧の文字列と一致する）: ' +
+  '`for p in <一覧の各パス>; do stat -f "%N %z" -- "$p" 2>/dev/null || stat -c "%n %s" -- "$p" 2>/dev/null || echo "$p MISSING"; done`。' +
+  'basename だけの出力・別ディレクトリからの実行・出力の手書きは不合格。ファイルの作成・変更・削除は禁止。';
+
+async function verifyEvidence(paths, label, phaseName) {
+  const ask = function (lbl, extra) {
+    return agentR(
+      [
+        '読み取り専用の検証タスク。以下の証跡パス一覧について、各ファイルの実在と非0サイズを機械検証せよ。',
+        EVIDENCE_CMD_NOTE,
+        extra,
+        '証跡パス(JSON): ' + JSON.stringify(paths),
+        '加えて ' + ART.qaEvidence + ' 直下の実ファイル一覧を ls で確認し extraFilesInEvidenceDir に返せ。',
+      ].filter(Boolean).join('\n'),
+      { label: lbl, phase: phaseName, effort: 'low', model: TIER.mechanical, schema: EVIDENCE_CHECK_SCHEMA }
+    );
+  };
+  const classify = function (evCheck) {
+    const missing = [];
+    const uncertain = [];
+    if (!evCheck) return { missing: ['証跡検証 agent が結果を返さなかった'], uncertain: uncertain };
+    // 網羅性突合: evidencePaths の各パスが checks に exists && nonEmpty で現れることを要求
+    // （検証 agent が checks:[] や部分回答を返した場合に合格擬装させない）
+    const byPath = {};
+    for (const c of (evCheck.checks || [])) byPath[c.path] = c;
+    for (const p of paths) {
+      const c = byPath[p];
+      if (!c) missing.push(p + '（検証結果に現れず — 未検証）');
+      else if (!c.exists || !c.nonEmpty) missing.push(p + '（' + (!c.exists ? '不存在' : '0バイト') + '）');
+      // rawLine にフルパスが無い = コマンド実行の証拠が無い（basename 一致では別ディレクトリの行を流用できる — Codex P2）。
+      // ただし不存在の証明でもないため missing ではなく uncertain に分類する
+      else if (typeof c.rawLine !== 'string' || c.rawLine.indexOf(String(p)) < 0) uncertain.push(p);
+    }
+    return { missing: missing, uncertain: uncertain };
+  };
+  let r = classify(await ask(label, ''));
+  if (r.uncertain.length > 0) {
+    log(label + ': rawLine 不一致 ' + r.uncertain.length + ' 件 → 是正指示付きで 1 回再検証');
+    r = classify(await ask(label + '-recheck',
+      '【再検証】前回の出力にはパス文字列が含まれていなかった（' + r.uncertain.length + ' 件。例: ' + r.uncertain.slice(0, 3).join(', ') + '）。上記コマンドを**リポジトリルート**で実行し直せ。'));
+  }
+  return r;
+}
+
 let qaResult = null;
 const QA_MAX = 2; // review-loops.md: QA-PLAY MAX_ITER 2
 for (let round = 1; round <= QA_MAX; round++) {
@@ -1274,31 +1324,13 @@ for (let round = 1; round <= QA_MAX; round++) {
 
   // 証跡実在＋目視宣言の独立機械検証（qa-lead の自己申告を workflow が別 agent で確認 — E1 教訓: 自己申告が唯一の関門にならないこと）
   {
-    const evCheck = await agentR(
-      [
-        '読み取り専用の検証タスク。以下の証跡パス一覧について、各ファイルの実在と非0サイズを Bash（`test -s`・`ls -l <path>`）で機械検証し、`ls -l <path>` の出力行をそのまま rawLine に入れよ（パスは一覧の文字列どおりに指定する）。ファイルの作成・変更・削除は禁止。',
-        '証跡パス(JSON): ' + JSON.stringify(qaResult.evidencePaths || []),
-        '加えて ' + ART.qaEvidence + ' 直下の実ファイル一覧を ls で確認し extraFilesInEvidenceDir に返せ。',
-      ].join('\n'),
-      { label: 'verify-evidence-round' + round, phase: 'QA', effort: 'low', model: TIER.mechanical, schema: EVIDENCE_CHECK_SCHEMA }
-    );
-    const missing = [];
-    if (!evCheck) {
-      missing.push('証跡検証 agent が結果を返さなかった');
-    } else {
-      // 網羅性突合: evidencePaths の各パスが checks に exists && nonEmpty で現れることを要求
-      // （検証 agent が checks:[] や部分回答を返した場合に合格擬装させない）
-      const byPath = {};
-      for (const c of (evCheck.checks || [])) byPath[c.path] = c;
-      for (const p of (qaResult.evidencePaths || [])) {
-        const c = byPath[p];
-        if (!c) missing.push(p + '（検証結果に現れず — 未検証）');
-        else if (!c.exists || !c.nonEmpty) missing.push(p + '（' + (!c.exists ? '不存在' : '0バイト') + '）');
-        // 自己申告の抑止: `ls -l <path>` の生出力行に**フルパス**が現れることを要求（basename 一致では別ディレクトリの実在
-        // ファイルの行を流用できる）。同一 agent の申告なので証明にはならない（workflow はファイルを読めない） —
-        // 信頼境界での実在確認はスキル Phase 2 のオーケストレータ Bash が行う（model-routing.md §1 / §3）
-        else if (typeof c.rawLine !== 'string' || c.rawLine.indexOf(String(p)) < 0) missing.push(p + '（rawLine に当該パスの実行出力なし — 検証 agent がコマンドを実行した証拠が無い）');
-      }
+    const ev = await verifyEvidence(qaResult.evidencePaths || [], 'verify-evidence-round' + round, 'QA');
+    const missing = ev.missing;
+    if (ev.uncertain.length > 0) {
+      // 降格しない — rawLine 不一致は検証 agent の出力不備であって不存在ではない（E4 で 78/78 件が擬陽性）。
+      // オーケストレータが test -s の結果で置換する（forge-prototype SKILL.md Phase 2）
+      unresolvedFindings.push('[QA-PLAY][VERIFY-UNCERTAIN] round ' + round + ': rawLine 不一致 ' + ev.uncertain.length +
+        ' 件（再検証後も）— オーケストレータの test -s 結果で置換すること: ' + ev.uncertain.join(', '));
     }
     if ((qaResult.evidencePaths || []).length === 0) missing.push('evidencePaths が空（証跡なしの判定は無効 — qa-lead.md）');
     if (qaResult.screenshotsVisuallyConfirmed !== true) missing.push('スクリーンショットの Read 目視が未実施（screenshotsVisuallyConfirmed=false）');

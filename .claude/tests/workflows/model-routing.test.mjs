@@ -341,17 +341,38 @@ test('batch-verify(full-build): Build/Polish とも escalate=opus・fixedNotes �
 
 // ---- 証跡検証（mechanical 階層）の自己申告擬装防止 ----
 
-test('verify-evidence: rawLine にパス名を含む実行出力が無い check は不合格扱い（APPROVE が CONCERNS に降格）', async () => {
+test('verify-evidence: rawLine 不一致は是正指示付きで 1 回再検証し、それでも不一致なら降格せず [VERIFY-UNCERTAIN] で orchestrator に引き渡す（E4 擬陽性 78/78 件の再発防止）', async () => {
   const fake = { checks: [{ path: EV_PATH, exists: true, nonEmpty: true, rawLine: 'ok' }], extraFilesInEvidenceDir: [] };
   const p = await runWorkflow(WF('prototype.js'), { args: PROTO_ARGS, routes: protoRoutes([], BATCH_OK, PROTO_QA_OK, fake) });
-  assert.ok(p.result.unresolvedFindings.some((f) => f.includes('rawLine に当該パスの実行出力なし')), JSON.stringify(p.result.unresolvedFindings));
-  assert.ok(p.result.verdictHistory.some((v) => v.gate === 'QA-PLAY' && v.verdict === 'CONCERNS'), '擬装 rawLine で APPROVE が通った');
+  const re = callsBy(p.calls, /^verify-evidence-round1-recheck$/);
+  assert.equal(re.length, 1, '再検証が 1 回発行されない');
+  assert.ok(re[0].prompt.includes('【再検証】') && re[0].prompt.includes('stat -f'), '再検証プロンプトに是正指示（コマンド固定）が無い');
+  assert.equal(re[0].opts.model, 'haiku'); assert.equal(re[0].opts.effort, 'low');
+  assert.ok(p.result.unresolvedFindings.some((f) => f.startsWith('[QA-PLAY][VERIFY-UNCERTAIN]') && f.includes(EV_PATH)), JSON.stringify(p.result.unresolvedFindings));
+  assert.ok(p.result.verdictHistory.some((v) => v.gate === 'QA-PLAY' && v.verdict === 'APPROVE'), 'rawLine 不一致だけで APPROVE が降格された（E4 擬陽性の再発）');
+  assert.ok(!p.result.unresolvedFindings.some((f) => f.includes('機械検証不合格')), '不一致が不合格として記録された');
   const f = await runWorkflow(WF('full-build.js'), { args: FB_ARGS, routes: [R(/^verify-evidence-/, fake)].concat(fbRoutes()) });
-  assert.ok(f.result.unresolvedFindings.some((x) => x.includes('rawLine に当該パスの実行出力なし')));
-  // basename 一致では別ディレクトリの実在ファイルの行を流用できる（Codex P2）— フルパス一致を要求
+  assert.equal(callsBy(f.calls, /^verify-evidence-1-recheck$/).length, 1);
+  assert.ok(f.result.unresolvedFindings.some((x) => x.startsWith('[VERIFY-UNCERTAIN] FullQA round 1')), JSON.stringify(f.result.unresolvedFindings));
+  assert.ok(f.result.verdictHistory.some((v) => v.gate === 'QA-PLAY' && v.verdict === 'APPROVE'));
+  // basename 一致（別ディレクトリの実在ファイルの行）も「未検証」— 合格にも不合格にもしない（Codex P2 の抜け道は塞いだまま）
   const collide = { checks: [{ path: EV_PATH, exists: true, nonEmpty: true, rawLine: '-rw-r--r-- 1 u g 1234 Sep 2 03:00 qa/evidence/old/e.png' }], extraFilesInEvidenceDir: [] };
   const c = await runWorkflow(WF('prototype.js'), { args: PROTO_ARGS, routes: protoRoutes([], BATCH_OK, PROTO_QA_OK, collide) });
-  assert.ok(c.result.unresolvedFindings.some((x) => x.includes('rawLine に当該パスの実行出力なし')), 'basename 衝突の rawLine が通った');
+  assert.ok(c.result.unresolvedFindings.some((x) => x.startsWith('[QA-PLAY][VERIFY-UNCERTAIN]')), 'basename 衝突の rawLine が確認済み扱いになった');
+  assert.ok(!c.result.verdictHistory.some((v) => v.gate === 'QA-PLAY' && v.verdict === 'CONCERNS'));
+  // 再検証で是正されれば何も残さない
+  const healed = (call) => (call.label.endsWith('-recheck') ? EV_OK : fake);
+  const h = await runWorkflow(WF('prototype.js'), { args: PROTO_ARGS, routes: protoRoutes([], BATCH_OK, PROTO_QA_OK, healed) });
+  assert.ok(!h.result.unresolvedFindings.some((x) => x.includes('VERIFY-UNCERTAIN')), '是正後も未検証が残った');
+  // 不存在・0 バイト・checks に現れない は従来どおり不合格 → APPROVE を CONCERNS に降格（再検証は不要）
+  const gone = { checks: [{ path: EV_PATH, exists: false, nonEmpty: false, rawLine: EV_PATH + ' MISSING' }], extraFilesInEvidenceDir: [] };
+  const g = await runWorkflow(WF('prototype.js'), { args: PROTO_ARGS, routes: protoRoutes([], BATCH_OK, PROTO_QA_OK, gone) });
+  assert.ok(g.result.unresolvedFindings.some((x) => x.includes('不存在')));
+  assert.ok(g.result.verdictHistory.some((v) => v.gate === 'QA-PLAY' && v.verdict === 'CONCERNS'), '不存在で降格されない');
+  assert.equal(callsBy(g.calls, /-recheck$/).length, 0, '不存在に再検証は不要');
+  const empty = await runWorkflow(WF('full-build.js'), { args: FB_ARGS, routes: [R(/^verify-evidence-/, { checks: [], extraFilesInEvidenceDir: [] })].concat(fbRoutes()) });
+  assert.ok(empty.result.unresolvedFindings.some((x) => x.includes('検証結果に現れず')));
+  assert.ok(empty.result.verdictHistory.some((v) => v.gate === 'QA-PLAY' && v.verdict === 'CONCERNS'));
 });
 
 // ---- 文脈節減 ----

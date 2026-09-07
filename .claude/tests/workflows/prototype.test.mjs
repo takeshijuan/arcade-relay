@@ -28,7 +28,7 @@ const CROSSCHECK = {
   ],
 };
 const QA_OK = { verdict: 'APPROVE', criticalBugs: [], failedAcceptance: [], evidencePaths: ['qa/evidence/e.png'], screenshotsVisuallyConfirmed: true };
-const EV_OK = { checks: [{ path: 'qa/evidence/e.png', exists: true, nonEmpty: true }], extraFilesInEvidenceDir: [] };
+const EV_OK = { checks: [{ path: 'qa/evidence/e.png', exists: true, nonEmpty: true, rawLine: 'qa/evidence/e.png 1234' }], extraFilesInEvidenceDir: [] }; // rawLine = stat "%N %z" の行（retro-e4）
 
 // route は接頭辞マッチにする（agentR の '-retry' 付き label でも同じ route が当たるように — retro-e3 指摘5）
 function baseRoutes(batchReply, qaReply) {
