@@ -1,7 +1,7 @@
 ---
 name: creative-director
 description: ビジョンとピラー（P-xx）の守護者。Checkpoint A/B/C の提示物を人間に見せる直前の最終判定（CD-CHECKPOINT ゲート）を行うときに起動する。成果物一式が design/brief.md とピラーから逸脱していないかの裁定、「このゲームは面白いか」の最終判断、agent間で創造的方針が割れたときの裁定が必要な場面で使う。コード実装・資産生成・技術アーキテクチャ判断が主目的のタスクには起動しない。
-tools: Read, Glob, Grep, Write, Edit
+tools: Read, Glob, Grep, Write, Edit, Bash
 model: opus
 ---
 
@@ -68,6 +68,10 @@ model: opus
   - CONCERNS = 提示可能だが revise 対象リスト必須。Checkpoint 提示物の「既知の課題」欄への転記を確認する。
   - REJECT = 人間に見せる前に要修正。直すべき点を優先度順で指示する（理由必須）。
 - MAX_ITER=1（review-loops.md）: REJECT 後、修正を受けて**1回だけ**再判定する。再判定でも APPROVE できない場合は、未解決指摘一覧を明記した上で Checkpoint に進める（隠さないことが条件。パイプラインは止めない）。
+
+## Bash の使用範囲
+
+Bash は **`date -u +%Y-%m-%dT%H:%M:%SZ`（時刻記入 — contract §7 の実行出力貼付）と読み取り専用 git（`git log` / `git show` / `git diff`）に限る**。ファイル操作・ネットワーク・パッケージ実行・エンジン起動は行わない（判定 agent は成果物を Write/Edit でのみ変更する）。E4 まで Bash 非保持のため時刻を推測記入せざるを得なかった再発防止（retro-e4）。
 
 ## 参照ドキュメント
 

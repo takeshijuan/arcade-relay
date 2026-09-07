@@ -110,6 +110,21 @@ test('階層表: workflow の TIER 定数が model-routing.md §1 の tier→mod
   }
 });
 
+test('階層表: 本文で `date -u` の実行出力を要求する agent は frontmatter tools に Bash を持つ（retro-e4: design 系 3 体の Bash 非保持で時刻が推測記入になった）', async () => {
+  for (const a of HARNESS_AGENTS) {
+    const md = await read('agents/' + a + '.md');
+    if (!md.includes('date -u')) continue;
+    const tools = md.match(/^tools:\s*(.+)$/m);
+    assert.ok(tools, a + '.md に tools frontmatter が無い');
+    assert.ok(tools[1].split(',').map((s) => s.trim()).includes('Bash'), a + ': `date -u` を要求するのに Bash が無い');
+  }
+  for (const a of ['creative-director', 'design-reviewer', 'game-designer']) {
+    const md = await read('agents/' + a + '.md');
+    assert.ok(/^tools:.*\bBash\b/m.test(md), a + ': Bash 付与（retro-e4）が外れている');
+    assert.ok(md.includes('## Bash の使用範囲'), a + ': 「Bash の使用範囲」節（date -u と読み取り git に限定）が無い');
+  }
+});
+
 // ---- 不変条件・mechanical・tokenUsage（各 workflow を 1 回だけ実行して 3 観点を検証） ----
 
 for (const run of RUNS) {

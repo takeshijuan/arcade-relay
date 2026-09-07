@@ -28,6 +28,8 @@
 | qa-lead | producer | sonnet |
 | art-reviewer | producer | sonnet |
 
+tools 備考: design 系 3 体（creative-director / design-reviewer / game-designer）も Bash を持つ（v0.5.1.0 / retro-e4）。用途は `date -u` の時刻記入（contract §7）と読み取り専用 git に限る — 各 agent.md「Bash の使用範囲」節。E4 まで Bash 非保持のため時刻を推測記入せざるを得なかった（`args` 経由の起動時刻注入は数時間ランで実時系列とズレ、script 内の `new Date()` は Workflow 実行系が throw する）。
+
 harness 外の agent（`pr-review-toolkit:code-reviewer` / `pr-review-toolkit:silent-failure-hunter`）は frontmatter に `model` を持たずセッションモデルを継承するため、workflow が `model: TIER.producer` を**必ず明示**する。外部 agent は agents/*.md の「参照ドキュメント」節も持たないため、プロンプトに `gates.md` / `review-loops.md` の**パス**を書いて読ませる（CLAUDE.md からは自動 import されない — §4）。
 
 `mechanical` 階層に専用 agent は無い。workflow が呼び出し単位で `model: TIER.mechanical, effort: 'low'` を明示する。対象ラベル: `verify-evidence-*`（証跡の実在確認。`agentType` 無し）/ `setup-crosscheck-stories`（stories.yaml 突合。`agentType` 無し）/ `finalize-state`（直列区間の active.md 更新。`agentType: tech-director` は役割宣言として据え置き）。
