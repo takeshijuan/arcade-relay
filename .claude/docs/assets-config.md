@@ -11,7 +11,7 @@
 |---|---|---|---|
 | 画像: スプライト/キャラ/UI | fal.ai `fal-ai/ideogram/v3/generate-transparent`（生成時ネイティブ透過・seed・style_codes・character_reference） | Ideogram V3 公式REST直（`api.ideogram.ai/v1/ideogram-v3/generate`。seed/style_codes互換） → 三次: OpenAI `gpt-image-1.5` を**pin**（`background:"transparent"`。**gpt-image-2 は透過エラーのため使用禁止**） | mflux or ComfyUI + FLUX **schnell/klein**（Apache-2.0＝商用可）+ rembg |
 | 画像: 背景/タイルセット | fal.ai `fal-ai/flux-2-pro`（参照画像8枚 + hexパレット厳密指定） | 同上 | 同上 |
-| ピクセルアート案件（全画像を置換） | Retro Diffusion `api.retrodiffusion.ai`（RD_FAST/RD_PLUS、RD_TILE=`tile_x/tile_y`、RD_ANIMATION=`return_spritesheet:true`、`remove_bg:true`、**`check_cost:true`で呼出し前予算ゲート**） | PixelLab hosted MCP（注意: text mode 64x64/4フレーム等の実制限） | nearest-neighbor縮小 + パレット量子化 |
+| ピクセルアート案件（全画像を置換） | Retro Diffusion `api.retrodiffusion.ai` — **現行 API のモデルは `RD_CLASSIC` / `RD_FLUX` のみ**（E4 実測 2026-09: `RD_FAST` / `RD_PLUS` / `RD_ANIMATION` は HTTP 422 で恒久不在）。**`RD_FLUX` の出力上限は 384px**（512 指定は失敗 — art-bible.json `resolution.sprite` は ≤384 にし表示倍率で吸収）。`return_spritesheet:true` は**単一画像しか返さない** — 歩行/モーションシートは個別フレーム生成 → Pillow 連結（`generation_method` を MANIFEST に記録。フレーム間の配色ドリフト時は idle からのプロシージャル合成へ縮退可）。**日本語文字の描画は不可**（ロゴは装飾バナーのみ生成し、文字はエンジン側テキスト描画で重ねる）。タイルは `tile_x/tile_y`、`remove_bg:true`、**`check_cost:true` で呼出し前予算ゲート** | PixelLab hosted MCP（注意: text mode 64x64/4フレーム等の実制限） | nearest-neighbor縮小 + パレット量子化 |
 | 背景除去 | fal.ai `fal-ai/birefnet/v2` | ローカル `rembg -m isnet-anime` | 同左 |
 | SFX | ElevenLabs SFX v2: `POST /v1/sound-generation`（model `eleven_text_to_sound_v2`、**`duration_seconds`明示**=自動比5x安・0.5〜30s、ループ素材は `loop:true`） | —（リトライのみ） | **jsfxr**（パブリックドメイン・決定的・出荷可） |
 | BGM | Eleven Music: `POST /v1/music`（model `music_v2`、`composition_plan`でセクション長指定、`force_instrumental:true`、seed。$0.15/分） | ローカル Stable Audio Open Small（Community License: 収益$1M未満商用可） | 同左（無理なら jsfxr アンビエント + must-replace 印） |
@@ -64,6 +64,7 @@
      "resolution": {"sprite": 512, "tile": 64}
    }
    ```
+   ピクセルアート案件（Retro Diffusion ルート）は `sprite` を **384 以下**にする（`RD_FLUX` の出力上限 — ルーティング表の注記。E4 実測）。
 2. 全画像生成は `style_block` を機械的に前置 + seed 記録。hero は `character_reference` を全ポーズで共用
 3. 資産50超なら fal で FLUX LoRA を1回訓練（$2・商用権付き）し、以後 LoRA id を pin
 4. 音楽はジャンル/BPM/キー固定の style block + seed。SFX は seed 無し → 共通語彙で4変種生成→ベスト選別
