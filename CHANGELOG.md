@@ -7,6 +7,76 @@ artifact contracts stabilize.
 
 ## [Unreleased]
 
+## [0.5.1.0] - 2026-09-08
+
+Retro of the E4 run (a Phaser farm sim built end-to-end on v0.5.0.0 —
+`.claude/docs/retro-e4.md`). Every item below was observed live and had to be
+recovered by hand by the orchestrator; this release mechanizes the recovery.
+
+### Fixed
+
+- Evidence verification no longer demotes QA-PLAY on a `rawLine` mismatch. In
+  E4 the mechanical-tier verifier ran `ls -l` on basenames and 78/78 evidence
+  files "failed", turning an APPROVE into CONCERNS although every file existed.
+  `verifyEvidence()` (prototype / full-build) pins the command to
+  `stat "%N %z"`, re-verifies once with a corrective prompt
+  (`verify-evidence-*-recheck`), and if still mismatched records
+  `[VERIFY-UNCERTAIN]` instead of failing — the orchestrator's own `test -s`
+  (skill Phase 2) replaces it. Missing / empty / unlisted files, an empty
+  `evidencePaths` and a skipped visual check still demote.
+- CR-CODE reviews verify their target first. E4 handed reviewers commits that
+  touched only `state/reviews` or `stories.yaml` (S-48 / S-50 / S-62) and the
+  empty diff got a verdict. Implementation and fix agents must now return
+  `changedFiles`; the workflow checks them against the engine's code path
+  (contract §11, `ENGINE_PROFILES.codePathRe`); reviewers must return
+  `targetMismatch: true` instead of a verdict when the commit has no code
+  files; the workflow then runs `locate-commit-*` once (read-only, the story's
+  engineer) and repeats the same iteration under a `-relocated` label, or
+  records a `[BLOCKER]` and neither approves nor fixes.
+- QA-PLAY non-APPROVE always triggers a fix attempt. In E4 qa-lead reported a
+  medium bug only in `qa/report.md` with empty `criticalBugs` /
+  `failedAcceptance`, so no fix ran and round 2 re-judged the same HEAD. When
+  every fix list is empty the workflow now records a qa-lead protocol
+  violation and runs one judge-tier fix from `summary` + `qa/report.md`
+  (`qa-fix-<n>-summary` / `fix-qa-r<n>-summary`). The prototype QA schema gains
+  `bugs` (major / minor); majors are fixed in one call per assignee.
+- `agentR(prompt, opts, retries)`: CD-CHECKPOINT (all three workflows) and
+  `finalize-state` retry twice (`-retry`, `-retry2`). The Workflow runtime has
+  no timers, so the wait-based recovery lives in the forge skills: on a missing
+  CD summary the orchestrator sleeps 120s and runs one standalone
+  creative-director Task, then substitutes the result and says so in the
+  checkpoint.
+- Skill verification examples note zsh's `${pipestatus[1]}` — on macOS zsh
+  `${PIPESTATUS[0]}` is empty and `EXIT=` printed nothing (an empty value is
+  now an observation failure, not a pass).
+
+### Changed
+
+- creative-director, design-reviewer and game-designer gain Bash, limited to
+  `date -u` (contract §7 timestamps) and read-only git. Without it the
+  timestamp rule could only be met by guessing; `new Date()` throws inside
+  workflow scripts and an `args`-injected start time drifts hours on a long
+  phase. `model-routing.test.mjs` checks that any agent whose prompt requires
+  `date -u` has Bash.
+- `assets-config.md` Retro Diffusion row rewritten from E4 measurements:
+  models are `RD_CLASSIC` / `RD_FLUX` only (`RD_FAST` / `RD_PLUS` /
+  `RD_ANIMATION` return HTTP 422), `RD_FLUX` caps at 384px,
+  `return_spritesheet` yields a single image (sheets are per-frame + Pillow),
+  Japanese glyphs cannot be rendered.
+- `qa-lead.md` / `review-loops.md`: a non-APPROVE verdict must carry its
+  reasons in the structured return; `gates.md` CR-CODE: target check first.
+
+### Added
+
+- `.claude/docs/retro-e4.md` — measurements (499 agents, 9.12M output
+  tokens, ~19h, $5.18), what worked, eight findings with their fixes, and what
+  to observe in E5.
+- `tech-stack.md` "既知の落とし穴 (engine=phaser)" — five pitfalls promoted
+  during E4 that had only landed on the run branch.
+- Tests 81 → 89 (retries, Bash sync, evidence recheck / uncertain / demotion,
+  empty-list QA fix, major batching, CR-CODE relocation and blocker paths).
+- TODOS: pixel-art animation sheet route (RD cannot produce sheets).
+
 ## [0.5.0.0] - 2026-09-02
 
 ### Added

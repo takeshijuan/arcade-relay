@@ -101,4 +101,5 @@ Workflow ツールで起動する:
 
 1. `state/stage.txt` に `done` の1語のみを Write
 2. `state/active.md` を更新: 現在地=「done・受け渡し完了」、次アクション=「なし（チューニングはエンジン別 config 正本で完結 — contract §11: phaser=game/src/config.ts / unity=GameConfig.cs / unreal=GameConfig.h）」、未解決事項=ライセンスフラグと must_replace 一覧
+   - **ハーネス差分の持ち帰り（retro-e4）**: 自分の Bash で `git diff main --stat -- .claude/` を実行し、run 中に QA fix / batch-verify が `tech-stack*.md`「既知の落とし穴」や `rules/` へ追記した差分があれば、run 成果物と一緒に退避せず**本体へ戻す対象**として最終報告に列挙する（harness PR `harness/<version>-retro-<run>` に切り出す。E4 で 5 件が run ブランチにだけ残った）
 3. 締めの案内: 遊び方コマンドを再掲し、「パラメータ調整はエンジン別 config 正本（phaser: `game/src/config.ts` / unity: `game/Assets/Scripts/GameConfig.cs` / unreal: `game/Source/ForgeGame/GameConfig.h`）だけで完結します」と伝える
