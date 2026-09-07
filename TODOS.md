@@ -2,8 +2,15 @@
 
 ## Harness (ArcadeRelay)
 
+### ピクセルアート・アニメーションシートの正規生成ルート（retro-e4）
+**What:** Retro Diffusion は `RD_ANIMATION` が現行 API に無く、`RD_FLUX` + `return_spritesheet:true` も単一画像しか返さない（E4 実測）。歩行/モーションシートの正規ルートを決める — (a) PixelLab hosted MCP のアニメ生成（64x64/4 フレーム等の実制限を確認）、(b) RD 個別フレーム生成 → 配色一貫性チェック → Pillow 連結の手順化（E4 で left/right が配色ドリフトで縮退した）、(c) idle 1 枚からのプロシージャル合成を正規の縮退として `generation_method` に記録。
+**Why:** E4 で歩行シート 4 方向のうち 2 方向と道具モーションが Pillow 縮退のまま受領された（品質の主因）。assets-config.md は v0.5.1.0 で実測に合わせたが、代替ルートは未定義。
+**Effort:** M
+**Priority:** P2
+**Depends on:** None
+
 ### prototype QA fix の assignee 単位バッチ化 + contract.md の常駐部分分割
-**What:** (1) prototype.js の QA fix を full-build.js と同じ「assignee ごとに bugs JSON を渡す 1 呼び出し」に揃え、opus セッション数とコンテキスト読込・検証コマンド実行を 1/3 にする（label は round+assignee で resume 安全を維持）。(2) contract.md（唯一の自動 import ≈19KB）から §6/§10/§11（セーブ規約・資産ルーティング・エンジン規則）を engineer/qa/art 系だけが読む別文書に分け、全 agent の常駐文脈を半減する。
+**What:** (1) prototype.js の QA fix を full-build.js と同じ「assignee ごとに bugs JSON を渡す 1 呼び出し」に揃え、opus セッション数とコンテキスト読込・検証コマンド実行を 1/3 にする（label は round+assignee で resume 安全を維持）。**v0.5.1.0 で major バグ（`bugs`）は assignee 単位バッチとして部分適用済み。criticalBugs の bug 単位 label は M-8a/b の resume 安全設計のため据え置き — 残りはこの据え置きを崩さずに揃えられるかの判断。** (2) contract.md（唯一の自動 import ≈19KB）から §6/§10/§11（セーブ規約・資産ルーティング・エンジン規則）を engineer/qa/art 系だけが読む別文書に分け、全 agent の常駐文脈を半減する。
 **Why:** v0.5.0.0 のレビュー（efficiency / altitude 観点）で残った最大の削減余地。QA fix は judge 階層（opus）で走るため件数削減の効果が大きい。
 **Context:** `.claude/docs/design-2026-09-02-model-routing.md`「見送り・未検証」。(1) は M-8a/b テストの前提変更を伴う。
 **Effort:** M

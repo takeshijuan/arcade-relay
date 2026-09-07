@@ -27,14 +27,24 @@ const CROSSCHECK = {
     { id: 'S-04', exists: true, assignee: 'gameplay-engineer', phase: 'prototype', acceptance: '可視の地面/背景・ライト・カメラ構図と画面レイアウトが確定している' }, // 環境 story は実体 acceptance も突合される
   ],
 };
-const QA_OK = { verdict: 'APPROVE', criticalBugs: [], failedAcceptance: [], evidencePaths: ['qa/evidence/e.png'], screenshotsVisuallyConfirmed: true };
-const EV_OK = { checks: [{ path: 'qa/evidence/e.png', exists: true, nonEmpty: true }], extraFilesInEvidenceDir: [] };
+const QA_OK = { verdict: 'APPROVE', criticalBugs: [], bugs: [], failedAcceptance: [], evidencePaths: ['qa/evidence/e.png'], screenshotsVisuallyConfirmed: true };
+const EV_OK = { checks: [{ path: 'qa/evidence/e.png', exists: true, nonEmpty: true, rawLine: 'qa/evidence/e.png 1234' }], extraFilesInEvidenceDir: [] }; // rawLine = stat "%N %z" の行（retro-e4）
 
+// retro-e4: 実装は changedFiles（コード対象パス）を、reviewer は observedCodeFiles（対象証明）を返すのが正常系。
+// どちらも無い既定応答（fromSchema の空配列）は「対象未証明」として再特定 → BLOCKER に流れる（意図した挙動 — 別テストで固定）
+// 3 engine のコード対象パス（contract §11）を全て含め、engine 切替テストでも対象証明が成立する fixture にする
+const CODE_FILES = ['game/src/systems/x.ts', 'game/Assets/Scripts/Systems/X.cs', 'game/Source/ForgeGame/Systems/X.cpp'];
+const IMPL_OK = { commitHash: 'abc1234', changedFiles: CODE_FILES, summary: 's' };
+const FIX_OK = { commitHash: 'f1x0001', changedFiles: CODE_FILES, summary: 's' }; // CR-CODE fix もコード対象パスを申告する（QA fix は fix-qa- で別）
+const CR_OK = { verdict: 'APPROVE', findings: [], observedCodeFiles: CODE_FILES };
 // route は接頭辞マッチにする（agentR の '-retry' 付き label でも同じ route が当たるように — retro-e3 指摘5）
 function baseRoutes(batchReply, qaReply) {
   return [
     R(/^setup-scaffold-stories/, SETUP),
     R(/^setup-crosscheck-stories/, CROSSCHECK),
+    R(/^implement-/, IMPL_OK),
+    R(/^fix-(?!qa-)/, FIX_OK),
+    R(/^cr-(code|silent)-/, CR_OK),
     R(/^qa-play-round/, qaReply || QA_OK),
     R(/^verify-evidence-round/, EV_OK),
     R(/^batch-verify-/, batchReply),
@@ -111,6 +121,8 @@ test('agentR リトライ: 初回 null は -retry label + resume ガード前置
       crosscheckCalls++;
       return call.label.endsWith('-retry') ? CROSSCHECK : null;
     }),
+    R(/^implement-/, IMPL_OK),
+    R(/^cr-(code|silent)-/, CR_OK),
     R(/^qa-play-round/, QA_OK),
     R(/^verify-evidence-round/, EV_OK),
     R(/^batch-verify-/, BATCH_OK),
@@ -364,4 +376,49 @@ test('レーン例外: AssetGen(images) トラックの laneSafe も実発火す
     result.unresolvedFindings.some((f) => f.includes('[BLOCKER] AssetGen(images) トラックが例外中断') && f.includes('images boom')),
     JSON.stringify(result.unresolvedFindings)
   );
+});
+
+// ---- retro-e4 追随: agentR retries（CD-CHECKPOINT は 2 回） ----
+test('agentR retries: cd-checkpoint-b は -retry → -retry2 の 2 回まで再試行し回復する（3 回 null なら従来どおり CD 未取得の戻り値）', async () => {
+  const cdOk = { verdict: 'APPROVE', summary: 'ok(retry2)', playInstructions: 'p', evidencePaths: [], knownIssues: [] };
+  const routes = [
+    R(/^cd-checkpoint-b-retry2$/, cdOk),
+    R(/^cd-checkpoint-b/, null),
+  ].concat(baseRoutes(BATCH_OK));
+  const { result, calls } = await runWorkflow(WF, { args: ARGS, routes });
+  assert.deepEqual(callsBy(calls, /^cd-checkpoint-b/).map((c) => c.label), ['cd-checkpoint-b', 'cd-checkpoint-b-retry', 'cd-checkpoint-b-retry2']);
+  assert.equal(result.summary, 'ok(retry2)');
+  assert.equal(result.verdict, 'APPROVE');
+  const dead = await runWorkflow(WF, { args: ARGS, routes: [R(/^cd-checkpoint-b/, null)].concat(baseRoutes(BATCH_OK)) });
+  assert.equal(callsBy(dead.calls, /^cd-checkpoint-b/).length, 3, '3 回で打ち切らない');
+  assert.ok(dead.result.knownIssues.includes('CD-CHECKPOINT 判定が取得できなかった'));
+  assert.equal(dead.result.verdict, 'CONCERNS');
+});
+
+// ---- retro-e4 追随: CR-CODE 対象コミットの確認と再特定 ----
+test('CR-CODE 対象不一致(prototype): targetMismatch → locate-commit 1 回 → -relocated label で同 iteration をやり直す / 特定不能は [BLOCKER] と review null（reviewer を再度起こさない）', async () => {
+  const routes = [
+    R(/^cr-code-S-01-iter1$/, { verdict: 'CONCERNS', findings: [], targetMismatch: true }),
+    R(/^locate-commit-S-01-iter1$/, { found: true, commitHash: 'deadbeef' }),
+    R(/^cr-code-S-01-iter1-relocated$/, { verdict: 'APPROVE', findings: [], observedCodeFiles: ['game/src/systems/x.ts'] }),
+    R(/^cr-silent-S-01-iter1-relocated$/, { verdict: 'APPROVE', findings: [] }),
+  ].concat(baseRoutes(BATCH_OK));
+  const { result, calls } = await runWorkflow(WF, { args: ARGS, routes });
+  assert.equal(callsBy(calls, /^locate-commit-S-01-iter1$/).length, 1);
+  const rel = callsBy(calls, /^cr-code-S-01-iter1-relocated$/);
+  assert.equal(rel.length, 1, '再特定後のレビューが -relocated label で走らない');
+  assert.ok(rel[0].prompt.includes('git show deadbeef'), '再特定した hash でレビューされていない');
+  assert.equal(callsBy(calls, /^cr-code-S-01-iter2/).length, 0, '再特定で iteration を消費している');
+  assert.ok(result.verdictHistory.some((v) => v.gate === 'CR-CODE' && v.artifact === 'S-01' && v.iteration === 1 && v.verdict === 'APPROVE'));
+  assert.ok(!result.unresolvedFindings.some((f) => f.includes('[BLOCKER] [CR-CODE][S-01]')), JSON.stringify(result.unresolvedFindings));
+  const nf = await runWorkflow(WF, { args: ARGS, routes: [
+    R(/^cr-code-S-01-iter1$/, { verdict: 'CONCERNS', findings: [], targetMismatch: true }),
+    R(/^locate-commit-S-01-iter1$/, { found: false, reason: 'none' }),
+  ].concat(baseRoutes(BATCH_OK)) });
+  assert.ok(nf.result.unresolvedFindings.some((f) => f.startsWith('[BLOCKER] [CR-CODE][S-01] 対象コミット')), JSON.stringify(nf.result.unresolvedFindings));
+  assert.ok(!nf.result.verdictHistory.some((v) => v.artifact === 'S-01' && v.verdict === 'APPROVE'), 'レビュー未成立が APPROVE 扱いになった');
+  assert.equal(callsBy(nf.calls, /^cr-code-S-01-iter2/).length, 0, '再特定不能の後に reviewer を再度起こした');
+  assert.equal(callsBy(nf.calls, /^fix-S-01-/).length, 0, 'レビュー未成立なのに fix が走った');
+  assert.ok(promptsBy(nf.calls, /^cr-code-S-01-iter1$/)[0].includes('対象確認（必須・最初に行う）'));
+  assert.ok(promptsBy(nf.calls, /^implement-S-01$/)[0].includes('git show --stat --format= <hash>'), '実装プロンプトが changedFiles の取得方法を示さない');
 });

@@ -50,8 +50,11 @@ Workflow ツールで起動する:
 完了通知の戻り値を読む。**失敗終了**: エラーと `/workflows` のログ参照を報告し、stage は変更せず停止。
 
 成功時、必須成果物を実在確認する: `qa/report.md`（更新済み）と MANIFEST.jsonl（エンジン別正本パス — contract §6: phaser=`game/assets/MANIFEST.jsonl` / unity・unreal=`game/_generated/MANIFEST.jsonl`。以下 `$MANIFEST`）。
-さらに engine の tech-stack 文書「検証コマンド」の build 相当が exit 0 であることを**オーケストレータ自身の Bash で**確認する（Task に委譲しない — model-routing.md §3）。出力は `tail -20` で切り詰め、exit code は `PIPESTATUS` で観測する。例: phaser: `cd game && npm run build 2>&1 | tail -20; echo EXIT=${PIPESTATUS[0]}` / unity: `ForgeBuild.BuildMac` batchmode — exit 0 に加え tech-stack-unity.md「検証コマンド」の成功ログ・成果物条件 / unreal: BuildCookRun フル — `BUILD SUCCESSFUL` 行の実在。欠落・失敗はワークフロー失敗として停止。
-加えて QA 証跡の**信頼境界での実在確認**: 戻り値の qa/report.md の証跡パス（戻り値に evidencePaths が無い場合は report の証跡表） を自分の Bash で `for p in <paths>; do test -s "$p" && echo "OK $p" || echo "MISSING $p"; done` のように確認する（workflow 内の証跡検証は agent の申告に依存する — model-routing.md §1）。MISSING があれば QA-PLAY の判定を未検証として扱い、既知の課題の冒頭に `[BLOCKER]` で記載する（stage は前進させてよいが隠さない）。
+さらに engine の tech-stack 文書「検証コマンド」の build 相当が exit 0 であることを**オーケストレータ自身の Bash で**確認する（Task に委譲しない — model-routing.md §3）。出力は `tail -20` で切り詰め、exit code はパイプ先頭の終了コードで観測する（bash: `${PIPESTATUS[0]}` / **zsh: `${pipestatus[1]}`** — macOS 既定の zsh では大文字 `PIPESTATUS` が空になり `EXIT=` が空文字で出力される。E4 で実害。`EXIT=` の値が空なら観測失敗として扱い、判定を出さない）。例: phaser: `cd game && npm run build 2>&1 | tail -20; echo EXIT=${PIPESTATUS[0]}`（zsh では `${pipestatus[1]}`） / unity: `ForgeBuild.BuildMac` batchmode — exit 0 に加え tech-stack-unity.md「検証コマンド」の成功ログ・成果物条件 / unreal: BuildCookRun フル — `BUILD SUCCESSFUL` 行の実在。欠落・失敗はワークフロー失敗として停止。
+加えて QA 証跡の**信頼境界での実在確認**: 戻り値の evidencePaths（QA の申告値そのもの — v0.5.1.0 から full-build も返す。無い場合のみ qa/report.md の証跡表）を自分の Bash で `for p in <paths>; do test -s "$p" && echo "OK $p" || echo "MISSING $p"; done` のように確認する（workflow 内の証跡検証は agent の申告に依存する — model-routing.md §1）。MISSING があれば QA-PLAY の判定を未検証として扱い、既知の課題の冒頭に `[BLOCKER]` で記載する（stage は前進させてよいが隠さない）。
+戻り値 `unresolvedFindings` の `[VERIFY-UNCERTAIN]` 項目（workflow 内の検証 agent の rawLine 出力不備 — 不存在ではない。retro-e4）は、**その行が名指ししているパスそのもの**（行末のカンマ区切り一覧）を `test -s` して置換する（戻り値の evidencePaths 全体や qa/report.md の表ではない — 集合がズレると別物を確認したことになる）: 名指しパスが**全件 OK のときに限り**提示から除外し「証跡 N 件をオーケストレータが実在確認済み（workflow 内の機械検証は出力不備で未確定）」と 1 行で記す。1 件でも MISSING ならその行を `[BLOCKER]` へ昇格する。
+
+**CD-CHECKPOINT 未取得の回復**（retro-e4 — E4 で API 529 が workflow 内の再試行でも回復せず、手作業の尾部再構成になった）: 戻り値の `summary` が既定文「CD-CHECKPOINT の要約が得られなかった。…」なら API 過負荷の可能性が高い。自分の Bash で `sleep 120` してから、Task（`subagent_type: creative-director`, `model: opus`, effort high）を **1 回だけ**起動して CD-CHECKPOINT を単発で取り直す。プロンプトは full-build.js の CD プロンプトと同じ構成にする（gates.md CD-CHECKPOINT 節に従う / 読むもの: design/brief.md・concept.md・gdd.md・qa/report.md・qa/evidence/・state/stories.yaml・MANIFEST・state/reviews/ / 戻り値の unresolvedFindings を JSON で全件渡す / 資産監査は `state/reviews/assets-audit.md` を読ませる / 判定を `state/reviews/checkpoint-c.md` に追記させる）。受け取った verdict / summary / playInstructions で戻り値の該当フィールドを置換し、Checkpoint 提示に「CD 判定は workflow 外で単発取得（理由: workflow 内 3 回 null）」と 1 行明記する。それでも得られなければ verdict=CONCERNS・summary 欠落のまま人間へ提示し、既知の課題の冒頭に `[BLOCKER] CD-CHECKPOINT 判定未取得` を置く（隠さない）。
 
 ## Phase 3: Checkpoint C 提示（完成品受け渡し）
 
@@ -98,4 +101,5 @@ Workflow ツールで起動する:
 
 1. `state/stage.txt` に `done` の1語のみを Write
 2. `state/active.md` を更新: 現在地=「done・受け渡し完了」、次アクション=「なし（チューニングはエンジン別 config 正本で完結 — contract §11: phaser=game/src/config.ts / unity=GameConfig.cs / unreal=GameConfig.h）」、未解決事項=ライセンスフラグと must_replace 一覧
+   - **ハーネス差分の持ち帰り（retro-e4）**: 自分の Bash で `git diff main --stat -- .claude/` を実行し、run 中に QA fix / batch-verify が `tech-stack*.md`「既知の落とし穴」や `rules/` へ追記した差分があれば、run 成果物と一緒に退避せず**本体へ戻す対象**として最終報告に列挙する（harness PR `harness/<version>-retro-<run>` に切り出す。E4 で 5 件が run ブランチにだけ残った）
 3. 締めの案内: 遊び方コマンドを再掲し、「パラメータ調整はエンジン別 config 正本（phaser: `game/src/config.ts` / unity: `game/Assets/Scripts/GameConfig.cs` / unreal: `game/Source/ForgeGame/GameConfig.h`）だけで完結します」と伝える

@@ -43,3 +43,15 @@ test('CD REJECT: 個別 fix の失敗が指示内容付きで unresolvedFindings
   assert.equal(callsBy(calls, /^CD修正の対応記録/).length, 1, 'fix 後の対応記録 agent が走らない');
   assert.equal(result.verdict, 'CONCERNS', '再判定の結果が反映されない');
 });
+
+// ---- retro-e4 追随: agentR retries（CD-CHECKPOINT は 2 回） ----
+test('agentR retries: CD-CHECKPOINT 判定は -retry → -retry2 の 2 回まで再試行し回復する', async () => {
+  const routes = [
+    R(/^CD-CHECKPOINT 判定-retry2$/, { verdict: 'APPROVE', findings: [], fixes: [] }),
+    R(/^CD-CHECKPOINT 判定/, null),
+  ];
+  const { result, calls } = await runWorkflow(WF, { args: ARGS, routes });
+  assert.deepEqual(callsBy(calls, /^CD-CHECKPOINT 判定/).map((c) => c.label), ['CD-CHECKPOINT 判定', 'CD-CHECKPOINT 判定-retry', 'CD-CHECKPOINT 判定-retry2']);
+  assert.equal(result.verdict, 'APPROVE');
+  assert.ok(!result.unresolvedFindings.some((f) => f.includes('判定が実行されず')), '回復したのに未取得として記録された');
+});

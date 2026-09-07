@@ -29,7 +29,8 @@
 
 ## 見送り・未検証（次ランで再評価）
 
-- 外部 reviewer（`pr-review-toolkit:*`）を sonnet に落とした判断: 次ランの tokenUsage と CR-CODE 検出率で再評価（QA-PLAY + バッチ検証を backstop とする設計）。
-- prototype.js の QA fix は重大バグ 1 件ごとに opus セッション（M-8a/b の resume 安全設計）。full-build と同じ assignee 単位バッチ化でコンテキスト読込と検証コマンド実行を 1/3 にできるが、既存テスト（M-8a/b）の前提変更を伴うため別 PR。
+- 外部 reviewer（`pr-review-toolkit:*`）を sonnet に落とした判断: **E4 で検証済み・継続**（S-02 CRITICAL 検出等。retro-e4.md「機能した点」）。
+- prototype.js の QA fix は重大バグ 1 件ごとに opus セッション（M-8a/b の resume 安全設計）。**v0.5.1.0 で major バグ（`bugs`）は assignee 単位バッチとして部分適用**。criticalBugs の bug 単位は据え置き（TODOS）。
+- E4 で見つかった v0.5.0.0 の欠陥（verify-evidence の rawLine 擬陽性 / CR-CODE 対象コミット指定ミス / QA 非 APPROVE で fix が走らない条件 / design 系 agent の Bash 非保持 / CD 529 の回復手順）は retro-e4.md に整理し v0.5.1.0 で処方済み。
 - contract.md（唯一の自動 import ≈19KB）の §6/§10/§11 は engineer/qa/art 系のみが要る — 分割すれば全 agent の常駐文脈をさらに半減できる。別 PR。
 - 実測比較の基準は E3（agent 156 本・全て旧割当）。
