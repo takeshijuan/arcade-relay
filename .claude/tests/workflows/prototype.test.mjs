@@ -35,6 +35,7 @@ const EV_OK = { checks: [{ path: 'qa/evidence/e.png', exists: true, nonEmpty: tr
 // 3 engine のコード対象パス（contract §11）を全て含め、engine 切替テストでも対象証明が成立する fixture にする
 const CODE_FILES = ['game/src/systems/x.ts', 'game/Assets/Scripts/Systems/X.cs', 'game/Source/ForgeGame/Systems/X.cpp'];
 const IMPL_OK = { commitHash: 'abc1234', changedFiles: CODE_FILES, summary: 's' };
+const FIX_OK = { commitHash: 'f1x0001', changedFiles: CODE_FILES, summary: 's' }; // CR-CODE fix もコード対象パスを申告する（QA fix は fix-qa- で別）
 const CR_OK = { verdict: 'APPROVE', findings: [], observedCodeFiles: CODE_FILES };
 // route は接頭辞マッチにする（agentR の '-retry' 付き label でも同じ route が当たるように — retro-e3 指摘5）
 function baseRoutes(batchReply, qaReply) {
@@ -42,6 +43,7 @@ function baseRoutes(batchReply, qaReply) {
     R(/^setup-scaffold-stories/, SETUP),
     R(/^setup-crosscheck-stories/, CROSSCHECK),
     R(/^implement-/, IMPL_OK),
+    R(/^fix-(?!qa-)/, FIX_OK),
     R(/^cr-(code|silent)-/, CR_OK),
     R(/^qa-play-round/, qaReply || QA_OK),
     R(/^verify-evidence-round/, EV_OK),

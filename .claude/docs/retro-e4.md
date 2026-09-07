@@ -69,7 +69,9 @@ retro-e3 処方どおり QA fix が `tech-stack.md` に 5 件追記したが、r
 
 そのほか: 無記録経路の解消（bookkeep / finalize-state / QA round 2 の agent 失敗・REJECT 空指示・engineer 外 assignee・locate の失敗理由）、スキル文面の「置換」→「追記」（劣化記録の消去を許可していた）、`[VERIFY-UNCERTAIN]` は行が名指しするパスを `test -s`、full-build 戻り値に evidencePaths、gen-* の冪等ガード、テストの空振り（-retry2 検証）修正、contract §11 ↔ ENGINE_PROFILES の同期テスト、`.gitignore`（`.gstack/`・`game/.tmp/`）。
 
-既知の限界（未対応・記録のみ）: unity の `Assets/Tests/**`・シーン・`.asmdef` のみ、unreal の `*.Build.cs`・`Config/*.ini` のみのコミットは contract §11 のコード対象パスに当たらず、単独 story なら「対象未証明」→ 再特定 → `[BLOCKER]` になる（実装と同じコミットに含める規約で回避。必要なら contract §11 の対象パスを広げる）。検証 agent が `<path> <bytes>` を捏造する最安の攻撃は workflow 内では検出できない — 信頼境界はオーケストレータの `test -s`（設計どおり）。ラン中のハーネス upgrade + resume は impl 以降のプレフィクスを外し課金再実行になり得るため避ける（gen-* の冪等ガードは緩和）。
+第 2 ラウンド（修正コミットへの code-reviewer 再レビュー + Codex 再実行）: 対象証明を reviewer の observedCodeFiles だけに求めると、reviewer が空で返しただけで正当な APPROVE を潰し story あたり +3 agent と偽 `[BLOCKER]` を生む（High）→ 実装/fix の申告 changedFiles と再特定 agent の包含確認も対象証明として認める（E4 の実害＝申告が state ファイルのみ、では引き続き発火）。逆に findings 付きでも対象未証明なら fix を起こさない。qa-lead が APPROVE と同時に major/重大バグを返す矛盾は CONCERNS に正規化して修正へ。自己申告 APPROVE + minor のみ + workflow 降格を judge fix に流さない。prototype の bugs の enum 外 severity（blocker 等）は major として修正レーンへ。rawLine は一次情報（実在を示せば申告 exists:false でも降格しない）とし、`ls -l` 形式も受理して毎 round の再検証を量産しない。prototype の戻り値 evidencePaths は QA 申告 ∪ CD 選定。bookkeep の注記文言は理由（対象不成立 / MAX_ITER）を反映。未固定だった fix 5 件にテストを追加（81 → 106）。
+
+既知の限界（未対応・記録のみ）: 対象証明は申告 changedFiles でも成立するため、実装 agent が hash と changedFiles の**両方**を偽り、かつ reviewer が targetMismatch を立てない二重の誤りは検出できない（reviewer の対象確認が残る防衛線）。unity の `Assets/Tests/**`・シーン・`.asmdef` のみ、unreal の `*.Build.cs`・`Config/*.ini` のみのコミットは contract §11 のコード対象パスに当たらず、単独 story なら「対象未証明」→ 再特定 → `[BLOCKER]` になる（実装と同じコミットに含める規約で回避。必要なら contract §11 の対象パスを広げる）。検証 agent が `<path> <bytes>` を捏造する最安の攻撃は workflow 内では検出できない — 信頼境界はオーケストレータの `test -s`（設計どおり）。ラン中のハーネス upgrade + resume は impl 以降のプレフィクスを外し課金再実行になり得るため避ける（gen-* の冪等ガードは緩和）。
 
 ## E5 で観測すること
 

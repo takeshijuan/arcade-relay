@@ -18,12 +18,14 @@ const EV_OK = { checks: [{ path: 'qa/evidence/e.png', exists: true, nonEmpty: tr
 // 3 engine のコード対象パス（contract §11）を全て含め、engine 切替テストでも対象証明が成立する fixture にする
 const CODE_FILES = ['game/src/systems/x.ts', 'game/Assets/Scripts/Systems/X.cs', 'game/Source/ForgeGame/Systems/X.cpp'];
 const IMPL_OK = { commitHash: 'abc1234', changedFiles: CODE_FILES };
+const FIX_OK = { commitHash: 'f1x0001', changedFiles: CODE_FILES }; // CR-CODE fix もコード対象パスを申告する（QA fix は qa-fix- で別）
 const CR_OK = { findings: [], observedCodeFiles: CODE_FILES };
 function baseRoutes(batchReply) {
   return [
     R(/^replan-stories$/, { stories: [gp('S-01'), ui('S-02'), gp('S-03')] }),
     R(/^polish-plan$/, { stories: [gp('S-10'), ui('S-11')] }),
     R(/^impl-/, IMPL_OK),
+    R(/^fix-/, FIX_OK),
     R(/^(cr|sfh)-/, CR_OK),
     R(/^qa-play-/, QA_OK),
     R(/^verify-evidence-/, EV_OK),

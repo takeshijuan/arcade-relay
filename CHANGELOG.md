@@ -28,7 +28,11 @@ recovered by hand by the orchestrator; this release mechanizes the recovery.
   pass reported missing never disappears — and `rawLine` is parsed as
   `<path> <bytes>` / `<path> MISSING`, so a line that merely contains the
   path does not pass and a `MISSING` or `0` line demotes even when the
-  verifier's `exists` / `nonEmpty` booleans claim otherwise.
+  verifier's `exists` / `nonEmpty` booleans claim otherwise. `rawLine` is
+  the primary signal: a parseable line showing the file exists is not
+  overridden by a false `exists` / `nonEmpty` (the contradiction is logged),
+  and `ls -l` lines whose last field is the full path are accepted too, so an
+  `ls -l`-style verifier does not trigger a recheck every round.
 - CR-CODE reviews verify their target first. E4 handed reviewers commits that
   touched only `state/reviews` or `stories.yaml` (S-48 / S-50 / S-62) and the
   empty diff got a verdict. Implementation and fix agents must return
@@ -38,11 +42,14 @@ recovered by hand by the orchestrator; this release mechanizes the recovery.
   (`locate-commit-<sid>-pre`, the story's engineer, read-only, hash
   validated) and records the suspicion in `unresolvedFindings`. Reviewers
   must return `observedCodeFiles` (required) and `targetMismatch: true` when
-  the commit has no code files; a zero-finding review without a code file in
-  `observedCodeFiles` is "target unproven" and never becomes APPROVE. One
-  relocation per story (`-relocated` label, same iteration); otherwise a
-  `[BLOCKER]` with the reason (agent failed / not found / invalid hash) and
-  neither approval nor fix.
+  the commit has no code files. Target proof comes from `observedCodeFiles`,
+  from the implementation's / fix's own `changedFiles`, or from a successful
+  relocation; a review with none of them is "target unproven" regardless of
+  its findings — it neither approves nor starts a fix. One relocation per
+  story (`-relocated` label, same iteration); otherwise a `[BLOCKER]` with the
+  reason (agent failed / not found / invalid hash), side findings kept in the
+  verdict history, and the `stories.yaml` note says why the story closed
+  unresolved.
 - QA-PLAY non-APPROVE always triggers a fix attempt. In E4 qa-lead reported a
   medium bug only in `qa/report.md` with empty `criticalBugs` /
   `failedAcceptance`, so no fix ran and round 2 re-judged the same HEAD. When
@@ -55,7 +62,12 @@ recovered by hand by the orchestrator; this release mechanizes the recovery.
   record, and the next round's qa-lead prompt carries the demotion reason.
   A minor-only non-APPROVE is recorded as an inconsistency (not a violation)
   and still gets one summary fix; bugs assigned outside the engineer lanes are
-  recorded as undispatched instead of silently dropped.
+  recorded as undispatched instead of silently dropped. An APPROVE that
+  arrives together with blocker/major bugs or failed acceptance is normalized
+  to CONCERNS and fixed; a demoted APPROVE with only minor bugs is not sent
+  to the judge-tier fix; in prototype a `bugs` severity outside the enum
+  (e.g. `blocker`) is handled as major rather than dropped, and the returned
+  `evidencePaths` is QA's list ∪ the CD's picks (never only the CD's subset).
 - `agentR(prompt, opts, retries)`: CD-CHECKPOINT (all three workflows,
   re-judges included) and full-build's `finalize-state` retry twice
   (`-retry`, `-retry2`). The Workflow runtime has no timers, so the
@@ -103,11 +115,13 @@ recovered by hand by the orchestrator; this release mechanizes the recovery.
   to observe in E5.
 - `tech-stack.md` "既知の落とし穴 (engine=phaser)" — five pitfalls promoted
   during E4 that had only landed on the run branch.
-- Tests 81 → 97 (retries, Bash sync, evidence recheck / uncertain / demotion,
+- Tests 81 → 106 (retries, Bash sync, evidence recheck / uncertain / demotion,
   empty-list QA fix, major batching, CR-CODE relocation and blocker paths, and
   the review-driven cases: fail-closed evidence merge, `rawLine` parsing,
-  pre-review relocation, target proof, qa-lead self-verdict separation,
-  undispatched bugs, silent paths, contract §11 ↔ `ENGINE_PROFILES` sync).
+  pre-review relocation, target proof incl. declaration / relocation proof,
+  qa-lead self-verdict separation and verdict normalization, undispatched
+  bugs, out-of-enum severities, silent paths, `rawLine`-primary parsing with
+  `ls -l` acceptance, contract §11 ↔ `ENGINE_PROFILES` sync).
 - TODOS: pixel-art animation sheet route (RD cannot produce sheets).
 
 ## [0.5.0.0] - 2026-09-02

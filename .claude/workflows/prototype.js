@@ -698,6 +698,9 @@ async function buildStoryLane(laneStories) {
     let relocated = false;
     let relSuffix = ''; // 再特定後の reviewer label 接尾辞（同 label の再呼び出しは不一致結果の replay になり得る）
     let targetUnresolvable = false;
+    // 対象証明の第 2 情報源: 実装/fix の申告 changedFiles（または再特定 agent の包含確認）。reviewer が observedCodeFiles を空で返した
+    // だけで正当な APPROVE を潰さない（第 2 ラウンドレビュー F1）。E4 の実害（申告が state ファイルのみ）では偽のまま
+    let declaredProven = false;
 
     const loopResult = await reviewLoop({
       gateId: 'CR-CODE',
@@ -732,7 +735,8 @@ async function buildStoryLane(laneStories) {
           // 申告 changedFiles（`git show --stat` の一覧）にコード対象パスが無ければ、reviewer の任意申告を待たず workflow が実装コミットを
           // 再特定する（retro-e4: E4 で state/reviews のみのコミットがレビューされた。決定的な根拠なので人間可視チャネルにも載せる）
           const declared = Array.isArray(r.changedFiles) ? r.changedFiles.map(String) : [];
-          if (!declared.some(function (f) { return EP.codePathRe.test(f); })) {
+          declaredProven = declared.some(function (f) { return EP.codePathRe.test(f); });
+          if (!declaredProven) {
             knownIssues.push('[CR-CODE][' + sid + '] 実装 agent の申告 changedFiles にコード対象パス（' + EP.codePathHint + '）が無い（対象コミット ' + lastCommitHash + ' が実装コミットでない疑い — 再特定を試行）');
             relocated = true;
             const loc = await locateImplCommit(sid, story, 'locate-commit-' + sid + '-pre', lastCommitHash);
@@ -740,6 +744,7 @@ async function buildStoryLane(laneStories) {
               log('[CR-CODE] ' + sid + ': 対象コミットを ' + lastCommitHash + ' → ' + loc.hash + ' に再特定（実装申告時点）');
               lastCommitHash = loc.hash;
               relSuffix = '-relocated';
+              declaredProven = true; // 再特定 agent がコード対象パスの包含を確認した hash
             } else {
               targetUnresolvable = true;
               unresolvedFindings.push('[BLOCKER] [CR-CODE][' + sid + '] レビュー対象コミットを固定できない（' + loc.note + '）— レビュー未成立・自動 APPROVE しない');
@@ -806,11 +811,11 @@ async function buildStoryLane(laneStories) {
         // いずれもレビュー未成立 — 実装 diff を見ていない APPROVE を作らない（retro-e4）
         const observed = [];
         for (const r of valid) for (const f of (r.observedCodeFiles || [])) observed.push(String(f));
-        const targetProven = observed.some(function (f) { return EP.codePathRe.test(f); });
+        const targetProven = observed.some(function (f) { return EP.codePathRe.test(f); }) || declaredProven;
         const flaggedMismatch = valid.some(function (r) { return r.targetMismatch === true; });
-        const zeroFindings = valid.length > 0 && valid.every(function (r) { return (r.findings || []).length === 0; });
-        if (flaggedMismatch || (zeroFindings && !targetProven)) {
-          const why = flaggedMismatch ? 'reviewer が targetMismatch を報告' : 'findings 0 件だが observedCodeFiles にコード対象パスが無い（対象未証明）';
+        // findings の有無に関わらず対象未証明のレビューは受け付けない — 誤った対象への findings で fix agent を起こさない（Codex 第 2 ラウンド P2）
+        if (valid.length > 0 && (flaggedMismatch || !targetProven)) {
+          const why = flaggedMismatch ? 'reviewer が targetMismatch を報告' : 'observedCodeFiles にコード対象パスが無く、申告 changedFiles からも対象を証明できない（対象未証明）';
           let note = '再特定は既に 1 回実施済み';
           if (!relocated) {
             // 1 回だけ実装コミットを再特定して同 iteration をやり直す
@@ -820,6 +825,7 @@ async function buildStoryLane(laneStories) {
               log('[CR-CODE] ' + sid + ': 対象コミットを ' + lastCommitHash + ' → ' + loc.hash + ' に再特定（' + why + '。iteration ' + iteration + ' をやり直す）');
               lastCommitHash = loc.hash;
               relSuffix = '-relocated';
+              declaredProven = true; // 再特定 agent がコード対象パスの包含を確認した hash
               return reviewOnce(iteration);
             }
             note = loc.note;
@@ -874,6 +880,9 @@ async function buildStoryLane(laneStories) {
         );
         if (r && r.commitHash) {
           lastCommitHash = r.commitHash;
+          // fix コミットの申告 changedFiles で対象証明を更新（次 iteration のレビュー対象は fix コミット）
+          const fixDeclared = Array.isArray(r.changedFiles) ? r.changedFiles.map(String) : [];
+          declaredProven = fixDeclared.some(function (f) { return EP.codePathRe.test(f); });
           return r;
         }
         return null;
@@ -1387,15 +1396,27 @@ async function verifyEvidence(paths, label, phaseName) {
         if (strictAbsence) missing.push(p + '（検証結果に現れず — 未検証）'); else uncertain.push(p);
         continue;
       }
-      if (!c.exists || !c.nonEmpty) { missing.push(p + '（' + (!c.exists ? '不存在' : '0バイト') + '）'); continue; }
-      // rawLine（`stat "%N %z"` = "<path> <bytes>" / 失敗時 "<path> MISSING"）を一次情報にする。exists/nonEmpty は同じ agent の
-      // 申告なので、rawLine と矛盾したら生出力を採る（"<path> MISSING" はパス文字列を含むため indexOf 突合では合格してしまう）。
-      // フルパス一致を要求する（basename 一致では別ディレクトリの行を流用できる — Codex P2）。一致しない = コマンド実行の証拠が
-      // 無いが不存在の証明でもないので uncertain
-      const m = typeof c.rawLine === 'string' ? c.rawLine.trim().match(/^(.*\S)\s+(\d+|MISSING)$/) : null;
-      if (!m || m[1] !== String(p)) { uncertain.push(p); continue; }
-      if (m[2] === 'MISSING') missing.push(p + '（不存在 — rawLine が MISSING。申告 exists:true と矛盾）');
-      else if (Number(m[2]) === 0) missing.push(p + '（0バイト — rawLine のサイズ 0。申告 nonEmpty:true と矛盾）');
+      // rawLine（`stat "%N %z"` = "<path> <bytes>" / 失敗時 "<path> MISSING"）を**一次情報**にする。exists/nonEmpty は同じ agent の
+      // 申告 boolean なので、解析できた rawLine と矛盾したら生出力を採る（"<path> MISSING" はパス文字列を含むため indexOf 突合では
+      // 合格してしまい、逆に exists:false の誤申告で実在ファイルを不存在にもしない — Codex P2 ×2）。フルパス一致を要求する
+      // （basename 一致では別ディレクトリの行を流用できる）
+      const raw = typeof c.rawLine === 'string' ? c.rawLine.trim() : '';
+      let m = raw ? raw.match(/^(.*\S)\s+(\d+|MISSING)$/) : null;
+      if (!m && raw) {
+        // ls -l 形式（perms links owner group size month day time name）も実行証拠として受理する（E4 の haiku は ls -l を選んだ —
+        // 毎 round 再検証 + [VERIFY-UNCERTAIN] を量産しない）。パスは末尾フィールドの完全一致を要求
+        const ls = raw.match(/^\S{10,}\s+\d+\s+\S+\s+\S+\s+(\d+)\s+\S+\s+\d+\s+\S+\s+(.+)$/);
+        if (ls) m = [ls[0], ls[2], ls[1]];
+      }
+      if (m && m[1] === String(p)) {
+        if (m[2] === 'MISSING') missing.push(p + '（不存在 — rawLine が MISSING' + (c.exists ? '。申告 exists:true と矛盾' : '') + '）');
+        else if (Number(m[2]) === 0) missing.push(p + '（0バイト — rawLine のサイズ 0' + (c.nonEmpty ? '。申告 nonEmpty:true と矛盾' : '') + '）');
+        else if (!c.exists || !c.nonEmpty) log(label + ': ' + p + ' — rawLine は実在（' + m[2] + ' bytes）だが申告 exists/nonEmpty が false（生出力を採用）');
+        continue;
+      }
+      // rawLine が解析不能（実行証拠なし）— 申告 boolean に頼る: 不存在/0 バイトの申告は missing、実在の申告は未検証（uncertain）
+      if (!c.exists || !c.nonEmpty) missing.push(p + '（' + (!c.exists ? '不存在' : '0バイト') + '）');
+      else uncertain.push(p);
     }
     return { missing: missing, uncertain: uncertain };
   };
@@ -1475,6 +1496,11 @@ for (let round = 1; round <= QA_MAX; round++) {
     }
   }
 
+  // 判定の正規化: APPROVE と同時に重大/major バグや未通過 acceptance を返す矛盾した返却を APPROVE のまま通さない（Codex 第 2 ラウンド P1）
+  if (qaResult.verdict === 'APPROVE' && (qaResult.criticalBugs.length > 0 || (qaResult.bugs || []).some(function (b) { return b && b.severity !== 'minor'; }) || (qaResult.failedAcceptance || []).length > 0)) {
+    qaResult.verdict = 'CONCERNS';
+    unresolvedFindings.push('[QA-PLAY] round ' + round + ': qa-lead が APPROVE と同時に重大/major バグまたは未通過 acceptance を返した（判定規則と矛盾）— CONCERNS に正規化して修正へ');
+  }
   log('[QA-PLAY] round ' + round + ': ' + qaResult.verdict + '（重大バグ ' + qaResult.criticalBugs.length + ' 件 / acceptance 未通過 ' + (qaResult.failedAcceptance || []).length + ' 件）');
   recordVerdict('QA-PLAY', 'qa', round, qaResult.verdict,
     qaResult.criticalBugs.map(function (b) { return '[critical] ' + b.title; })
@@ -1538,7 +1564,11 @@ for (let round = 1; round <= QA_MAX; round++) {
     }
     // major バグは assignee 単位で 1 呼び出しにバッチ（TODOS「prototype QA fix の assignee 単位バッチ化」の部分適用 —
     // criticalBugs の bug 単位 label（M-8a/b の resume 安全設計）は据え置き）。minor は修正対象外（qa/report.md の記録のみ）
-    const majors = (qaResult.bugs || []).filter(function (b) { return b && b.severity === 'major'; });
+    // minor 以外（major・enum 外の blocker/critical 等）は全て修正レーンへ — severity 素通しで重大指摘を落とさない（第 2 ラウンド F3）
+    const majors = (qaResult.bugs || []).filter(function (b) { return b && b.severity !== 'minor'; });
+    for (const b of majors) {
+      if (b.severity !== 'major') knownIssues.push('[QA-PLAY] round ' + round + ': bugs「' + b.title + '」の severity「' + b.severity + '」が enum 外 — major として修正レーンに乗せた');
+    }
     for (const eng of ['gameplay-engineer', 'ui-engineer']) {
       const mine = majors.filter(function (b) { return (b.assignee || 'gameplay-engineer') === eng; });
       if (mine.length === 0) continue;
@@ -1596,7 +1626,7 @@ for (let round = 1; round <= QA_MAX; round++) {
     for (const bug of qaResult.criticalBugs) {
       unresolvedFindings.push('[QA-PLAY] 未解決の重大バグ: ' + bug.title + ' — ' + bug.detail);
     }
-    for (const bug of (qaResult.bugs || []).filter(function (b) { return b && b.severity === 'major'; })) {
+    for (const bug of (qaResult.bugs || []).filter(function (b) { return b && b.severity !== 'minor'; })) {
       unresolvedFindings.push('[QA-PLAY] 未解決の major バグ: ' + bug.title + ' — ' + bug.detail);
     }
   }
@@ -1719,9 +1749,9 @@ if (!cd) {
 return {
   summary: cd.summary,
   playInstructions: cd.playInstructions,
-  evidencePaths: (cd.evidencePaths && cd.evidencePaths.length > 0)
-    ? cd.evidencePaths
-    : ((qaResult && qaResult.evidencePaths) || []),
+  // QA の申告値そのもの ∪ CD が提示に選んだ代表 — オーケストレータの test -s（信頼境界）が QA 申告集合を必ずカバーするように
+  // （CD のキュレーション部分集合だけを返すと [VERIFY-UNCERTAIN] の置換対象とズレる — 第 2 ラウンド F4）
+  evidencePaths: Array.from(new Set(((qaResult && qaResult.evidencePaths) || []).concat(cd.evidencePaths || []).map(String))),
   knownIssues: knownIssues.concat(cd.knownIssues || []),
   unresolvedFindings: unresolvedFindings,
   verdictHistory: verdictHistory,

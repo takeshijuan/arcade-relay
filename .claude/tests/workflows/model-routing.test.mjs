@@ -56,11 +56,13 @@ const BATCH_OK = { ok: true, fixedNotes: [], unresolved: [] };
 // 3 engine のコード対象パス（contract §11）を全て含め、unity 経路の RUNS でも対象証明が成立する fixture にする
 const CODE_FILES = ['game/src/systems/x.ts', 'game/Assets/Scripts/Systems/X.cs', 'game/Source/ForgeGame/Systems/X.cpp'];
 const PROTO_IMPL_OK = { commitHash: 'abc1234', changedFiles: CODE_FILES, summary: 's' };
+const PROTO_FIX_OK = { commitHash: 'f1x0001', changedFiles: CODE_FILES, summary: 's' }; // CR-CODE fix もコード対象パスを申告する（fix コミットが次 iteration の対象）
 const PROTO_CR_OK = { verdict: 'APPROVE', findings: [], observedCodeFiles: CODE_FILES };
 const protoRoutes = (extra = [], batch = BATCH_OK, qa = PROTO_QA_OK, ev = EV_OK) => extra.concat([
   R(/^setup-scaffold-stories/, SETUP),
   R(/^setup-crosscheck-stories/, CROSSCHECK),
   R(/^implement-/, PROTO_IMPL_OK),
+  R(/^fix-(?!qa-)/, PROTO_FIX_OK),
   R(/^cr-(code|silent)-/, PROTO_CR_OK),
   R(/^qa-play-round/, qa),
   R(/^verify-evidence-round/, ev),
@@ -72,11 +74,13 @@ const gp = (id, title) => ({ id, title: title || id, assignee: 'gameplay-enginee
 const ui = (id, title) => ({ id, title: title || id, assignee: 'ui-engineer', pillar: 'P-01', acceptance: 'a' });
 const FB_QA_OK = { verdict: 'APPROVE', bugs: [], failedAcceptance: [], evidencePaths: [EV_PATH], screenshotsVisuallyConfirmed: true };
 const FB_IMPL_OK = { commitHash: 'abc1234', changedFiles: CODE_FILES };
+const FB_FIX_OK = { commitHash: 'f1x0001', changedFiles: CODE_FILES }; // CR-CODE fix もコード対象パスを申告する（QA fix は qa-fix- で別）
 const FB_CR_OK = { findings: [], observedCodeFiles: CODE_FILES };
 const fbRoutes = (extra = [], batch = BATCH_OK, qa = FB_QA_OK) => extra.concat([
   R(/^replan-stories$/, { stories: [gp('S-01'), ui('S-02'), gp('S-03')] }),
   R(/^polish-plan$/, { stories: [gp('S-10'), ui('S-11')] }),
   R(/^impl-/, FB_IMPL_OK),
+  R(/^fix-/, FB_FIX_OK),
   R(/^(cr|sfh)-/, FB_CR_OK),
   R(/^qa-play-/, qa),
   R(/^verify-evidence-/, EV_OK),
@@ -464,14 +468,14 @@ test('verify-evidence(fail closed): 初回 missing + 不一致 の混在 — 再
   const re = callsBy(p.calls, /^verify-evidence-round1-recheck$/)[0];
   assert.ok(re, '再検証が走らない');
   assert.ok(re.prompt.includes(JSON.stringify([B])) && !re.prompt.includes(A), '再検証の対象が不一致分（B）に絞られていない');
-  assert.ok(p.result.unresolvedFindings.some((f) => f.includes(A + '（不存在）')), '初回の不存在が再検証で消えた（fail open）: ' + JSON.stringify(p.result.unresolvedFindings));
+  assert.ok(p.result.unresolvedFindings.some((f) => f.includes(A + '（不存在')), '初回の不存在が再検証で消えた（fail open）: ' + JSON.stringify(p.result.unresolvedFindings));
   assert.ok(p.result.verdictHistory.some((v) => v.gate === 'QA-PLAY' && v.iteration === 1 && v.verdict === 'CONCERNS'), '不存在があるのに降格されない');
   const f = await runWorkflow(WF('full-build.js'), { args: FB_ARGS, routes: [R(/^verify-evidence-/, ev)].concat(fbRoutes([], BATCH_OK, Object.assign({}, FB_QA_OK, { evidencePaths: [A, B] }))) });
-  assert.ok(f.result.unresolvedFindings.some((x) => x.includes(A + '（不存在）')));
+  assert.ok(f.result.unresolvedFindings.some((x) => x.includes(A + '（不存在')));
   assert.ok(f.result.verdictHistory.some((v) => v.gate === 'QA-PLAY' && v.verdict === 'CONCERNS'));
 });
 
-test('verify-evidence(rawLine 解析): "<path> MISSING" / サイズ 0 は申告 exists:true・nonEmpty:true と矛盾 → missing（降格）。ls -l 形式は実行証拠なし → 再検証 → [VERIFY-UNCERTAIN]', async () => {
+test('verify-evidence(rawLine 解析): "<path> MISSING" / サイズ 0 は申告 exists:true・nonEmpty:true と矛盾 → missing（降格）。ls -l 形式はフルパス末尾一致なら受理・別ディレクトリは未検証・サイズ 0 は降格', async () => {
   const gone = { checks: [{ path: EV_PATH, exists: true, nonEmpty: true, rawLine: EV_PATH + ' MISSING' }], extraFilesInEvidenceDir: [] };
   const g = await runWorkflow(WF('prototype.js'), { args: PROTO_ARGS, routes: protoRoutes([], BATCH_OK, PROTO_QA_OK, gone) });
   assert.ok(g.result.unresolvedFindings.some((x) => x.includes('rawLine が MISSING')), JSON.stringify(g.result.unresolvedFindings));
@@ -481,11 +485,21 @@ test('verify-evidence(rawLine 解析): "<path> MISSING" / サイズ 0 は申告 
   const z = await runWorkflow(WF('full-build.js'), { args: FB_ARGS, routes: [R(/^verify-evidence-/, zero)].concat(fbRoutes()) });
   assert.ok(z.result.unresolvedFindings.some((x) => x.includes('rawLine のサイズ 0')));
   assert.ok(z.result.verdictHistory.some((v) => v.gate === 'QA-PLAY' && v.verdict === 'CONCERNS'));
-  const lsStyle = { checks: [{ path: EV_PATH, exists: true, nonEmpty: true, rawLine: '-rw-r--r-- 1 u g 1234 Sep 2 03:00 ' + EV_PATH }], extraFilesInEvidenceDir: [] };
+  // ls -l 形式（末尾がフルパス・第 5 フィールドがサイズ）は実行証拠として受理（E4 の haiku が選んだ形式 — 毎 round の再検証を量産しない）
+  const lsStyle = { checks: [{ path: EV_PATH, exists: true, nonEmpty: true, rawLine: '-rw-r--r--@ 1 u g 1234 Sep 2 03:00 ' + EV_PATH }], extraFilesInEvidenceDir: [] };
   const l = await runWorkflow(WF('prototype.js'), { args: PROTO_ARGS, routes: protoRoutes([], BATCH_OK, PROTO_QA_OK, lsStyle) });
-  assert.equal(callsBy(l.calls, /^verify-evidence-round1-recheck$/).length, 1);
-  assert.ok(l.result.unresolvedFindings.some((x) => x.includes('[VERIFY-UNCERTAIN]')));
-  assert.ok(!l.result.verdictHistory.some((v) => v.gate === 'QA-PLAY' && v.verdict === 'CONCERNS'), 'ls -l 形式（実在の証拠はある）で降格された');
+  assert.equal(callsBy(l.calls, /-recheck$/).length, 0, 'ls -l 形式が未検証扱いになった');
+  assert.ok(!l.result.unresolvedFindings.some((x) => x.includes('VERIFY-UNCERTAIN')));
+  assert.ok(l.result.verdictHistory.some((v) => v.gate === 'QA-PLAY' && v.verdict === 'APPROVE'));
+  // ls -l でも別ディレクトリの同名ファイル（basename 一致）は未検証 → 再検証、サイズ 0 は矛盾で降格
+  const lsOther = { checks: [{ path: EV_PATH, exists: true, nonEmpty: true, rawLine: '-rw-r--r-- 1 u g 1234 Sep 2 03:00 qa/evidence/old/e.png' }], extraFilesInEvidenceDir: [] };
+  const lo = await runWorkflow(WF('prototype.js'), { args: PROTO_ARGS, routes: protoRoutes([], BATCH_OK, PROTO_QA_OK, lsOther) });
+  assert.equal(callsBy(lo.calls, /^verify-evidence-round1-recheck$/).length, 1);
+  assert.ok(lo.result.unresolvedFindings.some((x) => x.includes('[VERIFY-UNCERTAIN]')));
+  const lsZero = { checks: [{ path: EV_PATH, exists: true, nonEmpty: true, rawLine: '-rw-r--r-- 1 u g 0 Sep 2 03:00 ' + EV_PATH }], extraFilesInEvidenceDir: [] };
+  const lz = await runWorkflow(WF('prototype.js'), { args: PROTO_ARGS, routes: protoRoutes([], BATCH_OK, PROTO_QA_OK, lsZero) });
+  assert.ok(lz.result.unresolvedFindings.some((x) => x.includes('rawLine のサイズ 0')));
+  assert.ok(lz.result.verdictHistory.some((v) => v.gate === 'QA-PLAY' && v.verdict === 'CONCERNS'));
 });
 
 test('CR-CODE(事前再特定): 申告 changedFiles にコード対象パスが無い → reviewer 起動前に locate-commit-<sid>-pre（人間可視チャネルに記録）/ 特定不能は reviewer を起こさず [BLOCKER]・bookkeep で確定', async () => {
@@ -509,25 +523,33 @@ test('CR-CODE(事前再特定): 申告 changedFiles にコード対象パスが�
   assert.ok(p.result.verdictHistory.some((v) => v.gate === 'CR-CODE' && v.artifact === 'S-01' && v.verdict === 'CONCERNS'), 'prototype の未成立が verdictHistory に残らない');
 });
 
-test('CR-CODE(対象証明): commitHash 無しは再特定へ / findings 0 件 + observedCodeFiles 無し（対象未証明）は APPROVE にしない / 再特定 agent の不正 hash は採用しない', async () => {
+test('CR-CODE(対象証明): commitHash 無しは再特定へ / 再特定 agent が同一 hash の包含を確認すれば observedCodeFiles 空でも APPROVE / 不正 hash は採用しない', async () => {
   const noHash = await runWorkflow(WF('full-build.js'), { args: FB_ARGS, routes: [R(/^impl-s-01$/, { commitHash: '', changedFiles: [] }), R(/^locate-commit-s-01-pre$/, { found: false, reason: 'none' })].concat(fbRoutes()) });
   assert.ok(noHash.result.unresolvedFindings.some((f) => f.includes('S-01: 実装 agent が commitHash を返さなかった')));
   assert.ok(noHash.result.unresolvedFindings.some((f) => f.startsWith('[BLOCKER] S-01')));
   assert.equal(callsBy(noHash.calls, /^(cr|sfh)-s-01-/).length, 0);
   assert.ok(!noHash.result.verdictHistory.some((v) => v.artifact === 's-01' && v.verdict === 'APPROVE'));
+  // 申告にコード対象パスが無い → 事前再特定 → agent が**同一 hash**にコード対象パスが含まれると確認 → -relocated でレビュー →
+  // reviewer が observedCodeFiles を空で返しても再特定 agent の確認で APPROVE（同一 hash を拒否しない）
   const unproven = { findings: [], observedCodeFiles: [] };
-  const u = await runWorkflow(WF('full-build.js'), { args: FB_ARGS, routes: [R(/^(cr|sfh)-s-01-/, unproven), R(/^locate-commit-s-01-1$/, { found: true, commitHash: 'abc1234' })].concat(fbRoutes()) });
-  assert.equal(callsBy(u.calls, /^locate-commit-s-01-1$/).length, 1, '対象未証明で再特定が走らない');
-  assert.equal(callsBy(u.calls, /^cr-s-01-1-relocated$/).length, 1, '同 hash 再確認後のやり直しが走らない');
-  assert.ok(!u.result.verdictHistory.some((v) => v.artifact === 's-01' && v.verdict === 'APPROVE'), '対象未証明の findings 0 件が APPROVE になった');
-  assert.ok(u.result.unresolvedFindings.some((f) => f.startsWith('[BLOCKER] S-01') && f.includes('対象未証明')));
+  const stateOnly = { commitHash: 'abc1234', changedFiles: ['state/reviews/s-01.md'] };
+  const u = await runWorkflow(WF('full-build.js'), { args: FB_ARGS, routes: [R(/^impl-s-01$/, stateOnly), R(/^(cr|sfh)-s-01-/, unproven), R(/^locate-commit-s-01-pre$/, { found: true, commitHash: 'abc1234' })].concat(fbRoutes()) });
+  assert.equal(callsBy(u.calls, /^locate-commit-s-01-pre$/).length, 1, '申告不一致で事前再特定が走らない');
+  assert.equal(callsBy(u.calls, /^cr-s-01-1-relocated$/).length, 1, '同 hash 確認後のレビューが -relocated label で走らない');
+  assert.equal(callsBy(u.calls, /^cr-s-01-1$/).length, 0, '再特定前の label でレビューが走った');
+  assert.ok(u.result.verdictHistory.some((v) => v.artifact === 's-01' && v.iteration === 1 && v.verdict === 'APPROVE'), '同一 hash の包含確認が対象証明として認められない');
+  assert.ok(!u.result.unresolvedFindings.some((f) => f.startsWith('[BLOCKER] S-01')));
   const garbage = await runWorkflow(WF('full-build.js'), { args: FB_ARGS, routes: [R(/^cr-s-01-1$/, { findings: [], targetMismatch: true, observedCodeFiles: [] }), R(/^locate-commit-s-01-1$/, { found: true, commitHash: 'ではない' })].concat(fbRoutes()) });
   assert.equal(callsBy(garbage.calls, /-relocated$/).length, 0, '不正な hash で再レビューが走った');
   assert.ok(garbage.result.unresolvedFindings.some((f) => f.includes('不正な hash')));
-  const pu = await runWorkflow(WF('prototype.js'), { args: PROTO_ARGS, routes: protoRoutes([R(/^cr-(code|silent)-S-01-/, { verdict: 'APPROVE', findings: [], observedCodeFiles: [] }), R(/^locate-commit-S-01-iter1$/, { found: false, reason: 'none' })]) });
-  assert.ok(!pu.result.verdictHistory.some((v) => v.artifact === 'S-01' && v.verdict === 'APPROVE'));
-  assert.ok(pu.result.unresolvedFindings.some((f) => f.includes('[BLOCKER] [CR-CODE][S-01]') && f.includes('対象未証明')));
-  assert.equal(callsBy(pu.calls, /^cr-code-S-01-iter2/).length, 0, '打ち切り後に reviewer を再度起こした');
+  const pu = await runWorkflow(WF('prototype.js'), { args: PROTO_ARGS, routes: protoRoutes([
+    R(/^implement-S-01$/, Object.assign({}, stateOnly, { summary: 's' })),
+    R(/^cr-(code|silent)-S-01-/, { verdict: 'APPROVE', findings: [], observedCodeFiles: [] }),
+    R(/^locate-commit-S-01-pre$/, { found: true, commitHash: 'abc1234' }),
+  ]) });
+  assert.equal(callsBy(pu.calls, /^cr-code-S-01-iter1-relocated$/).length, 1);
+  assert.ok(pu.result.verdictHistory.some((v) => v.artifact === 'S-01' && v.iteration === 1 && v.verdict === 'APPROVE'), 'prototype: 同一 hash の包含確認が対象証明として認められない');
+  assert.ok(!pu.result.unresolvedFindings.some((f) => f.includes('[BLOCKER] [CR-CODE][S-01]')));
 });
 
 test('QA(自己申告の分離): qa-lead の APPROVE を workflow が証跡/目視で降格した場合は summary fix も qa-lead.md 違反記録も起こさず、次 round に降格理由を渡す', async () => {
@@ -596,4 +618,171 @@ test('contract §11 同期: ENGINE_PROFILES の codePathspec が contract の CR
       assert.ok(specs.includes(contractPath), wf + ' の codePathspec に contract §11 の ' + eng + ' コード対象パス（' + contractPath + '）が無い');
     }
   }
+});
+
+// ---- retro-e4 第 2 ラウンド追随（f878f9e への code-reviewer 再レビュー F1〜F6・未固定だった fix のピン止め） ----
+
+test('F1: reviewer が observedCodeFiles を空で返しても、実装/fix の申告 changedFiles か再特定 agent の確認がコード対象パスを示せば APPROVE（再特定・BLOCKER を起こさない）', async () => {
+  const emptyObs = { findings: [], observedCodeFiles: [] };
+  const f = await runWorkflow(WF('full-build.js'), { args: FB_ARGS, routes: [R(/^(cr|sfh)-s-01-/, emptyObs)].concat(fbRoutes()) });
+  assert.equal(callsBy(f.calls, /^locate-commit-s-01-/).length, 0, '申告済みなのに再特定が走った');
+  assert.ok(f.result.verdictHistory.some((v) => v.artifact === 's-01' && v.iteration === 1 && v.verdict === 'APPROVE'));
+  assert.ok(!f.result.unresolvedFindings.some((x) => x.includes('[BLOCKER] S-01')));
+  const p = await runWorkflow(WF('prototype.js'), { args: PROTO_ARGS, routes: protoRoutes([R(/^cr-(code|silent)-S-01-/, { verdict: 'APPROVE', findings: [], observedCodeFiles: [] })]) });
+  assert.equal(callsBy(p.calls, /^locate-commit-S-01-/).length, 0);
+  assert.ok(p.result.verdictHistory.some((v) => v.artifact === 'S-01' && v.verdict === 'APPROVE'));
+  // 申告にコード対象パスが無く事前再特定で見つかった後は、reviewer が observedCodeFiles 空でも再特定 agent の確認で APPROVE 可
+  const badImpl = { commitHash: 'cafe01', changedFiles: ['state/reviews/s-01.md'] };
+  const r = await runWorkflow(WF('full-build.js'), { args: FB_ARGS, routes: [R(/^impl-s-01$/, badImpl), R(/^locate-commit-s-01-pre$/, { found: true, commitHash: 'deadbeef' }), R(/^(cr|sfh)-s-01-/, emptyObs)].concat(fbRoutes()) });
+  assert.ok(r.result.verdictHistory.some((v) => v.artifact === 's-01' && v.verdict === 'APPROVE'), '再特定で確認済みの対象が未証明扱いになった');
+  // fix コミットの申告にコード対象パスが無ければ、次 iteration の対象証明は reviewer の observedCodeFiles に戻る（証明無し → 再特定 → BLOCKER）
+  const q = await runWorkflow(WF('full-build.js'), { args: FB_ARGS, routes: [
+    R(/^cr-s-01-1$/, { findings: [{ summary: 'x', severity: 'minor' }], observedCodeFiles: CODE_FILES }),
+    R(/^fix-s-01-1$/, { commitHash: 'f1x0001', changedFiles: ['state/reviews/s-01.md'] }),
+    R(/^(cr|sfh)-s-01-2/, emptyObs),
+  ].concat(fbRoutes()) });
+  assert.equal(callsBy(q.calls, /^locate-commit-s-01-2$/).length, 1, 'fix コミットの申告にコード対象パスが無いのに対象証明済み扱い');
+  assert.ok(!q.result.verdictHistory.some((v) => v.artifact === 's-01' && v.verdict === 'APPROVE'));
+  // E4 の実害ケース（申告が state ファイルのみ・reviewer も未証明・再特定不能）は引き続き BLOCKER
+  const e4 = await runWorkflow(WF('full-build.js'), { args: FB_ARGS, routes: [R(/^impl-s-01$/, badImpl), R(/^locate-commit-s-01-pre$/, { found: false, reason: 'none' }), R(/^(cr|sfh)-s-01-/, emptyObs)].concat(fbRoutes()) });
+  assert.ok(e4.result.unresolvedFindings.some((x) => x.startsWith('[BLOCKER] S-01')));
+  assert.ok(!e4.result.verdictHistory.some((v) => v.artifact === 's-01' && v.verdict === 'APPROVE'));
+});
+
+test('F2: qa-lead 自己申告 APPROVE + minor バグのみ を workflow が降格した場合、minor を judge fix に流さない（full-build）', async () => {
+  const qa = Object.assign({}, FB_QA_OK, { screenshotsVisuallyConfirmed: false, summary: '', bugs: [{ summary: '色味', severity: 'minor', assignee: 'ui-engineer' }] });
+  const f = await runWorkflow(WF('full-build.js'), { args: FB_ARGS, routes: fbRoutes([], BATCH_OK, qa) });
+  assert.equal(callsBy(f.calls, /^qa-fix-1-/).length, 0, 'minor のみ + workflow 降格で judge fix が走った');
+  assert.equal(callsBy(f.calls, /^qa-play-2$/).length, 1, 'round 2 が走らない');
+  assert.ok(!f.result.unresolvedFindings.some((x) => x.includes('qa-lead.md 違反')));
+  // 自己申告 APPROVE でも major があれば（矛盾した返却）従来どおり修正レーンへ
+  const qaMajor = Object.assign({}, qa, { bugs: [{ summary: 'HUD ずれ', severity: 'major', assignee: 'ui-engineer' }] });
+  const g = await runWorkflow(WF('full-build.js'), { args: FB_ARGS, routes: fbRoutes([], BATCH_OK, qaMajor) });
+  assert.equal(callsBy(g.calls, /^qa-fix-1-ui-engineer$/).length, 1);
+});
+
+test('F3: prototype の bugs に enum 外 severity（blocker）— 修正レーンに乗り、最終 round の残存も記録され、enum 外は knownIssues に注記', async () => {
+  const qa = Object.assign({}, PROTO_QA_OK, { verdict: 'CONCERNS', summary: 'x', bugs: [
+    { title: '落下即死', detail: 'd', severity: 'blocker', assignee: 'gameplay-engineer' },
+    { title: '色', detail: 'd', severity: 'major', assignee: 'ui-engineer' },
+  ] });
+  const p = await runWorkflow(WF('prototype.js'), { args: PROTO_ARGS, routes: protoRoutes([], BATCH_OK, qa) });
+  const gp1 = callsBy(p.calls, /^fix-qa-r1-bugs-gameplay-engineer$/);
+  assert.equal(gp1.length, 1, 'blocker が修正レーンに乗らない');
+  assert.ok(gp1[0].prompt.includes('落下即死'));
+  assert.ok(p.result.knownIssues.some((k) => k.includes('severity「blocker」が enum 外')));
+  assert.ok(p.result.unresolvedFindings.some((f) => f.includes('未解決の major バグ: 落下即死')), '最終 round の blocker 残存が記録されない');
+  assert.equal(callsBy(p.calls, /^fix-qa-r1-summary$/).length, 0);
+});
+
+test('F4: 戻り値 evidencePaths — prototype は QA 申告値 ∪ CD 選定（CD の部分集合だけにならない）/ full-build は QA 申告値そのもの', async () => {
+  const qa = Object.assign({}, PROTO_QA_OK, { evidencePaths: [EV_PATH, 'qa/evidence/two.png', 'qa/evidence/three.png'] });
+  const ev = { checks: qa.evidencePaths.map((pp) => ({ path: pp, exists: true, nonEmpty: true, rawLine: pp + ' 10' })), extraFilesInEvidenceDir: [] };
+  const cd = { verdict: 'APPROVE', summary: 's', playInstructions: 'p', evidencePaths: ['qa/evidence/two.png', 'qa/evidence/cd-only.png'], knownIssues: [] };
+  const p = await runWorkflow(WF('prototype.js'), { args: PROTO_ARGS, routes: protoRoutes([R(/^cd-checkpoint-b/, cd)], BATCH_OK, qa, ev) });
+  assert.deepEqual([...p.result.evidencePaths].sort(), [EV_PATH, 'qa/evidence/cd-only.png', 'qa/evidence/three.png', 'qa/evidence/two.png'].sort());
+  const f = await runWorkflow(WF('full-build.js'), { args: FB_ARGS, routes: fbRoutes() });
+  assert.deepEqual(f.result.evidencePaths, FB_QA_OK.evidencePaths, 'full-build の戻り値 evidencePaths が QA 申告値でない');
+});
+
+test('F5: 未固定だった fix のピン止め — criticalBugs の enum 外 assignee / 片側 reviewer の findings 保持 / prototype 未成立の CR-CODE 行 / concept CD 再判定 retries 2 / gen-* 冪等ガード / CD プロンプトの [VERIFY-UNCERTAIN] 注記', async () => {
+  const qa = Object.assign({}, PROTO_QA_OK, { verdict: 'CONCERNS', summary: 'x', criticalBugs: [{ title: 'SE 欠落', detail: 'd', assignee: 'audio-designer' }] });
+  const p = await runWorkflow(WF('prototype.js'), { args: PROTO_ARGS, routes: protoRoutes([], BATCH_OK, qa) });
+  const fx = callsBy(p.calls, /^fix-qa-r1-gameplay-engineer-0$/);
+  assert.equal(fx.length, 1, 'enum 外 assignee の重大バグが gameplay-engineer に倒れない');
+  assert.equal(fx[0].opts.agentType, 'gameplay-engineer');
+  assert.ok(p.result.knownIssues.some((k) => k.includes('assignee「audio-designer」が engineer 以外')));
+  const side = await runWorkflow(WF('full-build.js'), { args: FB_ARGS, routes: [
+    R(/^cr-s-01-1$/, { findings: [{ summary: '未使用 import', severity: 'minor' }], observedCodeFiles: [] }),
+    R(/^sfh-s-01-1$/, { findings: [], targetMismatch: true, observedCodeFiles: [] }),
+    R(/^locate-commit-s-01-1$/, { found: false, reason: 'none' }),
+  ].concat(fbRoutes()) });
+  const row = side.result.verdictHistory.find((v) => v.gate === 'CR-CODE' && v.artifact === 's-01' && v.iteration === 1);
+  assert.ok(row && row.verdict === 'CONCERNS' && row.findings.some((x) => x.includes('[minor] 未使用 import')), '片側 reviewer の findings が履歴から消えた: ' + JSON.stringify(row));
+  const ps = await runWorkflow(WF('prototype.js'), { args: PROTO_ARGS, routes: protoRoutes([
+    R(/^cr-code-S-01-iter1$/, { verdict: 'CONCERNS', findings: ['未使用 import'], observedCodeFiles: [] }),
+    R(/^cr-silent-S-01-iter1$/, { verdict: 'CONCERNS', findings: [], targetMismatch: true, observedCodeFiles: [] }),
+    R(/^locate-commit-S-01-iter1$/, { found: false, reason: 'none' }),
+  ]) });
+  const prow = ps.result.verdictHistory.find((v) => v.gate === 'CR-CODE' && v.artifact === 'S-01' && v.iteration === 1);
+  assert.ok(prow && prow.verdict === 'CONCERNS' && prow.findings.some((x) => x === '未使用 import'), 'prototype の未成立行/片側 findings が無い: ' + JSON.stringify(prow));
+  const c = await runWorkflow(WF('concept-design.js'), { args: CD_ARGS, routes: [
+    R(/^CD-CHECKPOINT 判定/, { verdict: 'REJECT', findings: ['骨子が弱い'], fixes: [{ assignee: 'game-designer', artifact: 'design/concept.md', instruction: 'ピラーを絞る' }] }),
+    R(/^CD-CHECKPOINT 再判定-retry2$/, { verdict: 'CONCERNS', findings: [], fixes: [] }),
+    R(/^CD-CHECKPOINT 再判定/, null),
+  ] });
+  assert.deepEqual(callsBy(c.calls, /^CD-CHECKPOINT 再判定/).map((x) => x.label), ['CD-CHECKPOINT 再判定', 'CD-CHECKPOINT 再判定-retry', 'CD-CHECKPOINT 再判定-retry2']);
+  assert.equal(c.result.verdict, 'CONCERNS');
+  const f = await runWorkflow(WF('full-build.js'), { args: FB_ARGS, routes: fbRoutes() });
+  assert.ok(promptsBy(f.calls, /^gen-images-1$/)[0].includes('冪等ガード'), 'gen-* に冪等ガードが無い');
+  assert.ok(promptsBy(f.calls, /^cd-checkpoint-1$/)[0].includes('[VERIFY-UNCERTAIN] 項目はオーケストレータが後段で'), 'CD プロンプトに [VERIFY-UNCERTAIN] 注記が無い');
+  assert.ok(promptsBy(p.calls, /^cd-checkpoint-b$/)[0].includes('[VERIFY-UNCERTAIN] 項目はオーケストレータが後段で'));
+});
+
+test('F6: 対象コミット不成立で確定した story の bookkeep は「MAX_ITER 到達」ではなく不成立の理由を stories.yaml に残す', async () => {
+  const badImpl = { commitHash: 'cafe01', changedFiles: ['state/reviews/s-01.md'] };
+  const nf = await runWorkflow(WF('full-build.js'), { args: FB_ARGS, routes: [R(/^impl-s-01$/, badImpl), R(/^locate-commit-s-01-pre$/, { found: false, reason: 'none' })].concat(fbRoutes()) });
+  const bk = promptsBy(nf.calls, /^bookkeep-s-01$/)[0];
+  assert.ok(bk && bk.includes('レビュー対象コミット不成立') && !bk.includes('MAX_ITER 到達'), 'bookkeep の理由文言が実態と違う');
+  const max = await runWorkflow(WF('full-build.js'), { args: FB_ARGS, routes: [R(/^(cr|sfh)-s-01-/, { findings: [{ summary: 'x', severity: 'major' }], observedCodeFiles: CODE_FILES })].concat(fbRoutes()) });
+  assert.ok(promptsBy(max.calls, /^bookkeep-s-01$/)[0].includes('MAX_ITER 到達'));
+});
+
+// ---- retro-e4 Codex 第 2 ラウンド追随（P1: APPROVE と矛盾する返却の正規化 / P2: rawLine 一次情報 / P2: findings 付き未証明レビュー） ----
+
+test('Codex P1: qa-lead が APPROVE と同時に major/重大バグや不合格 acceptance を返したら CONCERNS に正規化して修正レーンへ（両 workflow）', async () => {
+  const pq = Object.assign({}, PROTO_QA_OK, { bugs: [{ title: 'HUD ずれ', detail: 'd', severity: 'major', assignee: 'ui-engineer' }] });
+  const p = await runWorkflow(WF('prototype.js'), { args: PROTO_ARGS, routes: protoRoutes([], BATCH_OK, pq) });
+  assert.ok(p.result.unresolvedFindings.some((f) => f.includes('APPROVE と同時に重大/major バグ')), JSON.stringify(p.result.unresolvedFindings));
+  assert.equal(callsBy(p.calls, /^fix-qa-r1-bugs-ui-engineer$/).length, 1, '矛盾した APPROVE の major が修正されない');
+  assert.ok(!p.result.verdictHistory.some((v) => v.gate === 'QA-PLAY' && v.iteration === 1 && v.verdict === 'APPROVE'), 'major 付き APPROVE が履歴に APPROVE で残った');
+  const pc = Object.assign({}, PROTO_QA_OK, { criticalBugs: [{ title: 'クラッシュ', detail: 'd', assignee: 'gameplay-engineer' }] });
+  const c = await runWorkflow(WF('prototype.js'), { args: PROTO_ARGS, routes: protoRoutes([], BATCH_OK, pc) });
+  assert.equal(callsBy(c.calls, /^fix-qa-r1-gameplay-engineer-0$/).length, 1);
+  const fq = Object.assign({}, FB_QA_OK, { bugs: [{ summary: 'HUD ずれ', severity: 'major', assignee: 'ui-engineer' }] });
+  const f = await runWorkflow(WF('full-build.js'), { args: FB_ARGS, routes: fbRoutes([], BATCH_OK, fq) });
+  assert.ok(f.result.unresolvedFindings.some((x) => x.includes('APPROVE と同時に blocker/major バグ')));
+  assert.equal(callsBy(f.calls, /^qa-fix-1-ui-engineer$/).length, 1);
+  assert.ok(f.result.verdictHistory.some((v) => v.gate === 'QA-PLAY' && v.iteration === 1 && v.verdict === 'CONCERNS' && v.selfVerdict === 'APPROVE'));
+  // minor のみの APPROVE は正規化しない（qa-lead.md: minor は APPROVE を妨げない）
+  const fm = Object.assign({}, FB_QA_OK, { bugs: [{ summary: '色味', severity: 'minor', assignee: 'ui-engineer' }] });
+  const m = await runWorkflow(WF('full-build.js'), { args: FB_ARGS, routes: fbRoutes([], BATCH_OK, fm) });
+  assert.ok(m.result.verdictHistory.some((v) => v.gate === 'QA-PLAY' && v.verdict === 'APPROVE'));
+  assert.equal(callsBy(m.calls, /^qa-fix-/).length, 0);
+});
+
+test('Codex P2(rawLine 一次情報): 解析できた rawLine が実在を示せば申告 exists/nonEmpty:false でも降格しない・再検証も不要', async () => {
+  const contra = { checks: [{ path: EV_PATH, exists: false, nonEmpty: false, rawLine: EV_PATH + ' 1234' }], extraFilesInEvidenceDir: [] };
+  const p = await runWorkflow(WF('prototype.js'), { args: PROTO_ARGS, routes: protoRoutes([], BATCH_OK, PROTO_QA_OK, contra) });
+  assert.equal(callsBy(p.calls, /-recheck$/).length, 0);
+  assert.ok(!p.result.unresolvedFindings.some((x) => x.includes('機械検証不合格') || x.includes('VERIFY-UNCERTAIN')), JSON.stringify(p.result.unresolvedFindings));
+  assert.ok(p.result.verdictHistory.some((v) => v.gate === 'QA-PLAY' && v.verdict === 'APPROVE'), '実在を示す rawLine があるのに申告 boolean で降格された');
+  assert.ok(p.logs.some((l) => l.includes('生出力を採用')), '矛盾が log に残らない');
+  // rawLine が解析不能なら申告 boolean に頼る（不存在申告 → 降格）
+  const noRaw = { checks: [{ path: EV_PATH, exists: false, nonEmpty: false, rawLine: 'n/a' }], extraFilesInEvidenceDir: [] };
+  const n = await runWorkflow(WF('full-build.js'), { args: FB_ARGS, routes: [R(/^verify-evidence-/, noRaw)].concat(fbRoutes()) });
+  assert.ok(n.result.unresolvedFindings.some((x) => x.includes(EV_PATH + '（不存在）')));
+  assert.ok(n.result.verdictHistory.some((v) => v.gate === 'QA-PLAY' && v.verdict === 'CONCERNS'));
+});
+
+test('Codex P2(対象未証明 + findings): findings 付きでも対象証明が無いレビューは fix を起こさず再特定 → 不能なら BLOCKER（side findings は履歴に残す）', async () => {
+  const q = await runWorkflow(WF('full-build.js'), { args: FB_ARGS, routes: [
+    R(/^cr-s-01-1$/, { findings: [{ summary: 'x', severity: 'minor' }], observedCodeFiles: CODE_FILES }),
+    R(/^fix-s-01-1$/, { commitHash: 'f1x0001', changedFiles: ['state/reviews/s-01.md'] }), // fix コミットの申告にコード対象パス無し
+    R(/^(cr|sfh)-s-01-2/, { findings: [{ summary: 'y', severity: 'major' }], observedCodeFiles: [] }),
+  ].concat(fbRoutes()) });
+  assert.equal(callsBy(q.calls, /^locate-commit-s-01-2$/).length, 1, '対象未証明の findings 付きレビューで再特定が走らない');
+  assert.equal(callsBy(q.calls, /^fix-s-01-2$/).length, 0, '対象未証明のレビュー findings で fix agent が起動した');
+  const row = q.result.verdictHistory.find((v) => v.gate === 'CR-CODE' && v.artifact === 's-01' && v.iteration === 2);
+  assert.ok(row && row.verdict === 'CONCERNS' && row.findings.some((x) => x.includes('[major] y')), 'side findings が履歴から消えた: ' + JSON.stringify(row));
+  assert.ok(q.result.unresolvedFindings.some((x) => x.startsWith('[BLOCKER] S-01') && x.includes('対象未証明')));
+  const p = await runWorkflow(WF('prototype.js'), { args: PROTO_ARGS, routes: protoRoutes([
+    R(/^cr-code-S-01-iter1$/, { verdict: 'CONCERNS', findings: ['x'], observedCodeFiles: [] }),
+    R(/^fix-S-01-iter1$/, { commitHash: 'f1x0001', changedFiles: ['state/reviews/s-01.md'], summary: 's' }),
+    R(/^cr-(code|silent)-S-01-iter2/, { verdict: 'CONCERNS', findings: ['y'], observedCodeFiles: [] }),
+    R(/^locate-commit-S-01-iter2$/, { found: false, reason: 'none' }),
+  ]) });
+  assert.equal(callsBy(p.calls, /^locate-commit-S-01-iter2$/).length, 1);
+  assert.equal(callsBy(p.calls, /^fix-S-01-iter2$/).length, 0);
+  assert.ok(p.result.unresolvedFindings.some((x) => x.includes('[BLOCKER] [CR-CODE][S-01]') && x.includes('対象未証明')));
 });
