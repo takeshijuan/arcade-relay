@@ -414,3 +414,40 @@ test('agentR retries: cd-checkpoint / finalize-state は -retry → -retry2 の 
   assert.equal(callsBy(calls, /^batch-verify-build-retry$/).length, 1);
   assert.equal(callsBy(calls, /^batch-verify-build-retry2$/).length, 0, '既定 retries=1 の呼び出しに -retry2 が発行された');
 });
+
+// ---- retro-e4 追随: CR-CODE 対象コミットの確認と再特定 ----
+test('CR-CODE 対象不一致: reviewer の targetMismatch で locate-commit を 1 回起動し、再特定後は -relocated label で同 iteration をやり直す / 特定不能は [BLOCKER]・自動 APPROVE しない', async () => {
+  const ok = { ok: true, fixedNotes: [], unresolved: [] };
+  const routes = [
+    R(/^cr-s-01-1$/, { findings: [], targetMismatch: true }),
+    R(/^locate-commit-s-01-1$/, { found: true, commitHash: 'deadbeef' }),
+    R(/^cr-s-01-1-relocated$/, { findings: [], observedCodeFiles: ['game/src/systems/x.ts'] }),
+    R(/^sfh-s-01-1-relocated$/, { findings: [] }),
+  ].concat(baseRoutes(ok));
+  const { result, calls } = await runWorkflow(WF, { args: ARGS, routes });
+  const loc = callsBy(calls, /^locate-commit-s-01-1$/);
+  assert.equal(loc.length, 1, 'locate-commit が 1 回起動しない');
+  assert.equal(loc[0].opts.agentType, 'gameplay-engineer');
+  assert.ok(loc[0].prompt.includes('git log --format="%H %s" -40 -- game/src'), '再特定プロンプトがコード対象 pathspec を使わない');
+  const rel = callsBy(calls, /^cr-s-01-1-relocated$/);
+  assert.equal(rel.length, 1, '再特定後のレビューが -relocated label で走らない');
+  assert.ok(rel[0].prompt.includes('git show deadbeef') && rel[0].prompt.includes('git show --stat --format= deadbeef'), '再特定した hash でレビューされていない');
+  assert.equal(callsBy(calls, /^cr-s-01-2/).length, 0, '再特定で iteration を消費している（iteration 2 が走った）');
+  assert.ok(result.verdictHistory.some((v) => v.gate === 'CR-CODE' && v.artifact === 's-01' && v.iteration === 1 && v.verdict === 'APPROVE'), 'やり直しの APPROVE が iteration 1 として記録されない');
+  assert.ok(!result.unresolvedFindings.some((f) => f.includes('[BLOCKER] S-01')), JSON.stringify(result.unresolvedFindings));
+  // 2 回目の不一致（再特定後も）や特定不能は [BLOCKER] で打ち切り — レビュー未成立を APPROVE にしない
+  const nf = await runWorkflow(WF, { args: ARGS, routes: [
+    R(/^cr-s-01-1$/, { findings: [], targetMismatch: true }),
+    R(/^locate-commit-s-01-1$/, { found: false, reason: 'コード対象パスのコミットが無い' }),
+  ].concat(baseRoutes(ok)) });
+  assert.ok(nf.result.unresolvedFindings.some((f) => f.startsWith('[BLOCKER] S-01: CR-CODE 対象コミット')), JSON.stringify(nf.result.unresolvedFindings));
+  assert.ok(!nf.result.verdictHistory.some((v) => v.artifact === 's-01' && v.verdict === 'APPROVE'), 'レビュー未成立が APPROVE 扱いになった');
+  assert.equal(callsBy(nf.calls, /^cr-s-01-2/).length, 0, '打ち切り後に iteration 2 が走った');
+  assert.equal(callsBy(nf.calls, /^fix-s-01-/).length, 0, 'レビュー未成立なのに fix が走った');
+  // 一致（通常経路）では locate-commit も -relocated も発行されない
+  const plain = await runWorkflow(WF, { args: ARGS, routes: baseRoutes(ok) });
+  assert.equal(callsBy(plain.calls, /^locate-commit-/).length, 0);
+  assert.equal(callsBy(plain.calls, /-relocated$/).length, 0);
+  assert.ok(promptsBy(plain.calls, /^cr-s-01-1$/)[0].includes('対象確認（必須・最初に行う）'), 'reviewer プロンプトに対象確認が無い');
+  assert.ok(promptsBy(plain.calls, /^impl-s-01$/)[0].includes('changedFiles'), '実装プロンプトが changedFiles を要求しない');
+});

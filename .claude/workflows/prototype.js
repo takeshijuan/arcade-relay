@@ -75,6 +75,9 @@ const ENGINE_PROFILES = {
     codeRulesFile: '.claude/rules/gameplay-code.md',
     codeAddExample: '`git add game/src game/package.json state/stories.yaml`',
     configPath: 'game/src/config.ts',
+    codePathRe: /^game\/src\//,          // CR-CODE 対象パス（contract §11）— 対象コミットの包含確認に使う
+    codePathHint: 'game/src/**',
+    codePathspec: 'game/src',
     laneVerifyLine: '`cd game && npm run typecheck` を実行し、**自分の編集ファイル起因のエラーのみ** 0 にする（他レーンの書きかけ WIP・他レーンが提供予定の API 参照に起因するエラーは無視してよい — レーン合流後のバッチ検証が最終確認する。**並走レーン中は `npm run build` を実行しない** — dist/ が他レーンと衝突する — tech-stack.md「検証コマンド」節）',
     qaTarget: 'game/ を実際にビルド・起動し、headless ブラウザで実操作してプレイテストせよ（机上確認は不可。証跡必須）。',
     qaBuildLine: '`cd game && npm run build` 成功、起動時 console エラー 0。',
@@ -103,6 +106,9 @@ const ENGINE_PROFILES = {
     codeRulesFile: '.claude/rules/unity-code.md',
     codeAddExample: '`git add game/Assets game/Packages game/ProjectSettings state/stories.yaml`',
     configPath: 'game/Assets/Scripts/GameConfig.cs',
+    codePathRe: /^game\/Assets\/Scripts\/.*\.cs$/,
+    codePathHint: 'game/Assets/Scripts/**（.cs）',
+    codePathspec: 'game/Assets/Scripts',
     laneVerifyLine: '**Unity をここでは起動しない**（単一インスタンスロック — 並走レーン・資産レーンと衝突する。EditMode/ビルド検証はレーン合流後のバッチ検証区間で一括実行される — tech-stack-unity.md「検証コマンド」節）。代わりに参照する型・メンバ・アセットキー・シリアライズ対象の実在を Read/Grep で静的確認し、コンパイルを通らない参照を残さない',
     qaTarget: 'game/ を tech-stack-unity.md「QA-PLAY の実行方法」に従い、batchmode ビルドと PlayMode テスト（入力擬似発行・LogAssert・ScreenCapture）で実プレイ検証せよ（机上確認は不可。テスト結果XMLとスクリーンショット証跡必須）。',
     qaBuildLine: 'tech-stack-unity.md の build 相当（ForgeBuild.BuildMac batchmode）が exit 0、PlayMode テストで LogAssert.NoUnexpectedReceived() 通過（エラー0）。',
@@ -131,6 +137,9 @@ const ENGINE_PROFILES = {
     codeRulesFile: '.claude/rules/unreal-code.md',
     codeAddExample: '`git add game/Source game/Config game/ForgeGame.uproject state/stories.yaml`',
     configPath: 'game/Source/ForgeGame/GameConfig.h',
+    codePathRe: /^game\/Source\/.*\.(cpp|h)$/,
+    codePathHint: 'game/Source/**（.cpp/.h）',
+    codePathspec: 'game/Source',
     laneVerifyLine: '**UE/UBT をここでは起動しない**（単一インスタンスロック — 並走レーン・資産レーンと衝突する。BuildCookRun 検証はレーン合流後のバッチ検証区間で一括実行される — tech-stack-unreal.md「検証コマンド」節）。代わりに参照する型・メンバ・ヘッダ include の実在を Read/Grep で静的確認し、コンパイルを通らない参照を残さない',
     qaTarget: 'game/ を tech-stack-unreal.md「QA-PLAY の実行方法」に従い、BuildCookRun と Automation RunTests（レポートJSON・スクリーンショット）で実プレイ検証せよ（机上確認は不可。証跡必須）。',
     qaBuildLine: 'tech-stack-unreal.md の package 相当（BuildCookRun）が exit 0、Automation レポート JSON で failed 0。',
@@ -313,17 +322,32 @@ const VERDICT_SCHEMA = {
   properties: {
     verdict: { type: 'string', enum: ['APPROVE', 'CONCERNS', 'REJECT'] },
     findings: { type: 'array', items: { type: 'string' } },
+    // CR-CODE のみ使用（retro-e4）: 対象コミットにコード対象パス（contract §11）のファイルが 1 つも無く、レビューを実施しなかった場合 true
+    targetMismatch: { type: 'boolean' },
+    observedCodeFiles: { type: 'array', items: { type: 'string' } },
   },
 };
 
 // 実装/修正 agent の返却スキーマ（コミット hash 必須 — CR-CODE のレビュー対象固定に使う）
 const COMMIT_RESULT_SCHEMA = {
   type: 'object',
-  required: ['commitHash'],
+  required: ['commitHash', 'changedFiles'],
   properties: {
     commitHash: { type: 'string' },
     summary: { type: 'string' },
-    changedFiles: { type: 'array', items: { type: 'string' } },
+    changedFiles: { type: 'array', items: { type: 'string' }, description: '`git show --stat --format= <commitHash>` に現れたファイルパス（リポジトリ相対・全件）。workflow がコード対象パス（contract §11）の包含を確認する' },
+  },
+};
+
+// CR-CODE の対象コミット再特定（reviewer が targetMismatch を返したとき 1 回だけ — retro-e4: E4 で state/reviews のみの
+// コミット hash が渡され、実装 diff を見ていないレビューに判定が付いた S-48/S-50/S-62 の再発防止）
+const LOCATE_COMMIT_SCHEMA = {
+  type: 'object',
+  required: ['found'],
+  properties: {
+    found: { type: 'boolean' },
+    commitHash: { type: 'string', description: 'found=true のとき、コード対象パスの変更を含む当該 story の実装コミット hash' },
+    reason: { type: 'string' },
   },
 };
 
@@ -649,6 +673,10 @@ async function buildStoryLane(laneStories) {
     const storyHeader =
       'story: ' + sid + ' "' + story.title + '"（pillar: ' + (story.pillar || '未指定') + ' / acceptance: ' + story.acceptance + '）';
     let lastCommitHash = null;
+    // CR-CODE 対象コミットの再特定（retro-e4）: reviewer の targetMismatch で 1 回だけ実装コミットを探し直す
+    let relocated = false;
+    let relSuffix = ''; // 再特定後の reviewer label 接尾辞（同 label の再呼び出しは不一致結果の replay になり得る）
+    let targetUnresolvable = false;
 
     const loopResult = await reviewLoop({
       gateId: 'CR-CODE',
@@ -674,23 +702,30 @@ async function buildStoryLane(laneStories) {
             '   ' + IDEMPOTENT_RULE,
             '   コミットメッセージ: "' + sid + ': ' + story.title + '"。コミット hash は上記コミット規律の方法（`git log --format="%H %s" -20` の自メッセージ一致・最新行）で取得せよ。',
             '',
-            '構造化返却: commitHash（今回のコミット hash。必須）/ changedFiles（変更ファイル一覧）/ summary（実装要点）。',
+            '構造化返却: commitHash（今回のコミット hash。必須）/ changedFiles（`git show --stat --format= <hash>` のファイル一覧。必須 — ' + EP.codePathHint + ' のファイルが含まれない hash は実装コミットではない: 返さず失敗を報告）/ summary（実装要点）。',
           ].join('\n'),
           { label: 'implement-' + sid, phase: 'Build', agentType: story.assignee, effort: 'high', schema: COMMIT_RESULT_SCHEMA }
         );
         if (r && r.commitHash) {
           lastCommitHash = r.commitHash;
+          // 申告 changedFiles にコード対象パスが無ければ対象コミットを疑う（自己申告なので即断せず reviewer の対象確認に委ねる — retro-e4）
+          const declared = Array.isArray(r.changedFiles) ? r.changedFiles.map(String) : [];
+          if (declared.length > 0 && !declared.some(function (f) { return EP.codePathRe.test(f); })) {
+            log('[CR-CODE] ' + sid + ': 申告 changedFiles にコード対象パス（' + EP.codePathHint + '）が無い — レビュー対象コミット ' + lastCommitHash + ' を疑う');
+          }
           return r;
         }
         return null;
       },
 
-      review: async function (iteration) {
+      review: async function reviewOnce(iteration) {
+        if (targetUnresolvable) return null; // 対象コミット不一致・再特定不能（記録済み）— reviewer を再度起こさない
         // CR-CODE は code-reviewer + silent-failure-hunter のペア（gates.md CR-CODE 節）
         const reviewCommon = [
           reviewModeNote(reviewMode),
           'GATE: CR-CODE（' + DOCS.gates + ' の CR-CODE 節を読んで従うこと）。',
           'レビュー対象はコミット ' + lastCommitHash + ' に固定する（`git show ' + lastCommitHash + '` で取得。作業ツリーの未コミット変更や他のコミットの diff は対象外）。',
+          '**対象確認（必須・最初に行う）**: `git show --stat --format= ' + lastCommitHash + '` にコード対象パス（' + EP.codePathHint + '）のファイルが 1 つも無ければ**レビューせず** targetMismatch:true・verdict:CONCERNS・findings:[] を返せ（state/reviews や stories.yaml だけのコミットは実装ではない — gates.md CR-CODE。E4 再発防止）。含まれていれば observedCodeFiles に列挙せよ。',
           storyHeader,
           '',
           '判定の読み替え: findings 0件 = APPROVE / 修正可能な指摘 = CONCERNS / 設計欠陥 = REJECT。',
@@ -708,7 +743,7 @@ async function buildStoryLane(laneStories) {
                 'レビュー結果を ' + reviewLogPath + ' に追記せよ（' + DOCS.reviewLoops + ' の追記形式（外部 agent には自動 import されない — 読んでから追記）: iteration ' + iteration + '・verdict・指摘要約・日時。日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う — 推測記入禁止）。',
               ]).join('\n'),
               {
-                label: 'cr-code-' + sid + '-iter' + iteration,
+                label: 'cr-code-' + sid + '-iter' + iteration + relSuffix,
                 phase: 'Build',
                 agentType: 'pr-review-toolkit:code-reviewer',
                 model: TIER.producer, // 外部 agent は frontmatter に model 無し — セッションモデル継承を防ぐ（model-routing.md §1）
@@ -724,7 +759,7 @@ async function buildStoryLane(laneStories) {
                 STATE.reviewsDir + '/ への追記は不要（追記は code-reviewer 側が行う。あなたは構造化返却のみでよい）。',
               ]).join('\n'),
               {
-                label: 'cr-silent-' + sid + '-iter' + iteration,
+                label: 'cr-silent-' + sid + '-iter' + iteration + relSuffix,
                 phase: 'Build',
                 agentType: 'pr-review-toolkit:silent-failure-hunter',
                 model: TIER.producer,
@@ -734,6 +769,29 @@ async function buildStoryLane(laneStories) {
           },
         ]);
         const valid = (pair || []).filter(function (r) { return r && r.verdict; });
+        if (valid.some(function (r) { return r.targetMismatch === true; })) {
+          // 対象コミットに実装が無い（レビュー未成立）— 1 回だけ実装コミットを再特定して同 iteration をやり直す（retro-e4）
+          if (!relocated) {
+            relocated = true;
+            const loc = await agentR(
+              [
+                'story ' + sid + '「' + story.title + '」の実装コミットを特定せよ（読み取り専用・ファイル変更禁止）。',
+                '`git log --format="%H %s" -40 -- ' + EP.codePathspec + '` から story ID または title に一致する最新コミットを選び、`git show --stat --format= <hash>` に ' + EP.codePathHint + ' のファイルが含まれることを確認して commitHash に返せ。該当が無ければ found:false と reason を返す（推測の hash を返さない）。',
+                '参考: 直前にレビュー対象として渡された ' + lastCommitHash + ' にはコード対象パスの変更が無かった。',
+              ].join('\n'),
+              { label: 'locate-commit-' + sid + '-iter' + iteration, phase: 'Build', agentType: story.assignee, schema: LOCATE_COMMIT_SCHEMA, effort: 'low' }
+            );
+            if (loc && loc.found && loc.commitHash) {
+              log('[CR-CODE] ' + sid + ': 対象コミットを ' + lastCommitHash + ' → ' + loc.commitHash + ' に再特定（iteration ' + iteration + ' をやり直す）');
+              lastCommitHash = loc.commitHash;
+              relSuffix = '-relocated';
+              return reviewOnce(iteration);
+            }
+          }
+          targetUnresolvable = true;
+          unresolvedFindings.push('[BLOCKER] [CR-CODE][' + sid + '] 対象コミット ' + lastCommitHash + ' にコード対象パス（' + EP.codePathHint + '）の変更が無く、実装コミットも特定できない（レビュー未成立 — 自動 APPROVE しない）');
+          return null;
+        }
         if (valid.length === 0) {
           return null;
         }

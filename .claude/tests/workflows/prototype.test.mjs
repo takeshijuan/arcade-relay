@@ -382,3 +382,31 @@ test('agentR retries: cd-checkpoint-b は -retry → -retry2 の 2 回まで再�
   assert.ok(dead.result.knownIssues.includes('CD-CHECKPOINT 判定が取得できなかった'));
   assert.equal(dead.result.verdict, 'CONCERNS');
 });
+
+// ---- retro-e4 追随: CR-CODE 対象コミットの確認と再特定 ----
+test('CR-CODE 対象不一致(prototype): targetMismatch → locate-commit 1 回 → -relocated label で同 iteration をやり直す / 特定不能は [BLOCKER] と review null（reviewer を再度起こさない）', async () => {
+  const routes = [
+    R(/^cr-code-S-01-iter1$/, { verdict: 'CONCERNS', findings: [], targetMismatch: true }),
+    R(/^locate-commit-S-01-iter1$/, { found: true, commitHash: 'deadbeef' }),
+    R(/^cr-code-S-01-iter1-relocated$/, { verdict: 'APPROVE', findings: [], observedCodeFiles: ['game/src/systems/x.ts'] }),
+    R(/^cr-silent-S-01-iter1-relocated$/, { verdict: 'APPROVE', findings: [] }),
+  ].concat(baseRoutes(BATCH_OK));
+  const { result, calls } = await runWorkflow(WF, { args: ARGS, routes });
+  assert.equal(callsBy(calls, /^locate-commit-S-01-iter1$/).length, 1);
+  const rel = callsBy(calls, /^cr-code-S-01-iter1-relocated$/);
+  assert.equal(rel.length, 1, '再特定後のレビューが -relocated label で走らない');
+  assert.ok(rel[0].prompt.includes('git show deadbeef'), '再特定した hash でレビューされていない');
+  assert.equal(callsBy(calls, /^cr-code-S-01-iter2/).length, 0, '再特定で iteration を消費している');
+  assert.ok(result.verdictHistory.some((v) => v.gate === 'CR-CODE' && v.artifact === 'S-01' && v.iteration === 1 && v.verdict === 'APPROVE'));
+  assert.ok(!result.unresolvedFindings.some((f) => f.includes('[BLOCKER] [CR-CODE][S-01]')), JSON.stringify(result.unresolvedFindings));
+  const nf = await runWorkflow(WF, { args: ARGS, routes: [
+    R(/^cr-code-S-01-iter1$/, { verdict: 'CONCERNS', findings: [], targetMismatch: true }),
+    R(/^locate-commit-S-01-iter1$/, { found: false, reason: 'none' }),
+  ].concat(baseRoutes(BATCH_OK)) });
+  assert.ok(nf.result.unresolvedFindings.some((f) => f.startsWith('[BLOCKER] [CR-CODE][S-01] 対象コミット')), JSON.stringify(nf.result.unresolvedFindings));
+  assert.ok(!nf.result.verdictHistory.some((v) => v.artifact === 'S-01' && v.verdict === 'APPROVE'), 'レビュー未成立が APPROVE 扱いになった');
+  assert.equal(callsBy(nf.calls, /^cr-code-S-01-iter2/).length, 0, '再特定不能の後に reviewer を再度起こした');
+  assert.equal(callsBy(nf.calls, /^fix-S-01-/).length, 0, 'レビュー未成立なのに fix が走った');
+  assert.ok(promptsBy(nf.calls, /^cr-code-S-01-iter1$/)[0].includes('対象確認（必須・最初に行う）'));
+  assert.ok(promptsBy(nf.calls, /^implement-S-01$/)[0].includes('git show --stat --format= <hash>'), '実装プロンプトが changedFiles の取得方法を示さない');
+});

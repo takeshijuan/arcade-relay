@@ -61,6 +61,7 @@ CONCERNSの場合、修正すべき箇所を優先度順の箇条書きで示せ
 ## CR-CODE（既存コードレビューを利用 → game/ のコード変更。対象パスは contract.md §11）
 
 新規agentは使わない。`/code-review` スキル、または `pr-review-toolkit:code-reviewer` + `pr-review-toolkit:silent-failure-hunter` を story 単位の diff に対して起動する。
+**対象確認が先（retro-e4）**: レビュー前に `git show --stat --format= <hash>` で contract §11 のコード対象パス（phaser=`game/src/**` / unity=`game/Assets/Scripts/**` / unreal=`game/Source/**`）のファイルが含まれることを確認する。1 つも含まれなければ**レビューせず** `targetMismatch:true`（findings 空）を返す — state/reviews や stories.yaml だけのコミットに判定を付けない（E4 で S-48/S-50/S-62 がこの形で APPROVE/CONCERNS を得た）。workflow は実装コミットを 1 回だけ再特定してレビューをやり直し、特定できなければ `[BLOCKER]` として自動 APPROVE しない。
 判定の読み替え: findings 0件 = APPROVE / 修正可能な指摘 = CONCERNS / 設計欠陥 = REJECT。
 加えてエンジン別コード規約 rule（contract.md §11 の表: phaser=`rules/gameplay-code.md`+`rules/ui-code.md` / unity=`rules/unity-code.md` / unreal=`rules/unreal-code.md`。共通してマジックナンバー禁止・delta-time・エンジン非依存コア・永続化 I/O の Persistence 層集約）への違反を確認する。
 **並走レーン中の前提**（Build/Polish の assignee レーン並走 — 各 tech-stack 文書「検証バッチ化」節）: 他レーンの story が提供予定の API への参照は、docs/architecture.md の設計に合致していれば「実体未実装」だけを理由に blocker/REJECT としない（コンパイル整合はレーン合流後のバッチ検証が保証する。設計との不一致・誤用は通常どおり指摘してよい）。

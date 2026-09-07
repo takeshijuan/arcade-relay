@@ -97,7 +97,20 @@ const IMPL_SCHEMA = {
   required: ['commitHash'],
   properties: {
     commitHash: { type: 'string', description: '今回の変更をコミットした git hash（git log --format="%H %s" -20 の自メッセージ一致・最新行から取得 — rev-parse HEAD は並走レーンのコミットを拾い得る）' },
+    changedFiles: { type: 'array', items: { type: 'string' }, description: '`git show --stat --format= <commitHash>` に現れたファイルパス（リポジトリ相対・全件）。workflow がコード対象パス（contract §11）の包含を確認する' },
     notes: { type: 'string' }
+  }
+};
+
+// CR-CODE の対象コミット再特定（reviewer が targetMismatch を返したとき 1 回だけ — retro-e4: E4 で state/reviews のみの
+// コミット hash が渡され、実装 diff を見ていないレビューに判定が付いた S-48/S-50/S-62 の再発防止）
+const LOCATE_COMMIT_SCHEMA = {
+  type: 'object',
+  required: ['found'],
+  properties: {
+    found: { type: 'boolean' },
+    commitHash: { type: 'string', description: 'found=true のとき、コード対象パスの変更を含む当該 story の実装コミット hash' },
+    reason: { type: 'string' }
   }
 };
 
@@ -105,6 +118,8 @@ const CODE_REVIEW_SCHEMA = {
   type: 'object',
   required: ['findings'],
   properties: {
+    targetMismatch: { type: 'boolean', description: '対象コミットにコード対象パス（contract §11）のファイルが 1 つも無く、レビューを実施しなかった場合 true（findings は空）' },
+    observedCodeFiles: { type: 'array', items: { type: 'string' }, description: '対象コミット内で確認したコード対象パスのファイル' },
     findings: {
       type: 'array',
       items: {
@@ -338,6 +353,9 @@ const ENGINE_PROFILES = {
     reviewRulesLine: 'コード規約違反（マジックナンバー・delta-time未使用・Scene肥大・systems/のPhaser依存・パスのハードコード）',
     codeAddExample: 'git add game/src state/stories.yaml state/reviews',
     configPath: 'game/src/config.ts',
+    codePathRe: /^game\/src\//,          // CR-CODE 対象パス（contract §11）— 対象コミットの包含確認に使う
+    codePathHint: 'game/src/**',
+    codePathspec: 'game/src',
     audioFormatLine: '全音声: ffmpeg loudnorm(-16 LUFS)＋無音トリム → OGG Vorbis 128-160kbps + M4A/AAC の両方を出力。',
     qaTarget: 'headlessブラウザで game/ を実際に起動・操作して判定せよ',
     playInstructions: 'cd game && npm install && npm run dev'
@@ -353,6 +371,9 @@ const ENGINE_PROFILES = {
     reviewRulesLine: 'コード規約違反（マジックナンバー・deltaTime未使用・Components肥大・Systems/のMonoBehaviour依存・パスのハードコード。rules/unity-code.md）',
     codeAddExample: 'git add game/Assets game/Packages game/ProjectSettings state/stories.yaml state/reviews',
     configPath: 'game/Assets/Scripts/GameConfig.cs',
+    codePathRe: /^game\/Assets\/Scripts\/.*\.cs$/,
+    codePathHint: 'game/Assets/Scripts/**（.cs）',
+    codePathspec: 'game/Assets/Scripts',
     audioFormatLine: '全音声: ffmpeg loudnorm(-16 LUFS)＋無音トリム → OGG Vorbis 128-160kbps を出力（Unity ネイティブ対応。M4A 不要）。',
     qaTarget: 'tech-stack-unity.md「QA-PLAY の実行方法」に従い、batchmode ビルドと PlayMode テスト（入力擬似発行・LogAssert・ScreenCapture）で game/ を実プレイ検証せよ',
     playInstructions: 'open game/Build/ForgeGame.app（または Unity エディタで game/ を開いて Play）'
@@ -368,6 +389,9 @@ const ENGINE_PROFILES = {
     reviewRulesLine: 'コード規約違反（マジックナンバー・DeltaSeconds未使用・Actors肥大・Systems/のUObject依存・パスのハードコード・Blueprintロジック。rules/unreal-code.md）',
     codeAddExample: 'git add game/Source game/Config state/stories.yaml state/reviews',
     configPath: 'game/Source/ForgeGame/GameConfig.h',
+    codePathRe: /^game\/Source\/.*\.(cpp|h)$/,
+    codePathHint: 'game/Source/**（.cpp/.h）',
+    codePathspec: 'game/Source',
     audioFormatLine: '全音声: ffmpeg loudnorm(-16 LUFS)＋無音トリム → WAV を出力（UE ネイティブ対応。OGG/M4A 不要）。',
     qaTarget: 'tech-stack-unreal.md「QA-PLAY の実行方法」に従い、BuildCookRun と Automation RunTests（レポートJSON・スクリーンショット）で game/ を実プレイ検証せよ',
     playInstructions: 'open game/Build/Mac/ForgeGame.app'
@@ -491,7 +515,7 @@ async function implementStoryWithReview(story, phaseName) {
     EP.implRulesLine + '\n' +
     '3) ' + EP.laneVerifyLine + '\n' +
     '4) ' + story.id + ' を status: review に更新\n' +
-    '5) git commit -m "' + story.id + ': ' + story.title + '" し、そのコミットhashを commitHash として報告する。' + CODE_COMMIT_RULE + '\n' +
+    '5) git commit -m "' + story.id + ': ' + story.title + '" し、そのコミットhashを commitHash として、`git show --stat --format= <hash>` のファイル一覧を changedFiles として報告する（' + EP.codePathHint + ' のファイルが含まれない hash は実装コミットではない — 返さず失敗を報告）。' + CODE_COMMIT_RULE + '\n' +
     IDEMPOTENT_RULE + '\n' +
     LANE_RULE + '\n' +
     'acceptance: ' + story.acceptance,
@@ -502,12 +526,24 @@ async function implementStoryWithReview(story, phaseName) {
     return false;
   }
   let commitHash = impl.commitHash ? String(impl.commitHash) : null;
+  // 申告 changedFiles にコード対象パスが無ければ対象コミットを疑う（E4: state/reviews のみのコミットが渡された S-48/S-50/S-62）。
+  // 申告は自己申告なので即断せず、reviewer 側の対象確認（targetMismatch）と再特定に委ねる
+  const declared = Array.isArray(impl.changedFiles) ? impl.changedFiles.map(String) : [];
+  if (commitHash && declared.length > 0 && !declared.some(function (f) { return EP.codePathRe.test(f); })) {
+    log(story.id + ': 申告 changedFiles にコード対象パス（' + EP.codePathHint + '）が無い — レビュー対象コミット ' + commitHash + ' を疑う');
+  }
+  let relocated = false; // 対象コミットの再特定は story ごとに 1 回
 
   let approved = false;
   let fixAttempts = 0; // 実行済み fix 回数（レビューペア両方失敗で continue した iteration は数えない）
   for (let iter = 1; iter <= CR_CODE_MAX_ITER; iter++) {
+    // 再特定後は label を変える（同 label の再呼び出しは不一致結果の replay になり得る）
+    const crLabel = function (prefix) { return prefix + sid + '-' + iter + (relocated ? '-relocated' : ''); };
     const reviewPrompt =
       'CR-CODE レビュー（story ' + story.id + '、iteration ' + iter + '）。\n' +
+      (commitHash
+        ? '**対象確認（必須・最初に行う）**: `git show --stat --format= ' + commitHash + '` にコード対象パス（' + EP.codePathHint + '）のファイルが 1 つも無ければ**レビューせず** targetMismatch:true・findings:[] を返せ（state/reviews や stories.yaml だけのコミットは実装ではない — gates.md CR-CODE。E4 再発防止）。含まれていれば observedCodeFiles に列挙せよ。\n'
+        : '') +
       (commitHash
         ? '対象: `git show ' + commitHash + '` の diff **のみ**（並走する資産生成トラックの変更や他storyの差分はレビュー対象外）。\n'
         : '対象: game/ 配下の story ' + story.id + ' に対応する直近の実装変更（コミットhash不明のため state/reviews/' + sid + '.md と実装ファイルから対象を特定）。\n') +
@@ -517,11 +553,33 @@ async function implementStoryWithReview(story, phaseName) {
       'findings は severity（blocker=設計欠陥 / major / minor）付きで返せ。0件なら空配列。';
     const reviews = await parallel([
       // 外部 reviewer は frontmatter に model 無し — セッションモデル継承を防ぐため producer 階層を明示（model-routing.md §1）
-      () => agentR(reviewPrompt, { label: 'cr-' + sid + '-' + iter, phase: phaseName, agentType: 'pr-review-toolkit:code-reviewer', model: TIER.producer, schema: CODE_REVIEW_SCHEMA }),
+      () => agentR(reviewPrompt, { label: crLabel('cr-'), phase: phaseName, agentType: 'pr-review-toolkit:code-reviewer', model: TIER.producer, schema: CODE_REVIEW_SCHEMA }),
       () => agentR(reviewPrompt + '\n特に黙殺されたエラー・握り潰された失敗パス・catchして無視している箇所を重点的に洗え。',
-        { label: 'sfh-' + sid + '-' + iter, phase: phaseName, agentType: 'pr-review-toolkit:silent-failure-hunter', model: TIER.producer, schema: CODE_REVIEW_SCHEMA })
+        { label: crLabel('sfh-'), phase: phaseName, agentType: 'pr-review-toolkit:silent-failure-hunter', model: TIER.producer, schema: CODE_REVIEW_SCHEMA })
     ]);
     const validReviews = reviews.filter(Boolean);
+    if (commitHash && validReviews.some(function (r) { return r.targetMismatch === true; })) {
+      // 対象コミットに実装が無い（レビュー未成立）。1 回だけ実装コミットを再特定して同 iteration をやり直す — retro-e4
+      if (!relocated) {
+        relocated = true;
+        const loc = await agentR(
+          'story ' + story.id + '「' + story.title + '」の実装コミットを特定せよ（読み取り専用・ファイル変更禁止）。\n' +
+          '`git log --format="%H %s" -40 -- ' + EP.codePathspec + '` から story ID または title に一致する最新コミットを選び、`git show --stat --format= <hash>` に ' + EP.codePathHint + ' のファイルが含まれることを確認して commitHash に返せ。該当が無ければ found:false と reason を返す（推測の hash を返さない）。\n' +
+          '参考: 直前にレビュー対象として渡された ' + commitHash + ' にはコード対象パスの変更が無かった。',
+          { label: 'locate-commit-' + sid + '-' + iter, phase: phaseName, agentType: assignee, schema: LOCATE_COMMIT_SCHEMA, effort: 'low' }
+        );
+        if (loc && loc.found && loc.commitHash) {
+          log(story.id + ': CR-CODE 対象コミットを ' + commitHash + ' → ' + loc.commitHash + ' に再特定（iteration ' + iter + ' をやり直す）');
+          commitHash = String(loc.commitHash);
+          iter--; // レビュー未成立のため反復を消費しない
+          continue;
+        }
+      }
+      unresolvedFindings.push('[BLOCKER] ' + story.id + ': CR-CODE 対象コミット ' + commitHash + ' にコード対象パス（' + EP.codePathHint + '）の変更が無く、実装コミットも特定できない（レビュー未成立 — 自動 APPROVE しない）');
+      verdictHistory.push({ gate: 'CR-CODE', artifact: sid, iteration: iter, verdict: 'CONCERNS', findings: ['対象コミット不一致（レビュー未成立）'] });
+      log('CR-CODE ' + story.id + ' iteration ' + iter + ': 対象コミット不一致・再特定不能 — レビュー未成立で打ち切り');
+      break;
+    }
     if (validReviews.length === 0) {
       // 両レビュアー失敗 = レビュー不成立。findings 0 件を APPROVE と誤認しない（prototype.js と同じガード）
       unresolvedFindings.push(story.id + ': CR-CODE iteration ' + iter + ' のレビューペアが両方失敗（レビュー未実施 — 自動 APPROVE しない）');
@@ -572,7 +630,7 @@ async function implementStoryWithReview(story, phaseName) {
       '1) 各finding に修正で対応するか、見送るなら理由を明記（黙殺禁止）\n' +
       '2) 修正後の検証: ' + EP.laneVerifyLine + '\n' +
       '3) state/reviews/' + sid + '.md に ' + DOCS + '/review-loops.md の追記形式で iteration 記録（verdict・指摘要約・対応/見送り＋理由・ISO8601日時。日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う — 推測記入禁止）を追記\n' +
-      '4) git commit -m "' + story.id + ': fix CR-CODE iteration ' + iter + '" し、そのコミットhashを commitHash として報告する。' + CODE_COMMIT_RULE + '\n' +
+      '4) git commit -m "' + story.id + ': fix CR-CODE iteration ' + iter + '" し、そのコミットhashを commitHash として、`git show --stat --format= <hash>` のファイル一覧を changedFiles として報告する。' + CODE_COMMIT_RULE + '\n' +
       IDEMPOTENT_RULE + '\n' +
       LANE_RULE + '\n' +
       (isLast
