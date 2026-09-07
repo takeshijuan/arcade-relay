@@ -10,6 +10,17 @@ allowed-tools: Read, Glob, Grep, Write, Edit, Bash, Task, Workflow, AskUserQuest
 命名・ID・パスは `.claude/docs/contract.md` が単一情報源。ここに書かれていない名前を発明しない。
 状態はファイルが真実（`state/`）。各Phase完了時に `state/active.md`（現在地/次アクション/未解決事項）を更新する。
 
+## オーケストレータ規約（`.claude/docs/model-routing.md` §3）
+
+このスキルを実行するメインセッションは**オーケストレータ**である。自分で行うのは「判断と人間接点」と「改竄不能であるべき観測」: 再開位置の決定・矛盾検出の裁定・AskUserQuestion・`state/stage.txt` 書込・PushNotification・提示文の最終確認・単発コマンドの実行（エンジン実体パスの解決、`jq` 1 行のコスト集計 — Task を起こすより安く、幻覚の余地が無い）。
+**Task ツール（`subagent_type: general-purpose`）に委譲する**のは preflight（Phase 1 手順 1〜4）のみ。返ってきた構造化サマリだけを読み（生の curl 出力をオーケストレータの文脈に入れない）、指示には該当手順の本文（コマンド・スキーマ・判定規則）をそのまま含める:
+
+| 作業 | model | 返させるもの・制約 |
+|---|---|---|
+| Phase 1 手順 1〜4（キー ping・プラン判定・`state/asset-routing.json` 生成） | `sonnet` | 書き出した JSON の `checks` / `routes` / `shippable` / `notes` の要約と、手順 5 の AskUserQuestion が必要な欠落（FAL 系全滅 / ElevenLabs 無し・Free）の有無。**キー値を返却・`notes`・JSON に一切書かない**（contract §10 — `.env` の内容を要約に含めない）。**AskUserQuestion を使わない**（判断はオーケストレータ） |
+
+サブスキル（forge-concept / forge-prototype / forge-build）は Checkpoint 提示文の下書きだけを読み取り専用の Task に委譲する。ワークフロー内の agent 階層はスクリプト側で固定済み。
+
 ## Phase 0: 前提確認・再開位置決定（冪等）
 
 1. `state/stage.txt` を読む（無ければ「未着手」）。`state/active.md` があれば読み、前回の未解決事項を把握する。
@@ -27,6 +38,8 @@ allowed-tools: Read, Glob, Grep, Write, Edit, Bash, Task, Workflow, AskUserQuest
 3. 矛盾検出: stage値に対応する成果物（`.claude/docs/pipeline.yaml` の `artifacts.required`）が欠落していたら、その成果物を生むフェーズまで巻き戻して再実行する（例: stage=`concept` なのに `design/gdd.md` が無い → Phase 3 から）。stage.txt は書き換えず、フェーズ完了時に正しい値で上書きされるに任せる。
 
 ## Phase 1: preflight（キー検証・ルーティング決定・状態初期化）
+
+**実行主体**: スキップ判定（次段落）はオーケストレータ。手順 1〜4 は Task（general-purpose, `model: sonnet`。キー値を返させない・AskUserQuestion 禁止 — オーケストレータ規約）へ委譲し、手順 5（AskUserQuestion）と手順 6 はオーケストレータが行う。
 
 `state/asset-routing.json` が既に存在すれば**このPhaseをスキップ**する（生成中のルート再判定禁止 — contract.md §10）。**ただし既存ファイルに `shippable` キーが無い（旧スキーマ）場合はスキップせず再生成する**（旧形式のまま生成レーンが参照すると全ルートが事実上出荷可扱いになるため）。
 
@@ -126,6 +139,7 @@ curl -s -H "xi-api-key: $ELEVENLABS_API_KEY" \
 6. 状態初期化（既存ファイルは上書きしない＝冪等）:
 
 ```bash
+set -a; source .env 2>/dev/null; set +a   # ASSET_BUDGET_USD を読む（Bash 呼び出しごとにシェルは新規 — 手順 2 の source は引き継がれない。キー値は echo しない）
 mkdir -p state
 [ -s state/budget.txt ]      || echo "${ASSET_BUDGET_USD:-20}" > state/budget.txt
 [ -s state/review-mode.txt ] || echo "lean" > state/review-mode.txt
@@ -196,4 +210,5 @@ jq -c 'select(.license != "commercial-ok" or .must_replace == true)' "$MANIFEST"
    - **コスト**: MANIFEST 合計 vs `state/budget.txt`。
    - **ライセンスフラグ**: 手順2の列挙 + `must_replace` 資産があれば差し替え指示。
    - **未解決事項**: `state/reviews/` で MAX_ITER 到達のまま非APPROVEの指摘一覧。
+   - **トークン消費**: 各フェーズの戻り値 `tokenUsage`（phase 別出力トークン・終端 `end` 込み）を `state/active.md` に記録済みなら再掲（model-routing.md §5 — 出力トークンのみ・再開ランは比較に使わない）。
 4. `state/active.md` を「受け渡し完了」で更新する（forge-build が更新済みなら差分のみ追記。`state/stage.txt` は forge-build が書き込み済みのため触れない）。
