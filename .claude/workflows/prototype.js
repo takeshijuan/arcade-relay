@@ -1189,7 +1189,7 @@ phaseT('QA');
 
 const qaSchema = {
   type: 'object',
-  required: ['verdict', 'criticalBugs', 'failedAcceptance', 'summary', 'evidencePaths', 'screenshotsVisuallyConfirmed'],
+  required: ['verdict', 'criticalBugs', 'bugs', 'failedAcceptance', 'summary', 'evidencePaths', 'screenshotsVisuallyConfirmed'],
   properties: {
     verdict: { type: 'string', enum: ['APPROVE', 'CONCERNS', 'REJECT'] },
     summary: { type: 'string' },
@@ -1201,6 +1201,21 @@ const qaSchema = {
         properties: {
           title: { type: 'string' },
           detail: { type: 'string' },
+          storyId: { type: 'string' },
+          assignee: { type: 'string', enum: ['gameplay-engineer', 'ui-engineer'] },
+        },
+      },
+    },
+    bugs: {
+      type: 'array',
+      description: '重大でないバグ（major/minor）。非APPROVE の理由が criticalBugs/failedAcceptance に無いときは必ず非空にする（qa/report.md にだけ書いた指摘は修正されない — retro-e4）',
+      items: {
+        type: 'object',
+        required: ['title', 'detail', 'severity', 'assignee'],
+        properties: {
+          title: { type: 'string' },
+          detail: { type: 'string' },
+          severity: { type: 'string', enum: ['major', 'minor'] },
           storyId: { type: 'string' },
           assignee: { type: 'string', enum: ['gameplay-engineer', 'ui-engineer'] },
         },
@@ -1312,7 +1327,7 @@ for (let round = 1; round <= QA_MAX; round++) {
       'レビュー履歴を ' + STATE.reviewsDir + '/qa.md に追記（review-loops.md の追記形式・iteration ' + round + '。日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う — 推測記入禁止）。',
       '判定: 重大バグ 0 かつ acceptance 全通過 = APPROVE。',
       '応答の1行目は「QA-PLAY: APPROVE|CONCERNS|REJECT」（contract.md §5）とし、構造化返却にも同じ判定を入れよ。',
-      '構造化返却: verdict / summary / criticalBugs（title・detail・storyId・修正担当 assignee。重大バグのみ。軽微な指摘は qa/report.md に記載）/ failedAcceptance（未通過の acceptance 一覧。story ID と何が満たせなかったかを1行ずつ。全通過なら空配列）/ evidencePaths（保存した証跡の相対パス）/ screenshotsVisuallyConfirmed（全スクリーンショットを Read で目視済みか。未実施なら false を正直に返す）。',
+      '構造化返却: verdict / summary / criticalBugs（title・detail・storyId・修正担当 assignee。重大バグのみ）/ bugs（重大でないバグ: title・detail・severity major|minor・storyId・assignee。**非APPROVE の理由が criticalBugs/failedAcceptance に無いときは必ず非空にする** — qa/report.md にだけ書いた指摘は修正ループに乗らない。E4 実害・qa-lead.md）/ failedAcceptance（未通過の acceptance 一覧。story ID と何が満たせなかったかを1行ずつ。全通過なら空配列）/ evidencePaths（保存した証跡の相対パス）/ screenshotsVisuallyConfirmed（全スクリーンショットを Read で目視済みか。未実施なら false を正直に返す）。',
     ].filter(Boolean).join('\n'),
     { label: 'qa-play-round' + round, phase: 'QA', agentType: 'qa-lead', effort: 'high', schema: qaSchema }
   );
@@ -1398,9 +1413,56 @@ for (let round = 1; round <= QA_MAX; round++) {
         unresolvedFindings.push('[QA-PLAY] acceptance 未通過の修正 agent が失敗');
       }
     }
+    // major バグは assignee 単位で 1 呼び出しにバッチ（TODOS「prototype QA fix の assignee 単位バッチ化」の部分適用 —
+    // criticalBugs の bug 単位 label（M-8a/b の resume 安全設計）は据え置き）。minor は修正対象外（qa/report.md の記録のみ）
+    const majors = (qaResult.bugs || []).filter(function (b) { return b && b.severity === 'major'; });
+    for (const eng of ['gameplay-engineer', 'ui-engineer']) {
+      const mine = majors.filter(function (b) { return (b.assignee || 'gameplay-engineer') === eng; });
+      if (mine.length === 0) continue;
+      const mfixed = await agentR(
+        [
+          QA_FIX_NOTE,
+          'あなたは ArcadeRelay の実装 engineer。QA-PLAY round ' + round + ' で検出された major バグ（担当: ' + eng + '）を修正せよ。担当外は触らない。',
+          'bugs(JSON):',
+          JSON.stringify(mine),
+          '参照: ' + ART.qaReport + '（QA 所見全文）/ ' + ART.conventions + ' / ' + DOCS.techStack + '。',
+          '修正後 ' + EP.verifyCmd + ' が exit 0 を確認し、パス限定で add してコミット: `git add game state ' + DOCS.techStack + ' && git commit -m "phase2: fix QA — major (' + eng + ')"`（`git add -A`・`.claude/docs` ディレクトリ丸ごと指定は禁止。' + DOCS.techStack + ' は落とし穴昇格を同一コミットに含めるため）。',
+          '修正原因がエンジン/テストランナー起因の一般則（環境の落とし穴）だった場合は、tech-stack 文書の「既知の落とし穴」節へ即時追記せよ（無ければ新設 — gates.md QA-PLAY）。',
+          IDEMPOTENT_RULE,
+          '修正内容を簡潔に返せ。',
+        ].join('\n'),
+        { label: 'fix-qa-r' + round + '-bugs-' + eng, phase: 'QA', agentType: eng, effort: 'high', model: TIER.judge }
+      );
+      if (mfixed === null) {
+        unresolvedFindings.push('[QA-PLAY] round ' + round + ' の major バグ修正 agent（' + eng + '）が失敗');
+      }
+    }
+    // 非 APPROVE なのに修正対象の配列が全て空 — E4 で中程度バグが qa/report.md にだけ書かれ、修正が一度も走らず
+    // HEAD 同一のまま round 2 に到達した（retro-e4）。summary と qa/report.md を起点に 1 回修正を試みる（judge 階層）
+    if (qaResult.criticalBugs.length === 0 && majors.length === 0 && (qaResult.failedAcceptance || []).length === 0) {
+      unresolvedFindings.push('[QA-PLAY] round ' + round + ': qa-lead が非APPROVE（' + qaResult.verdict + '）の理由を criticalBugs/bugs/failedAcceptance に載せなかった（qa-lead.md 違反）— summary 起点で修正を試行');
+      const sfixed = await agentR(
+        [
+          QA_FIX_NOTE,
+          'あなたは ArcadeRelay の実装 engineer。QA-PLAY round ' + round + ' が ' + qaResult.verdict + ' だが、修正対象の配列（criticalBugs / bugs / failedAcceptance）が全て空で返された。',
+          'summary: ' + (qaResult.summary || '（なし）'),
+          ART.qaReport + ' の round ' + round + ' 所見と上記 summary から非APPROVE の原因（中程度以下のバグを含む）を全て特定して修正せよ。修正不能・修正不要と判断した項目は ' + ART.qaReport + ' に理由を追記せよ。',
+          '参照: ' + ART.conventions + ' / ' + DOCS.techStack + '。修正後 ' + EP.verifyCmd + ' が exit 0 を確認し、パス限定で add してコミット: `git add game qa state ' + DOCS.techStack + ' && git commit -m "phase2: fix QA — summary"`（`git add -A` 禁止）。',
+          IDEMPOTENT_RULE,
+          '修正内容（または修正不要の理由）を簡潔に返せ。',
+        ].join('\n'),
+        { label: 'fix-qa-r' + round + '-summary', phase: 'QA', agentType: 'gameplay-engineer', effort: 'high', model: TIER.judge }
+      );
+      if (sfixed === null) {
+        unresolvedFindings.push('[QA-PLAY] round ' + round + ' の summary 起点修正 agent が失敗');
+      }
+    }
   } else {
     for (const bug of qaResult.criticalBugs) {
       unresolvedFindings.push('[QA-PLAY] 未解決の重大バグ: ' + bug.title + ' — ' + bug.detail);
+    }
+    for (const bug of (qaResult.bugs || []).filter(function (b) { return b && b.severity === 'major'; })) {
+      unresolvedFindings.push('[QA-PLAY] 未解決の major バグ: ' + bug.title + ' — ' + bug.detail);
     }
   }
 }

@@ -1081,7 +1081,7 @@ await parallel([
         '視覚証跡の機械検知＋目視（gates.md 視覚証跡の目視義務）: 全スクリーンショットに magick の mean 検査（<0.02 / >0.98 = SUSPECT_BLANK → 撮影方式を切替えて再撮影）と主要 UI テキストの低コントラスト検査（crop + stddev < 0.05 = SUSPECT_LOW_CONTRAST → 目視で可読性判定 — gates.md 視覚証跡）を行い、必ず Read で目視して「何が写っているか」を qa/report.md の目視所見表に記録。\n' +
         '証跡を qa/evidence/ に保存し、qa/report.md に結果を書け（round ' + round + ' として追記）。state/reviews/qa.md に iteration 記録を追記（追記は判定者たるあなたの責務。日時は `date -u +%Y-%m-%dT%H:%M:%SZ` の実行出力を使う — 推測記入禁止）。\n' +
         '応答の1行目は「QA-PLAY: APPROVE|CONCERNS|REJECT」とし、構造化返却の verdict にも同じ判定を入れよ。\n' +
-        'バグは severity（blocker/major/minor）と担当（gameplay-engineer/ui-engineer）付きで返せ。failedAcceptance には不合格の story ID を全て入れ、非APPROVE時は summary に判定理由を書け。evidencePaths に保存した証跡パス、screenshotsVisuallyConfirmed に目視実施の有無（未実施なら false を正直に）を入れよ。\n' +
+        'バグは severity（blocker/major/minor）と担当（gameplay-engineer/ui-engineer）付きで返せ。failedAcceptance には不合格の story ID を全て入れ、非APPROVE時は summary に判定理由を書き、**その理由となった項目を bugs（中程度以下も含む）か failedAcceptance に必ず載せる**（qa/report.md にだけ書いた指摘は修正ループに乗らない — E4 実害。qa-lead.md）。evidencePaths に保存した証跡パス、screenshotsVisuallyConfirmed に目視実施の有無（未実施なら false を正直に）を入れよ。\n' +
         '判定: 重大バグ0かつacceptance全通過のみ APPROVE。',
         { label: 'qa-play-' + round, phase: 'FullQA', agentType: 'qa-lead', schema: QA_SCHEMA, effort: 'high' }
       );
@@ -1126,6 +1126,24 @@ await parallel([
       log('QA-PLAY round ' + round + ': ' + qa.verdict + '（バグ ' + qaBugs.length + '件 / acceptance不合格 ' + qaFailedAcceptance.length + '件）');
       if (qa.verdict === 'APPROVE') break; // 合格は verdict === APPROVE のみ（バグ件数での合格ショートカット禁止）
       if (round === 2) break; // review 2回上限到達 → エスカレーション
+
+      if (qaBugs.length === 0 && qaFailedAcceptance.length === 0) {
+        // 非 APPROVE なのに修正対象が空 — E4 で中程度バグが qa/report.md にだけ書かれ、修正が一度も走らず
+        // HEAD 同一のまま round 2 に到達した（retro-e4）。summary と qa/report.md を起点に 1 回修正を試みる（judge 階層）
+        unresolvedFindings.push('FullQA round ' + round + ': qa-lead が非APPROVE（' + qa.verdict + '）の理由を bugs/failedAcceptance に載せなかった（qa-lead.md 違反）— summary 起点で修正を試行');
+        const sfix = await agentR(
+          QA_FIX_NOTE + '\n' +
+          'QA-PLAY round ' + round + ' が ' + qa.verdict + ' だが、修正対象の配列（bugs / failedAcceptance）が全て空で返された。\n' +
+          'summary: ' + (qaSummary || '（なし）') + '\n' +
+          'qa/report.md の round ' + round + ' 所見と上記 summary から非APPROVE の原因（中程度以下のバグを含む）を全て特定して修正せよ。修正不能・修正不要と判断した項目は qa/report.md に理由を追記せよ。\n' +
+          '参照: state/stories.yaml、' + EP.techStackDoc + '（規約: チューニングは ' + EP.configPath + ' のみで）。\n' +
+          '修正後 ' + EP.verifyCmd + ' を exit 0 にし、git commit -m "QA-PLAY round ' + round + ' fix (summary)" すること。' + CODE_COMMIT_RULE + '\n' +
+          IDEMPOTENT_RULE,
+          { label: 'qa-fix-' + round + '-summary', phase: 'FullQA', agentType: 'gameplay-engineer', effort: 'high', model: TIER.judge }
+        );
+        if (sfix === null) unresolvedFindings.push('FullQA: round ' + round + ' の summary 起点修正 agent が失敗（未修正のまま再QAへ）');
+        continue;
+      }
 
       // 修正はコード規律に合わせて順次（同一ファイル競合を避ける）
       // acceptance 未通過 story を assignee で分配する（全件を両レーンに渡すと担当外の judge fix が重複起動し、同一ファイルへ

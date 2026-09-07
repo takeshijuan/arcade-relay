@@ -49,7 +49,7 @@ const CROSSCHECK = { found: [
   { id: 'S-04', exists: true, assignee: 'gameplay-engineer', phase: 'prototype', acceptance: ENV_ACC },
 ] };
 const EV_PATH = 'qa/evidence/e.png';
-const PROTO_QA_OK = { verdict: 'APPROVE', criticalBugs: [], failedAcceptance: [], evidencePaths: [EV_PATH], screenshotsVisuallyConfirmed: true };
+const PROTO_QA_OK = { verdict: 'APPROVE', criticalBugs: [], bugs: [], failedAcceptance: [], evidencePaths: [EV_PATH], screenshotsVisuallyConfirmed: true };
 const EV_OK = { checks: [{ path: EV_PATH, exists: true, nonEmpty: true, rawLine: '-rw-r--r--  1 u  g  1234 Sep  2 03:00 qa/evidence/e.png' }], extraFilesInEvidenceDir: [] };
 const BATCH_OK = { ok: true, fixedNotes: [], unresolved: [] };
 const protoRoutes = (extra = [], batch = BATCH_OK, qa = PROTO_QA_OK, ev = EV_OK) => extra.concat([
@@ -260,6 +260,51 @@ test('段階エスカレーション(full-build): QA fix は judge(opus)・accep
     const fx = callsBy(u.calls, new RegExp('^qa-fix-1-' + eng + '$'))[0];
     assert.ok(fx && fx.prompt.includes('"S-77'), eng + ' レーンに所有者不明の acceptance が渡らない');
   }
+});
+
+// ---- QA 非 APPROVE の修正条件（retro-e4） ----
+
+test('QA 非 APPROVE で修正対象が空（retro-e4）: summary 起点の fix が judge で 1 回走り、qa-lead のプロトコル違反として記録される', async () => {
+  // E4: 中程度バグが qa/report.md にだけ書かれ、fix が一度も走らず HEAD 同一のまま round 2 に到達した
+  const qaEmpty = { verdict: 'CONCERNS', criticalBugs: [], bugs: [], failedAcceptance: [], evidencePaths: [EV_PATH], screenshotsVisuallyConfirmed: true, summary: '中程度の表示崩れ' };
+  const p = await runWorkflow(WF('prototype.js'), { args: PROTO_ARGS, routes: protoRoutes([], BATCH_OK, qaEmpty) });
+  const sfix = callsBy(p.calls, /^fix-qa-r1-summary$/);
+  assert.equal(sfix.length, 1, 'summary 起点 fix が走らない');
+  assert.equal(sfix[0].opts.model, 'opus'); assert.equal(sfix[0].opts.agentType, 'gameplay-engineer');
+  assert.ok(sfix[0].prompt.startsWith('【judge 階層で実施') && sfix[0].prompt.includes('中程度の表示崩れ'), 'summary が fix プロンプトに渡らない');
+  assert.ok(p.result.unresolvedFindings.some((f) => f.includes('qa-lead.md 違反')), 'プロトコル違反が記録されない');
+  assert.equal(callsBy(p.calls, /^fix-qa-r2-summary$/).length, 0, '最終 round では fix を走らせない');
+  const fbEmpty = { verdict: 'CONCERNS', bugs: [], failedAcceptance: [], evidencePaths: [EV_PATH], screenshotsVisuallyConfirmed: true, summary: 'HUD 数値が更新されない' };
+  const f = await runWorkflow(WF('full-build.js'), { args: FB_ARGS, routes: fbRoutes([], BATCH_OK, fbEmpty) });
+  const fb = callsBy(f.calls, /^qa-fix-1-summary$/);
+  assert.equal(fb.length, 1, 'full-build の summary 起点 fix が走らない');
+  assert.equal(fb[0].opts.model, 'opus');
+  assert.ok(fb[0].prompt.includes('HUD 数値が更新されない'));
+  assert.equal(callsBy(f.calls, /^qa-fix-1-(gameplay|ui)-engineer$/).length, 0, '空配列なのに担当レーン fix が走った');
+  assert.equal(callsBy(f.calls, /^qa-fix-2-summary$/).length, 0, '最終 round では fix を走らせない');
+  assert.ok(f.result.unresolvedFindings.some((x) => x.includes('qa-lead.md 違反')));
+  // 修正対象があるときは summary 起点 fix を起こさない（既存経路のまま）
+  const qaAcc = Object.assign({}, qaEmpty, { failedAcceptance: ['S-01: x'] });
+  const a = await runWorkflow(WF('prototype.js'), { args: PROTO_ARGS, routes: protoRoutes([], BATCH_OK, qaAcc) });
+  assert.equal(callsBy(a.calls, /^fix-qa-r1-summary$/).length, 0);
+  assert.equal(callsBy(a.calls, /^fix-qa-acceptance-r1$/).length, 1);
+});
+
+test('QA major バグ（prototype・retro-e4）: bugs の major は assignee 単位で 1 呼び出しにバッチし judge で修正、minor は修正対象外、最終 round 残存は記録', async () => {
+  const qa = { verdict: 'CONCERNS', criticalBugs: [], failedAcceptance: [], evidencePaths: [EV_PATH], screenshotsVisuallyConfirmed: true, summary: 'ng',
+    bugs: [
+      { title: 'HUD ずれ', detail: 'd1', severity: 'major', assignee: 'ui-engineer' },
+      { title: 'メニュー戻り', detail: 'd2', severity: 'major', assignee: 'ui-engineer' },
+      { title: '色味', detail: 'd3', severity: 'minor', assignee: 'gameplay-engineer' },
+    ] };
+  const { calls, result } = await runWorkflow(WF('prototype.js'), { args: PROTO_ARGS, routes: protoRoutes([], BATCH_OK, qa) });
+  const ui = callsBy(calls, /^fix-qa-r1-bugs-ui-engineer$/);
+  assert.equal(ui.length, 1, 'ui の major 2 件が 1 呼び出しにバッチされない');
+  assert.equal(ui[0].opts.model, 'opus'); assert.equal(ui[0].opts.agentType, 'ui-engineer');
+  assert.ok(ui[0].prompt.includes('HUD ずれ') && ui[0].prompt.includes('メニュー戻り'));
+  assert.equal(callsBy(calls, /^fix-qa-r1-bugs-gameplay-engineer$/).length, 0, 'minor だけの assignee に fix が走った');
+  assert.equal(callsBy(calls, /^fix-qa-r1-summary$/).length, 0, 'major があるのに summary 起点 fix が走った');
+  assert.ok(result.unresolvedFindings.some((f) => f.includes('未解決の major バグ: HUD ずれ')), '最終 round 後の major 残存が記録されない');
 });
 
 // ---- 段階エスカレーション: batch-verify（fail closed マージ） ----

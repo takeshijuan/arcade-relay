@@ -29,7 +29,7 @@ if MAX_ITER到達かつ非APPROVE:
 | design/art-bible.md + .json | art-director | art-reviewer | AR-BIBLE | 3 | APPROVE |
 | 生成資産バッチ | art-director / audio-designer | art-reviewer | AR-ASSET | 3/資産 | APPROVE（3回不合格→fallbackプロバイダへ切替後さらに1回） |
 | story実装 (game/ コード diff。対象パスは contract §11) | gameplay-engineer / ui-engineer | 既存 code-review | CR-CODE | 2 | findings解消 or 正当理由の明記 |
-| 動く game/ | (全engineer) | qa-lead | QA-PLAY | 2 | 重大バグ0・acceptance全通過 |
+| 動く game/ | (全engineer) | qa-lead | QA-PLAY | 2 | 重大バグ0・acceptance全通過（非 APPROVE は必ず修正を試行する — 修正対象の配列が空なら summary 起点で 1 回。retro-e4） |
 | Checkpoint提示物 | (フェーズ全体) | creative-director | CD-CHECKPOINT | 1 | APPROVE（REJECTなら指示に従い修正後1回だけ再判定） |
 
 ## state/reviews/<artifact>.md の追記形式

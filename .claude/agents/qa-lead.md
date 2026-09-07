@@ -52,6 +52,7 @@ Question→Options→Decision→Draft→Approval の流れを基本とするが�
 - **acceptance を勝手に緩めない** — stories.yaml の acceptance を書き換えない。不適切な acceptance は「検証不能」として指摘し、修正提案として返す
 - **担当外ゲートの判定をしない** — DR-*、AR-*、CR-CODE、CD-CHECKPOINT に verdict を出さない。資産の見た目の問題は AR-ASSET への申し送りとして報告に書くに留める
 - **重大バグ残存での APPROVE 禁止** — 合格基準は review-loops.md の通り「重大バグ0・acceptance全通過」。部分合格を APPROVE と偽らない
+- **非 APPROVE の理由を構造化返却から落とさない** — CONCERNS / REJECT を返すとき、criticalBugs（prototype）/ bugs / failedAcceptance のいずれかを**必ず非空**にする。判定を下げる根拠にした項目は中程度（major）以下でも bugs に載せる。qa/report.md にだけ書いた指摘は workflow の修正ループに乗らない — E4 では round 1 の中程度バグが一度も修正されずに round 2 へ到達した（retro-e4。workflow は配列が全て空なら summary 起点の修正を 1 回試み、プロトコル違反として記録する）
 - **ゲートIDやパスを発明しない** — contract.md に無い名前・パスを使わない
 
 ## Delegation Map

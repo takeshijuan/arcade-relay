@@ -27,7 +27,7 @@ const CROSSCHECK = {
     { id: 'S-04', exists: true, assignee: 'gameplay-engineer', phase: 'prototype', acceptance: '可視の地面/背景・ライト・カメラ構図と画面レイアウトが確定している' }, // 環境 story は実体 acceptance も突合される
   ],
 };
-const QA_OK = { verdict: 'APPROVE', criticalBugs: [], failedAcceptance: [], evidencePaths: ['qa/evidence/e.png'], screenshotsVisuallyConfirmed: true };
+const QA_OK = { verdict: 'APPROVE', criticalBugs: [], bugs: [], failedAcceptance: [], evidencePaths: ['qa/evidence/e.png'], screenshotsVisuallyConfirmed: true };
 const EV_OK = { checks: [{ path: 'qa/evidence/e.png', exists: true, nonEmpty: true, rawLine: 'qa/evidence/e.png 1234' }], extraFilesInEvidenceDir: [] }; // rawLine = stat "%N %z" の行（retro-e4）
 
 // route は接頭辞マッチにする（agentR の '-retry' 付き label でも同じ route が当たるように — retro-e3 指摘5）
